@@ -476,7 +476,8 @@ h1 {
   margin-bottom: 2rem;
 }
 
-.quiz-session-header h1:focus {
+.quiz-session-header h1:focus,
+.quiz-question h2:focus {
   outline: none;
 }
 
@@ -629,6 +630,18 @@ h1 {
   color: var(--color-muted);
   font-size: 0.82rem;
   line-height: 1.6;
+}
+
+.quiz-question-navigation {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.quiz-question-navigation p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .narrow-page {
