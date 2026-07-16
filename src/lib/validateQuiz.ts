@@ -1,14 +1,13 @@
-import type { QuestionType, QuizFile, QuizQuestion } from "./quizSchema";
+import {
+  QUESTION_TYPES,
+  type QuestionType,
+  type QuizFile,
+  type QuizQuestion,
+} from "./quizSchema.ts";
 
 export type QuizValidationResult =
   | { valid: true; quiz: QuizFile }
   | { valid: false; message: string };
-
-const questionTypes: QuestionType[] = [
-  "single_choice",
-  "multiple_choice",
-  "true_false",
-];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -62,7 +61,7 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
 
     if (
       typeof value.type !== "string" ||
-      !questionTypes.includes(value.type as QuestionType)
+      !QUESTION_TYPES.includes(value.type as QuestionType)
     ) {
       return invalid(
         `${label} type must be single_choice, multiple_choice, or true_false.`,
