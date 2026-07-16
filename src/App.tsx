@@ -16,8 +16,8 @@ export default function App() {
   const { state, retry } = useAppInfo();
   const library = useQuizLibrary();
   const handleImported = useCallback(
-    (file: ValidatedQuizFile) => {
-      library.addQuiz(file);
+    async (file: ValidatedQuizFile) => {
+      await library.addQuiz(file);
       setActiveView("library");
     },
     [library.addQuiz],
@@ -51,7 +51,8 @@ export default function App() {
               onAddQuiz={() => setActiveView("import")}
               onClearQuizzes={library.clearQuizzes}
               onRemoveQuiz={library.removeQuiz}
-              quizzes={library.quizzes}
+              onRetry={library.retry}
+              state={library.state}
             />
             <div className="desktop-status">
               <AppStatus state={state} onRetry={retry} />

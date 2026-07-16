@@ -306,6 +306,18 @@ h1 {
   font-size: 0.8rem;
 }
 
+.management-status-error {
+  border-color: rgba(251, 113, 133, 0.25);
+  color: #fda4af;
+  background: rgba(251, 113, 133, 0.07);
+}
+
+.primary-button:disabled,
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .library-empty .management-status {
   margin: 0 0 1rem;
 }

@@ -18,7 +18,7 @@ export type QuizFileImportState =
   | { status: "error"; fileName: string; message: string };
 
 export function useQuizFileImport(
-  onImported?: (file: ValidatedQuizFile) => void,
+  onImported?: (file: ValidatedQuizFile) => void | Promise<void>,
 ) {
   const [state, setState] = useState<QuizFileImportState>({ status: "empty" });
 
@@ -43,8 +43,8 @@ export function useQuizFileImport(
         size: importedFile.size,
         quiz: validation.quiz,
       };
+      await onImported?.(validatedFile);
       setState({ status: "success", data: validatedFile });
-      onImported?.(validatedFile);
     } catch (error) {
       setState({
         status: "error",

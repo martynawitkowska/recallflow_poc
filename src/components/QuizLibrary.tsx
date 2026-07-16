@@ -1,39 +1,119 @@
 import { useState } from "react";
-import type { LibraryQuiz } from "../hooks/useQuizLibrary";
+import type { QuizLibraryState } from "../hooks/useQuizLibrary";
+import type { LibraryQuiz } from "../lib/quizLibrary";
 import Icon from "./Icon";
 
 type QuizLibraryProps = {
-  quizzes: LibraryQuiz[];
+  state: QuizLibraryState;
   onAddQuiz: () => void;
-  onClearQuizzes: () => void;
-  onRemoveQuiz: (quizId: string) => void;
+  onClearQuizzes: () => Promise<void>;
+  onRemoveQuiz: (quizId: string) => Promise<void>;
+  onRetry: () => Promise<void>;
 };
 
+type ManagementFeedback = {
+  kind: "success" | "error";
+  message: string;
+};
+
+const actionErrorMessage = (error: unknown) =>
+  error instanceof Error
+    ? error.message
+    : "RecallFlow could not update the local quiz library. Restart the app and try again.";
+
 export default function QuizLibrary({
-  quizzes,
+  state,
   onAddQuiz,
   onClearQuizzes,
   onRemoveQuiz,
+  onRetry,
 }: QuizLibraryProps) {
-  const [managementMessage, setManagementMessage] = useState("");
+  const [managementFeedback, setManagementFeedback] =
+    useState<ManagementFeedback | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
-  const removeQuiz = (file: LibraryQuiz) => {
-    if (!window.confirm(`Remove "${file.quiz.title}" from this session library?`)) {
+  const removeQuiz = async (file: LibraryQuiz) => {
+    if (!window.confirm(`Remove "${file.quiz.title}" from your local library?`)) {
       return;
     }
 
-    onRemoveQuiz(file.id);
-    setManagementMessage(`${file.quiz.title} was removed from the library.`);
+    setPendingAction(file.id);
+    setManagementFeedback(null);
+    try {
+      await onRemoveQuiz(file.id);
+      setManagementFeedback({
+        kind: "success",
+        message: `${file.quiz.title} was removed from the library.`,
+      });
+    } catch (error) {
+      setManagementFeedback({ kind: "error", message: actionErrorMessage(error) });
+    } finally {
+      setPendingAction(null);
+    }
   };
 
-  const clearLibrary = () => {
-    if (!window.confirm(`Remove all ${quizzes.length} quizzes from this session library?`)) {
+  const clearLibrary = async (quizCount: number) => {
+    if (!window.confirm(`Remove all ${quizCount} quizzes from your local library?`)) {
       return;
     }
 
-    onClearQuizzes();
-    setManagementMessage("The session library was cleared.");
+    setPendingAction("clear");
+    setManagementFeedback(null);
+    try {
+      await onClearQuizzes();
+      setManagementFeedback({
+        kind: "success",
+        message: "The local library was cleared.",
+      });
+    } catch (error) {
+      setManagementFeedback({ kind: "error", message: actionErrorMessage(error) });
+    } finally {
+      setPendingAction(null);
+    }
   };
+
+  if (state.status === "loading") {
+    return (
+      <section className="library-empty" aria-busy="true">
+        <span className="library-empty-icon">
+          <Icon name="book" size={32} />
+        </span>
+        <h2>Loading your library</h2>
+        <p role="status">Reading quizzes stored on this device…</p>
+      </section>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <section className="library-empty">
+        <span className="library-empty-icon">
+          <Icon name="book" size={32} />
+        </span>
+        <h2>Your library could not be loaded</h2>
+        <p role="alert">{state.message}</p>
+        <button
+          className="primary-button"
+          onClick={() => void onRetry()}
+          type="button"
+        >
+          Try again
+        </button>
+      </section>
+    );
+  }
+
+  const { quizzes } = state;
+  const feedback = managementFeedback && (
+    <p
+      className={`management-status ${
+        managementFeedback.kind === "error" ? "management-status-error" : ""
+      }`}
+      role={managementFeedback.kind === "error" ? "alert" : "status"}
+    >
+      {managementFeedback.message}
+    </p>
+  );
 
   if (quizzes.length === 0) {
     return (
@@ -43,11 +123,7 @@ export default function QuizLibrary({
         </span>
         <h2>Your library is quiet</h2>
         <p>Import a validated quiz file to start your local study library.</p>
-        {managementMessage && (
-          <p className="management-status" role="status">
-            {managementMessage}
-          </p>
-        )}
+        {feedback}
         <button className="primary-button" onClick={onAddQuiz} type="button">
           <Icon name="upload" size={16} />
           Add a quiz
@@ -60,13 +136,18 @@ export default function QuizLibrary({
     <section aria-label="Quiz library">
       <div className="library-heading">
         <p>
-          {quizzes.length} quiz{quizzes.length === 1 ? "" : "zes"} in this
-          session
+          {quizzes.length} quiz{quizzes.length === 1 ? "" : "zes"} stored
+          locally
         </p>
         <div className="library-heading-actions">
-          <button className="danger-button" onClick={clearLibrary} type="button">
+          <button
+            className="danger-button"
+            disabled={pendingAction !== null}
+            onClick={() => void clearLibrary(quizzes.length)}
+            type="button"
+          >
             <Icon name="trash" size={16} />
-            Clear library
+            {pendingAction === "clear" ? "Clearing…" : "Clear library"}
           </button>
           <button className="primary-button" onClick={onAddQuiz} type="button">
             <Icon name="upload" size={16} />
@@ -74,11 +155,7 @@ export default function QuizLibrary({
           </button>
         </div>
       </div>
-      {managementMessage && (
-        <p className="management-status" role="status">
-          {managementMessage}
-        </p>
-      )}
+      {feedback}
       <div className="library-grid">
         {quizzes.map((file) => (
           <article className="library-card" key={file.id}>
@@ -125,20 +202,18 @@ export default function QuizLibrary({
               <button
                 aria-label={`Remove ${file.quiz.title}`}
                 className="danger-button"
-                onClick={() => removeQuiz(file)}
+                disabled={pendingAction !== null}
+                onClick={() => void removeQuiz(file)}
                 type="button"
               >
                 <Icon name="trash" size={15} />
-                Remove
+                {pendingAction === file.id ? "Removing…" : "Remove"}
               </button>
             </div>
           </article>
         ))}
       </div>
-      <p className="session-note">
-        Quizzes remain local to this app session until SQLite persistence is
-        enabled.
-      </p>
+      <p className="session-note">Quizzes are stored locally on this device.</p>
     </section>
   );
 }
