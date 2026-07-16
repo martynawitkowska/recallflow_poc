@@ -49,8 +49,8 @@ export default function FileDropzone({ state, onFile }: FileDropzoneProps) {
         <Icon name={success ? "check" : "upload"} size={30} />
       </span>
       <div>
-        <h2>{success ? "Quiz file ready" : "Drop a quiz JSON file"}</h2>
-        <p>Choose one local JSON file. RecallFlow reads it only on this device.</p>
+        <h2>{success ? "Quiz validated" : "Drop a quiz JSON file"}</h2>
+        <p>Choose one local JSON file. RecallFlow validates it only on this device.</p>
       </div>
       <label className="file-picker">
         Browse files
@@ -67,8 +67,9 @@ export default function FileDropzone({ state, onFile }: FileDropzoneProps) {
         {state.status === "loading" && <p>Reading {state.fileName}…</p>}
         {state.status === "success" && (
           <p>
-            <strong>{state.data.name}</strong> was read successfully and is ready
-            for schema validation.
+            <strong>{state.data.quiz.title}</strong> is ready with{" "}
+            {state.data.quiz.questions.length} question
+            {state.data.quiz.questions.length === 1 ? "" : "s"} from {state.data.name}.
           </p>
         )}
         {state.status === "error" && (

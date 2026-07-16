@@ -1,13 +1,20 @@
 import { useCallback, useState } from "react";
 import {
   readQuizFile,
-  type ImportedQuizFile,
 } from "../lib/readQuizFile";
+import type { QuizFile } from "../lib/quizSchema";
+import { validateQuiz } from "../lib/validateQuiz";
+
+type ValidatedQuizFile = {
+  name: string;
+  size: number;
+  quiz: QuizFile;
+};
 
 export type QuizFileImportState =
   | { status: "empty" }
   | { status: "loading"; fileName: string }
-  | { status: "success"; data: ImportedQuizFile }
+  | { status: "success"; data: ValidatedQuizFile }
   | { status: "error"; fileName: string; message: string };
 
 export function useQuizFileImport() {
@@ -17,7 +24,26 @@ export function useQuizFileImport() {
     setState({ status: "loading", fileName: file.name });
 
     try {
-      setState({ status: "success", data: await readQuizFile(file) });
+      const importedFile = await readQuizFile(file);
+      const validation = validateQuiz(importedFile.contents);
+
+      if (!validation.valid) {
+        setState({
+          status: "error",
+          fileName: file.name,
+          message: validation.message,
+        });
+        return;
+      }
+
+      setState({
+        status: "success",
+        data: {
+          name: importedFile.name,
+          size: importedFile.size,
+          quiz: validation.quiz,
+        },
+      });
     } catch (error) {
       setState({
         status: "error",
