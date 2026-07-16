@@ -1,14 +1,56 @@
+import { useState } from "react";
+import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
 import { useAppInfo } from "./hooks/useAppInfo";
 
 export default function App() {
+  const [activeView, setActiveView] = useState<ViewKey>("library");
   const { state, retry } = useAppInfo();
 
   return (
-    <main>
-      <p className="eyebrow">Local-first learning</p>
-      <h1>RecallFlow</h1>
-      <AppStatus state={state} onRetry={retry} />
-    </main>
+    <div className="app-shell">
+      <header>
+        <button
+          className="brand"
+          onClick={() => setActiveView("library")}
+          type="button"
+        >
+          <strong>RecallFlow</strong>
+          <small>Local-first learning</small>
+        </button>
+        <AppNavigation activeView={activeView} onNavigate={setActiveView} />
+      </header>
+
+      <main>
+        {activeView === "library" && (
+          <section>
+            <p className="eyebrow">Your study system</p>
+            <h1>Library</h1>
+            <p className="lede">Your saved quizzes will be ready here.</p>
+            <AppStatus state={state} onRetry={retry} />
+          </section>
+        )}
+
+        {activeView === "import" && (
+          <section>
+            <p className="eyebrow">Add study material</p>
+            <h1>Add a quiz</h1>
+            <p className="lede">
+              Quiz importing will be available in the next foundation step.
+            </p>
+          </section>
+        )}
+
+        {activeView === "settings" && (
+          <section>
+            <p className="eyebrow">Provider configuration</p>
+            <h1>AI settings</h1>
+            <p className="lede">
+              Provider settings will be available when AI features are enabled.
+            </p>
+          </section>
+        )}
+      </main>
+    </div>
   );
 }
