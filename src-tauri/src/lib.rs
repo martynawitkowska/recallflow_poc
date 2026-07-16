@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod database;
+pub mod generation;
 pub mod models;
 pub mod state;
 

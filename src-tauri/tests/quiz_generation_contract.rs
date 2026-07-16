@@ -1,7 +1,5 @@
 use recallflow_lib::{
-    commands::generation::{
-        parse_generated_quiz_json, validate_generation_request, GenerationSource,
-    },
+    generation::{parse_generated_quiz_json, validate_generation_request, GenerationSource},
     models::{AiProvider, GenerateQuizRequest},
 };
 use serde_json::json;
@@ -51,7 +49,7 @@ fn generation_request_requires_material_and_api_key() {
     assert!(validate_generation_request(&missing_key)
         .err()
         .expect("empty API key should fail")
-        .contains("OpenAI API key"));
+        .contains("API key for the selected provider"));
 }
 
 #[test]
@@ -112,7 +110,7 @@ fn generation_request_validates_provider_and_question_count() {
     assert!(validate_generation_request(&unsupported_provider)
         .err()
         .expect("unsupported provider should fail")
-        .contains("only available quiz provider"));
+        .contains("selected quiz provider is not available"));
     assert!(matches!(
         unsupported_provider.provider,
         AiProvider::Unsupported
