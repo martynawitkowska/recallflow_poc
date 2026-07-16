@@ -6,16 +6,22 @@ export type AppInfo = {
 };
 
 export async function getAppInfo(): Promise<AppInfo> {
-  const [name, version] = await Promise.all([
-    invokeIpc<string>("plugin:app|name"),
-    invokeIpc<string>("plugin:app|version"),
-  ]);
+  const appInfo = await invokeIpc<unknown>("get_app_info");
 
-  if (!name.trim() || !version.trim()) {
+  if (
+    typeof appInfo !== "object" ||
+    appInfo === null ||
+    !("name" in appInfo) ||
+    typeof appInfo.name !== "string" ||
+    !appInfo.name.trim() ||
+    !("version" in appInfo) ||
+    typeof appInfo.version !== "string" ||
+    !appInfo.version.trim()
+  ) {
     throw new Error(
       "RecallFlow returned incomplete application details. Restart the desktop app and try again.",
     );
   }
 
-  return { name, version };
+  return appInfo as AppInfo;
 }
