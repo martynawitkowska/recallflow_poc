@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 
 type QuizSessionProps = {
@@ -14,6 +14,7 @@ const questionTypeLabels = {
 
 export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const question = file.quiz.questions[0];
 
   useEffect(() => {
@@ -37,11 +38,34 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
       <article className="quiz-question" aria-labelledby="quiz-question-title">
         <p className="question-type">{questionTypeLabels[question.type]}</p>
         <h2 id="quiz-question-title">{question.question}</h2>
-        <ol className="quiz-answer-list" aria-label="Answer options">
-          {question.answers.map((answer) => (
-            <li key={answer}>{answer}</li>
-          ))}
-        </ol>
+        {question.type === "single_choice" ? (
+          <fieldset className="quiz-answer-list">
+            <legend>Choose one answer</legend>
+            {question.answers.map((answer) => (
+              <label
+                className={`quiz-answer-option ${
+                  selectedAnswer === answer ? "selected" : ""
+                }`}
+                key={answer}
+              >
+                <input
+                  checked={selectedAnswer === answer}
+                  name={`question-${question.id}`}
+                  onChange={() => setSelectedAnswer(answer)}
+                  type="radio"
+                  value={answer}
+                />
+                <span>{answer}</span>
+              </label>
+            ))}
+          </fieldset>
+        ) : (
+          <ol className="quiz-answer-list" aria-label="Answer options">
+            {question.answers.map((answer) => (
+              <li key={answer}>{answer}</li>
+            ))}
+          </ol>
+        )}
       </article>
     </section>
   );

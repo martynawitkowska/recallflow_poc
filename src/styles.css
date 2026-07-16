@@ -505,18 +505,51 @@ h1 {
 .quiz-answer-list {
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
   margin: 0;
   padding: 0;
+  border: 0;
   list-style: none;
 }
 
-.quiz-answer-list li {
+.quiz-answer-list legend {
+  margin-bottom: 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.quiz-answer-list li,
+.quiz-answer-option {
   padding: 0.9rem 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
   background: var(--color-surface-soft);
   line-height: 1.45;
+}
+
+.quiz-answer-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.quiz-answer-option:hover {
+  border-color: var(--color-accent);
+}
+
+.quiz-answer-option.selected {
+  border-color: var(--color-accent);
+  background: rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.2);
+}
+
+.quiz-answer-option input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--color-accent);
 }
 
 .narrow-page {
