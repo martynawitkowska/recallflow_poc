@@ -8,6 +8,7 @@ const REQUEST_FAILED_MESSAGE =
 export async function invokeIpc<T>(
   command: string,
   args?: Record<string, unknown>,
+  requestFailedMessage = REQUEST_FAILED_MESSAGE,
 ): Promise<T> {
   if (!command.trim()) {
     throw new Error("RecallFlow could not start an invalid desktop request.");
@@ -20,6 +21,6 @@ export async function invokeIpc<T>(
   try {
     return await invoke<T>(command, args);
   } catch {
-    throw new Error(REQUEST_FAILED_MESSAGE);
+    throw new Error(requestFailedMessage);
   }
 }
