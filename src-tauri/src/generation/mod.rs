@@ -214,8 +214,13 @@ pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, Str
     let source = validate_generation_request(&request)?;
     let question_count = request.question_count as usize;
     let prompt = GenerationPrompt::new(source, question_count);
-    let generated_json =
-        providers::generate(request.provider, request.api_key.trim(), &prompt).await?;
+    let generated_json = providers::generate(
+        request.provider,
+        request.model.as_deref(),
+        request.api_key.trim(),
+        &prompt,
+    )
+    .await?;
 
     parse_generated_quiz_json(&generated_json, question_count)
 }
