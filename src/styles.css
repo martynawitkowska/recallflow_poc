@@ -612,6 +612,25 @@ h1 {
   background: rgba(251, 113, 133, 0.08);
 }
 
+.answer-explanation {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.answer-explanation h3 {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.answer-explanation p {
+  margin: 0.4rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
 .narrow-page {
   width: min(42rem, 100%);
   margin: 0 auto;

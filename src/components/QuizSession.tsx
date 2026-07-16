@@ -106,17 +106,29 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
             {answerChecked ? "Answer checked" : "Check answer"}
           </button>
           {answerChecked && (
-            <p
-              className={`answer-feedback ${isCorrect ? "correct" : "incorrect"}`}
-              role="status"
-            >
-              <strong>{isCorrect ? "Correct." : "Not quite."}</strong>{" "}
-              {isCorrect
-                ? "Your selection is correct."
-                : question.type === "multiple_choice"
-                  ? "The correct answers are highlighted."
-                  : "The correct answer is highlighted."}
-            </p>
+            <>
+              <p
+                className={`answer-feedback ${isCorrect ? "correct" : "incorrect"}`}
+                role="status"
+              >
+                <strong>{isCorrect ? "Correct." : "Not quite."}</strong>{" "}
+                {isCorrect
+                  ? "Your selection is correct."
+                  : question.type === "multiple_choice"
+                    ? "The correct answers are highlighted."
+                    : "The correct answer is highlighted."}
+              </p>
+              <section
+                className="answer-explanation"
+                aria-labelledby="answer-explanation-title"
+              >
+                <h3 id="answer-explanation-title">Why this is the answer</h3>
+                <p>
+                  {question.explanation ||
+                    "No explanation was provided for this question."}
+                </p>
+              </section>
+            </>
           )}
         </div>
       </article>
