@@ -51,38 +51,30 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
       <article className="quiz-question" aria-labelledby="quiz-question-title">
         <p className="question-type">{questionTypeLabels[question.type]}</p>
         <h2 id="quiz-question-title">{question.question}</h2>
-        {question.type !== "true_false" ? (
-          <fieldset className="quiz-answer-list">
-            <legend>
-              {question.type === "multiple_choice"
-                ? "Choose every answer that applies"
-                : "Choose one answer"}
-            </legend>
-            {question.answers.map((answer) => (
-              <label
-                className={`quiz-answer-option ${
-                  selectedAnswers.includes(answer) ? "selected" : ""
-                }`}
-                key={answer}
-              >
-                <input
-                  checked={selectedAnswers.includes(answer)}
-                  name={`question-${question.id}`}
-                  onChange={() => selectAnswer(answer)}
-                  type={question.type === "multiple_choice" ? "checkbox" : "radio"}
-                  value={answer}
-                />
-                <span>{answer}</span>
-              </label>
-            ))}
-          </fieldset>
-        ) : (
-          <ol className="quiz-answer-list" aria-label="Answer options">
-            {question.answers.map((answer) => (
-              <li key={answer}>{answer}</li>
-            ))}
-          </ol>
-        )}
+        <fieldset className="quiz-answer-list">
+          <legend>
+            {question.type === "multiple_choice"
+              ? "Choose every answer that applies"
+              : "Choose one answer"}
+          </legend>
+          {question.answers.map((answer) => (
+            <label
+              className={`quiz-answer-option ${
+                selectedAnswers.includes(answer) ? "selected" : ""
+              }`}
+              key={answer}
+            >
+              <input
+                checked={selectedAnswers.includes(answer)}
+                name={`question-${question.id}`}
+                onChange={() => selectAnswer(answer)}
+                type={question.type === "multiple_choice" ? "checkbox" : "radio"}
+                value={answer}
+              />
+              <span>{answer}</span>
+            </label>
+          ))}
+        </fieldset>
       </article>
     </section>
   );
