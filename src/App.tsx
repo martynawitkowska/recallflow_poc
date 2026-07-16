@@ -4,6 +4,7 @@ import AppStatus from "./components/AppStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
+import QuizGenerator from "./components/QuizGenerator";
 import QuizLibrary from "./components/QuizLibrary";
 import { useAppInfo } from "./hooks/useAppInfo";
 import {
@@ -66,13 +67,15 @@ export default function App() {
             <p className="eyebrow">Add study material</p>
             <h1>Add a quiz</h1>
             <p className="lede">
-              Import a local quiz, or use the references below to create one
-              with any AI chat.
+              Import a local quiz, generate one from pasted material, or use an
+              external AI chat.
             </p>
             <FileDropzone
               onFile={quizFileImport.importFile}
               state={quizFileImport.state}
             />
+            <div className="import-divider"><span>or</span></div>
+            <QuizGenerator />
             <ExternalQuizReference />
           </section>
         )}

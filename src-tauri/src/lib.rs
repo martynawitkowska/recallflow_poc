@@ -34,6 +34,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app::get_app_info,
+            commands::generation::generate_quiz,
             commands::library::list_imported_quizzes,
             commands::library::save_imported_quiz,
             commands::library::delete_imported_quiz,

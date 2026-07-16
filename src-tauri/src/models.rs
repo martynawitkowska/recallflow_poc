@@ -55,3 +55,10 @@ pub struct ImportedQuiz {
     pub imported_at: String,
     pub quiz: QuizFile,
 }
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateQuizRequest {
+    pub material: String,
+    pub api_key: String,
+}
