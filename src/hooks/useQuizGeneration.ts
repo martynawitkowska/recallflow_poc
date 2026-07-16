@@ -13,7 +13,15 @@ import type { QuizFile } from "../lib/quizSchema";
 export type QuizGenerationState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "success"; quiz: QuizFile }
+  | {
+      status: "success";
+      quiz: QuizFile;
+      saveState:
+        | { status: "idle" }
+        | { status: "saving" }
+        | { status: "saved" }
+        | { status: "error"; message: string };
+    }
   | { status: "error"; message: string };
 
 export type QuizSourceMode = "material" | "url";
@@ -27,7 +35,9 @@ function isReadableUrl(value: string) {
   }
 }
 
-export function useQuizGeneration() {
+export function useQuizGeneration(
+  onSaveQuiz: (quiz: QuizFile) => Promise<void>,
+) {
   const [sourceMode, setSourceMode] = useState<QuizSourceMode>("material");
   const [material, setMaterial] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -98,7 +108,7 @@ export function useQuizGeneration() {
             : { sourceUrl, apiKey, provider, questionCount },
         );
         setApiKey("");
-        setState({ status: "success", quiz });
+        setState({ status: "success", quiz, saveState: { status: "idle" } });
       } catch (error) {
         setState({
           status: "error",
@@ -111,6 +121,35 @@ export function useQuizGeneration() {
     },
     [apiKey, material, provider, questionCount, sourceMode, sourceUrl],
   );
+
+  const save = useCallback(async () => {
+    if (
+      state.status !== "success" ||
+      state.saveState.status === "saving" ||
+      state.saveState.status === "saved"
+    ) {
+      return;
+    }
+
+    const quiz = state.quiz;
+    setState({ status: "success", quiz, saveState: { status: "saving" } });
+    try {
+      await onSaveQuiz(quiz);
+      setState({ status: "success", quiz, saveState: { status: "saved" } });
+    } catch (error) {
+      setState({
+        status: "success",
+        quiz,
+        saveState: {
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "RecallFlow could not save this quiz locally. Try again.",
+        },
+      });
+    }
+  }, [onSaveQuiz, state]);
 
   return {
     apiKey,
@@ -125,6 +164,7 @@ export function useQuizGeneration() {
     setQuestionCount,
     setSourceMode,
     setSourceUrl,
+    save,
     state,
     submit,
   };

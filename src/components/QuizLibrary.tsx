@@ -122,7 +122,7 @@ export default function QuizLibrary({
           <Icon name="book" size={32} />
         </span>
         <h2>Your library is quiet</h2>
-        <p>Import a validated quiz file to start your local study library.</p>
+        <p>Import or generate a quiz to start your local study library.</p>
         {feedback}
         <button className="primary-button" onClick={onAddQuiz} type="button">
           <Icon name="upload" size={16} />
@@ -186,7 +186,7 @@ export default function QuizLibrary({
                 </dd>
               </div>
               <div>
-                <dt>Imported</dt>
+                <dt>Added</dt>
                 <dd>{new Date(file.importedAt).toLocaleString()}</dd>
               </div>
             </dl>

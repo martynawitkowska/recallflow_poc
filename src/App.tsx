@@ -75,7 +75,7 @@ export default function App() {
               state={quizFileImport.state}
             />
             <div className="import-divider"><span>or</span></div>
-            <QuizGenerator />
+            <QuizGenerator onSaveQuiz={library.addGeneratedQuiz} />
             <ExternalQuizReference />
           </section>
         )}
