@@ -1,15 +1,28 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
 import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
+import QuizLibrary from "./components/QuizLibrary";
 import { useAppInfo } from "./hooks/useAppInfo";
-import { useQuizFileImport } from "./hooks/useQuizFileImport";
+import {
+  useQuizFileImport,
+  type ValidatedQuizFile,
+} from "./hooks/useQuizFileImport";
+import { useQuizLibrary } from "./hooks/useQuizLibrary";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewKey>("library");
   const { state, retry } = useAppInfo();
-  const quizFileImport = useQuizFileImport();
+  const library = useQuizLibrary();
+  const handleImported = useCallback(
+    (file: ValidatedQuizFile) => {
+      library.addQuiz(file);
+      setActiveView("library");
+    },
+    [library.addQuiz],
+  );
+  const quizFileImport = useQuizFileImport(handleImported);
 
   return (
     <div className="app-shell">
@@ -33,8 +46,14 @@ export default function App() {
           <section>
             <p className="eyebrow">Your study system</p>
             <h1>Library</h1>
-            <p className="lede">Your saved quizzes will be ready here.</p>
-            <AppStatus state={state} onRetry={retry} />
+            <p className="lede">Browse the quizzes ready for active recall.</p>
+            <QuizLibrary
+              onAddQuiz={() => setActiveView("import")}
+              quizzes={library.quizzes}
+            />
+            <div className="desktop-status">
+              <AppStatus state={state} onRetry={retry} />
+            </div>
           </section>
         )}
 

@@ -202,6 +202,123 @@ h1 {
   background: var(--color-accent-strong);
 }
 
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: #03110c;
+  background: var(--color-accent);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: var(--color-accent-strong);
+}
+
+.library-empty {
+  display: grid;
+  min-height: 20rem;
+  place-items: center;
+  align-content: center;
+  padding: 2rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1.25rem;
+  text-align: center;
+  background: rgba(17, 22, 20, 0.65);
+}
+
+.library-empty-icon,
+.library-card-icon {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  color: var(--color-accent);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.library-empty-icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+}
+
+.library-empty h2 {
+  margin: 1rem 0 0;
+}
+
+.library-empty p {
+  margin: 0.5rem 0 1.25rem;
+  color: var(--color-muted);
+}
+
+.library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.library-heading p,
+.session-note {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.library-card {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: linear-gradient(145deg, var(--color-surface-soft), var(--color-surface));
+}
+
+.library-card-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.library-card h2 {
+  overflow: hidden;
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.2rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-card p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.library-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-note {
+  margin: 1rem 0 0;
+}
+
+.desktop-status {
+  margin-top: 2rem;
+}
+
 .narrow-page {
   width: min(42rem, 100%);
   margin: 0 auto;
@@ -304,6 +421,10 @@ h1 {
   .app-navigation button {
     flex: 1 0 auto;
     justify-content: center;
+  }
+
+  .library-grid {
+    grid-template-columns: 1fr;
   }
 }
 

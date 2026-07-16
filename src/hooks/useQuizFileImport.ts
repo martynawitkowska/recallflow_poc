@@ -5,7 +5,7 @@ import {
 import type { QuizFile } from "../lib/quizSchema";
 import { validateQuiz } from "../lib/validateQuiz";
 
-type ValidatedQuizFile = {
+export type ValidatedQuizFile = {
   name: string;
   size: number;
   quiz: QuizFile;
@@ -17,7 +17,9 @@ export type QuizFileImportState =
   | { status: "success"; data: ValidatedQuizFile }
   | { status: "error"; fileName: string; message: string };
 
-export function useQuizFileImport() {
+export function useQuizFileImport(
+  onImported?: (file: ValidatedQuizFile) => void,
+) {
   const [state, setState] = useState<QuizFileImportState>({ status: "empty" });
 
   const importFile = useCallback(async (file: File) => {
@@ -36,14 +38,13 @@ export function useQuizFileImport() {
         return;
       }
 
-      setState({
-        status: "success",
-        data: {
-          name: importedFile.name,
-          size: importedFile.size,
-          quiz: validation.quiz,
-        },
-      });
+      const validatedFile = {
+        name: importedFile.name,
+        size: importedFile.size,
+        quiz: validation.quiz,
+      };
+      setState({ status: "success", data: validatedFile });
+      onImported?.(validatedFile);
     } catch (error) {
       setState({
         status: "error",
@@ -54,7 +55,7 @@ export function useQuizFileImport() {
             : "RecallFlow could not import this file. Try another JSON file.",
       });
     }
-  }, []);
+  }, [onImported]);
 
   return { state, importFile };
 }
