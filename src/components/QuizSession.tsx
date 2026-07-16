@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 
 type QuizSessionProps = {
@@ -15,13 +16,19 @@ const questionTypeLabels = {
 export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
+  const [answerChecked, setAnswerChecked] = useState(false);
   const question = file.quiz.questions[0];
+  const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
 
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
 
   const selectAnswer = (answer: string) => {
+    if (answerChecked) {
+      return;
+    }
+
     if (question.type === "multiple_choice") {
       setSelectedAnswers((current) =>
         current.includes(answer)
@@ -51,30 +58,67 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
       <article className="quiz-question" aria-labelledby="quiz-question-title">
         <p className="question-type">{questionTypeLabels[question.type]}</p>
         <h2 id="quiz-question-title">{question.question}</h2>
-        <fieldset className="quiz-answer-list">
+        <fieldset className="quiz-answer-list" disabled={answerChecked}>
           <legend>
             {question.type === "multiple_choice"
               ? "Choose every answer that applies"
               : "Choose one answer"}
           </legend>
-          {question.answers.map((answer) => (
-            <label
-              className={`quiz-answer-option ${
-                selectedAnswers.includes(answer) ? "selected" : ""
-              }`}
-              key={answer}
-            >
-              <input
-                checked={selectedAnswers.includes(answer)}
-                name={`question-${question.id}`}
-                onChange={() => selectAnswer(answer)}
-                type={question.type === "multiple_choice" ? "checkbox" : "radio"}
-                value={answer}
-              />
-              <span>{answer}</span>
-            </label>
-          ))}
+          {question.answers.map((answer) => {
+            const selected = selectedAnswers.includes(answer);
+            const correct = question.correctAnswers.includes(answer);
+            const state = answerChecked
+              ? correct
+                ? "correct"
+                : selected
+                  ? "incorrect"
+                  : ""
+              : selected
+                ? "selected"
+                : "";
+
+            return (
+              <label className={`quiz-answer-option ${state}`} key={answer}>
+                <input
+                  checked={selected}
+                  name={`question-${question.id}`}
+                  onChange={() => selectAnswer(answer)}
+                  type={question.type === "multiple_choice" ? "checkbox" : "radio"}
+                  value={answer}
+                />
+                <span>{answer}</span>
+                {answerChecked && (correct || selected) && (
+                  <span className="answer-option-result">
+                    {correct ? "Correct answer" : "Your answer"}
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </fieldset>
+        <div className="quiz-answer-actions">
+          <button
+            className="primary-button quiz-check-button"
+            disabled={selectedAnswers.length === 0 || answerChecked}
+            onClick={() => setAnswerChecked(true)}
+            type="button"
+          >
+            {answerChecked ? "Answer checked" : "Check answer"}
+          </button>
+          {answerChecked && (
+            <p
+              className={`answer-feedback ${isCorrect ? "correct" : "incorrect"}`}
+              role="status"
+            >
+              <strong>{isCorrect ? "Correct." : "Not quite."}</strong>{" "}
+              {isCorrect
+                ? "Your selection is correct."
+                : question.type === "multiple_choice"
+                  ? "The correct answers are highlighted."
+                  : "The correct answer is highlighted."}
+            </p>
+          )}
+        </div>
       </article>
     </section>
   );
