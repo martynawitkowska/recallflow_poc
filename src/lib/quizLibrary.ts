@@ -57,7 +57,11 @@ export async function listImportedQuizzes(): Promise<LibraryQuiz[]> {
 }
 
 export function saveImportedQuiz(quiz: LibraryQuiz): Promise<void> {
-  return invokeIpc("save_imported_quiz", { quiz });
+  return invokeIpc(
+    "save_imported_quiz",
+    { quiz },
+    "RecallFlow could not save the quiz locally. Restart the desktop app and try again.",
+  );
 }
 
 export function deleteImportedQuiz(quizId: string): Promise<void> {

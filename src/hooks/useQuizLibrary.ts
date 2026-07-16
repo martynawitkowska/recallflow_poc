@@ -6,6 +6,7 @@ import {
   saveImportedQuiz,
   type LibraryQuiz,
 } from "../lib/quizLibrary";
+import type { QuizFile } from "../lib/quizSchema";
 import type { ValidatedQuizFile } from "./useQuizFileImport";
 
 export type QuizLibraryState =
@@ -53,6 +54,15 @@ export function useQuizLibrary() {
     await loadQuizzes();
   }, [loadQuizzes]);
 
+  const addGeneratedQuiz = useCallback(async (quiz: QuizFile) => {
+    const json = JSON.stringify(quiz);
+    await addQuiz({
+      name: "generated-quiz.json",
+      size: new TextEncoder().encode(json).length,
+      quiz,
+    });
+  }, [addQuiz]);
+
   const removeQuiz = useCallback(async (quizId: string) => {
     ++requestId.current;
     await deleteImportedQuiz(quizId);
@@ -74,6 +84,7 @@ export function useQuizLibrary() {
   return {
     state,
     addQuiz,
+    addGeneratedQuiz,
     removeQuiz,
     clearQuizzes,
     retry: loadQuizzes,
