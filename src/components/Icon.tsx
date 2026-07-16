@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type IconName = "book" | "key" | "logo" | "upload";
+export type IconName = "book" | "check" | "key" | "logo" | "upload";
 
 type IconProps = {
   name: IconName;
@@ -14,6 +14,7 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5Z" />
     </>
   ),
+  check: <path d="m5 12 4 4L19 6" />,
   key: (
     <>
       <circle cx="8.5" cy="15.5" r="4.5" />

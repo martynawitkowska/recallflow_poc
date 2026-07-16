@@ -37,7 +37,9 @@ button {
   font: inherit;
 }
 
-button:focus-visible {
+button:focus-visible,
+input:focus-visible,
+.file-picker:focus-within {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
 }
@@ -198,6 +200,94 @@ h1 {
 
 .status-card button:hover {
   background: var(--color-accent-strong);
+}
+
+.narrow-page {
+  width: min(42rem, 100%);
+  margin: 0 auto;
+}
+
+.drop-zone {
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+  min-height: 24rem;
+  padding: clamp(2rem, 7vw, 3.5rem) 2rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1.25rem;
+  text-align: center;
+  background:
+    radial-gradient(circle, rgba(16, 185, 129, 0.05), transparent 60%),
+    rgba(17, 22, 20, 0.7);
+}
+
+.drop-zone.dragging,
+.drop-zone.success {
+  border-color: var(--color-accent);
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.drop-zone-icon {
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  place-items: center;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 1.25rem;
+  color: var(--color-accent);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.drop-zone h2 {
+  margin: 0;
+}
+
+.drop-zone p {
+  max-width: 28rem;
+  margin: 0.5rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.file-picker {
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface-soft);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.file-picker:hover {
+  border-color: var(--color-accent);
+}
+
+.file-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.import-status {
+  width: min(32rem, 100%);
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.import-status p {
+  margin: 0;
+}
+
+.import-status [role="alert"] {
+  color: #fda4af;
 }
 
 @media (max-width: 40rem) {

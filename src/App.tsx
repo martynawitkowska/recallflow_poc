@@ -1,12 +1,15 @@
 import { useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
+import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
 import { useAppInfo } from "./hooks/useAppInfo";
+import { useQuizFileImport } from "./hooks/useQuizFileImport";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewKey>("library");
   const { state, retry } = useAppInfo();
+  const quizFileImport = useQuizFileImport();
 
   return (
     <div className="app-shell">
@@ -36,12 +39,16 @@ export default function App() {
         )}
 
         {activeView === "import" && (
-          <section>
+          <section className="narrow-page">
             <p className="eyebrow">Add study material</p>
             <h1>Add a quiz</h1>
             <p className="lede">
-              Quiz importing will be available in the next foundation step.
+              Import a local quiz file to prepare it for validation.
             </p>
+            <FileDropzone
+              onFile={quizFileImport.importFile}
+              state={quizFileImport.state}
+            />
           </section>
         )}
 
