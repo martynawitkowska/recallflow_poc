@@ -49,6 +49,8 @@ export default function App() {
             <p className="lede">Browse the quizzes ready for active recall.</p>
             <QuizLibrary
               onAddQuiz={() => setActiveView("import")}
+              onClearQuizzes={library.clearQuizzes}
+              onRemoveQuiz={library.removeQuiz}
               quizzes={library.quizzes}
             />
             <div className="desktop-status">

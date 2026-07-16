@@ -20,5 +20,11 @@ export function useQuizLibrary() {
     ]);
   }, []);
 
-  return { quizzes, addQuiz };
+  const removeQuiz = useCallback((quizId: string) => {
+    setQuizzes((current) => current.filter((quiz) => quiz.id !== quizId));
+  }, []);
+
+  const clearQuizzes = useCallback(() => setQuizzes([]), []);
+
+  return { quizzes, addQuiz, removeQuiz, clearQuizzes };
 }

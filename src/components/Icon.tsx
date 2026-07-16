@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 
-export type IconName = "book" | "check" | "key" | "logo" | "upload";
+export type IconName =
+  | "book"
+  | "check"
+  | "key"
+  | "logo"
+  | "trash"
+  | "upload";
 
 type IconProps = {
   name: IconName;
@@ -25,6 +31,12 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <path d="M5 4h6v16H7a3 3 0 0 0-3 3V5a1 1 0 0 1 1-1Z" />
       <path d="M19 4h-6v16h4a3 3 0 0 1 3 3V5a1 1 0 0 0-1-1Z" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14" />
+      <path d="M10 11v6M14 11v6" />
     </>
   ),
   upload: (
