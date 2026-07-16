@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
+import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
 import QuizLibrary from "./components/QuizLibrary";
@@ -65,12 +66,14 @@ export default function App() {
             <p className="eyebrow">Add study material</p>
             <h1>Add a quiz</h1>
             <p className="lede">
-              Import a local quiz file to prepare it for validation.
+              Import a local quiz, or use the references below to create one
+              with any AI chat.
             </p>
             <FileDropzone
               onFile={quizFileImport.importFile}
               state={quizFileImport.state}
             />
+            <ExternalQuizReference />
           </section>
         )}
 

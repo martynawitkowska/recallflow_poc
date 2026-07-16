@@ -220,6 +220,21 @@ h1 {
   background: var(--color-accent-strong);
 }
 
+.secondary-button {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface-soft);
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  border-color: var(--color-accent);
+}
+
 .danger-button {
   display: inline-flex;
   align-items: center;
@@ -313,6 +328,7 @@ h1 {
 }
 
 .primary-button:disabled,
+.secondary-button:disabled,
 .danger-button:disabled {
   cursor: wait;
   opacity: 0.55;
@@ -532,6 +548,96 @@ h1 {
   color: #fda4af;
 }
 
+.external-reference {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.external-reference header h2 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.external-reference header > p:last-child,
+.reference-card-heading p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.reference-steps {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.reference-steps strong {
+  color: var(--color-text);
+}
+
+.reference-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+}
+
+.reference-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.reference-card-heading h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.reference-card-heading .secondary-button {
+  flex: 0 0 auto;
+}
+
+.reference-preview {
+  max-height: 20rem;
+  margin: 0;
+  padding: 0.9rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: #a7f3d0;
+  background: var(--color-bg);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.copy-feedback {
+  min-height: 1.1rem;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+}
+
+.copy-feedback p {
+  margin: 0;
+  color: var(--color-accent);
+}
+
+.copy-feedback [role="alert"] {
+  color: #fda4af;
+}
+
 @media (max-width: 40rem) {
   .app-header {
     align-items: stretch;
@@ -559,6 +665,15 @@ h1 {
 
   .library-heading-actions {
     flex-wrap: wrap;
+  }
+
+  .reference-card-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reference-card-heading .secondary-button {
+    align-self: flex-start;
   }
 }
 
