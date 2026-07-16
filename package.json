@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "check": "npm run build && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run build && npm run check:quiz-schema && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check:quiz-schema": "node --no-warnings --experimental-strip-types src/lib/validateQuiz.check.ts",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
     "preview": "vite preview",
