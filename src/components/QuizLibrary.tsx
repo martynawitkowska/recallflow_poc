@@ -9,6 +9,7 @@ type QuizLibraryProps = {
   onClearQuizzes: () => Promise<void>;
   onRemoveQuiz: (quizId: string) => Promise<void>;
   onRetry: () => Promise<void>;
+  onStartQuiz: (quiz: LibraryQuiz) => void;
 };
 
 type ManagementFeedback = {
@@ -27,6 +28,7 @@ export default function QuizLibrary({
   onClearQuizzes,
   onRemoveQuiz,
   onRetry,
+  onStartQuiz,
 }: QuizLibraryProps) {
   const [managementFeedback, setManagementFeedback] =
     useState<ManagementFeedback | null>(null);
@@ -199,6 +201,14 @@ export default function QuizLibrary({
               </ol>
             </details>
             <div className="library-card-actions">
+              <button
+                className="primary-button"
+                disabled={pendingAction !== null}
+                onClick={() => onStartQuiz(file)}
+                type="button"
+              >
+                Start quiz
+              </button>
               <button
                 aria-label={`Remove ${file.quiz.title}`}
                 className="danger-button"

@@ -6,23 +6,32 @@ import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
 import QuizGenerator from "./components/QuizGenerator";
 import QuizLibrary from "./components/QuizLibrary";
+import QuizSession from "./components/QuizSession";
 import { useAppInfo } from "./hooks/useAppInfo";
 import {
   useQuizFileImport,
   type ValidatedQuizFile,
 } from "./hooks/useQuizFileImport";
 import { useQuizLibrary } from "./hooks/useQuizLibrary";
+import type { LibraryQuiz } from "./lib/quizLibrary";
+
+type ActiveView = ViewKey | "quiz";
 
 export default function App() {
-  const [activeView, setActiveView] = useState<ViewKey>("library");
+  const [activeView, setActiveView] = useState<ActiveView>("library");
+  const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
   const { state, retry } = useAppInfo();
   const library = useQuizLibrary();
+  const navigate = useCallback((view: ViewKey) => {
+    setActiveQuiz(null);
+    setActiveView(view);
+  }, []);
   const handleImported = useCallback(
     async (file: ValidatedQuizFile) => {
       await library.addQuiz(file);
-      setActiveView("library");
+      navigate("library");
     },
-    [library.addQuiz],
+    [library.addQuiz, navigate],
   );
   const quizFileImport = useQuizFileImport(handleImported);
 
@@ -31,7 +40,7 @@ export default function App() {
       <header className="app-header">
         <button
           className="brand"
-          onClick={() => setActiveView("library")}
+          onClick={() => navigate("library")}
           type="button"
         >
           <span className="brand-mark"><Icon name="logo" size={26} /></span>
@@ -40,7 +49,7 @@ export default function App() {
             <small>Local-first learning</small>
           </span>
         </button>
-        <AppNavigation activeView={activeView} onNavigate={setActiveView} />
+        <AppNavigation activeView={activeView} onNavigate={navigate} />
       </header>
 
       <main className="app-content">
@@ -50,16 +59,24 @@ export default function App() {
             <h1>Library</h1>
             <p className="lede">Browse the quizzes ready for active recall.</p>
             <QuizLibrary
-              onAddQuiz={() => setActiveView("import")}
+              onAddQuiz={() => navigate("import")}
               onClearQuizzes={library.clearQuizzes}
               onRemoveQuiz={library.removeQuiz}
               onRetry={library.retry}
+              onStartQuiz={(quiz) => {
+                setActiveQuiz(quiz);
+                setActiveView("quiz");
+              }}
               state={library.state}
             />
             <div className="desktop-status">
               <AppStatus state={state} onRetry={retry} />
             </div>
           </section>
+        )}
+
+        {activeView === "quiz" && activeQuiz && (
+          <QuizSession quiz={activeQuiz} onExit={() => navigate("library")} />
         )}
 
         {activeView === "import" && (
