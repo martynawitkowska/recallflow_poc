@@ -6,9 +6,14 @@ import {
   MIN_QUESTION_COUNT,
   type AiProvider,
 } from "../lib/quizGeneration";
+import type { QuizFile } from "../lib/quizSchema";
 
-export default function QuizGenerator() {
-  const generation = useQuizGeneration();
+type QuizGeneratorProps = {
+  onSaveQuiz: (quiz: QuizFile) => Promise<void>;
+};
+
+export default function QuizGenerator({ onSaveQuiz }: QuizGeneratorProps) {
+  const generation = useQuizGeneration(onSaveQuiz);
   const isLoading = generation.state.status === "loading";
 
   return (
@@ -161,14 +166,55 @@ export default function QuizGenerator() {
             {generation.state.quiz.description && (
               <p>{generation.state.quiz.description}</p>
             )}
-            <ol>
+            <ol className="generated-question-list">
               {generation.state.quiz.questions.map((question) => (
-                <li key={question.id}>{question.question}</li>
+                <li key={question.id}>
+                  <details>
+                    <summary>{question.question}</summary>
+                    <ul>
+                      {question.answers.map((answer) => {
+                        const isCorrect = question.correctAnswers.includes(answer);
+                        return (
+                          <li className={isCorrect ? "correct-answer" : ""} key={answer}>
+                            {answer}{isCorrect ? " (correct)" : ""}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {question.explanation && (
+                      <p><strong>Explanation:</strong> {question.explanation}</p>
+                    )}
+                  </details>
+                </li>
               ))}
             </ol>
-            <p className="draft-note">
-              Review the questions here. This draft is not saved yet.
-            </p>
+            <div className="generated-quiz-actions">
+              <p className="draft-note">
+                {generation.state.saveState.status === "saved"
+                  ? "Saved to your local library."
+                  : "Review each question before saving this draft."}
+              </p>
+              <button
+                className="primary-button"
+                disabled={
+                  generation.state.saveState.status === "saving" ||
+                  generation.state.saveState.status === "saved"
+                }
+                onClick={() => void generation.save()}
+                type="button"
+              >
+                {generation.state.saveState.status === "saving"
+                  ? "Saving…"
+                  : generation.state.saveState.status === "saved"
+                    ? "Saved"
+                    : "Save to library"}
+              </button>
+            </div>
+            {generation.state.saveState.status === "error" && (
+              <p className="save-error" role="alert">
+                {generation.state.saveState.message}
+              </p>
+            )}
           </article>
         )}
       </div>
