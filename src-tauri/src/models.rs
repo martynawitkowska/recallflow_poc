@@ -56,10 +56,20 @@ pub struct ImportedQuiz {
     pub quiz: QuizFile,
 }
 
+#[derive(Clone, Copy, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum AiProvider {
+    Openai,
+    #[serde(other)]
+    Unsupported,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateQuizRequest {
     pub material: Option<String>,
     pub source_url: Option<String>,
+    pub provider: AiProvider,
+    pub question_count: i64,
     pub api_key: String,
 }

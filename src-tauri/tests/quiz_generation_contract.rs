@@ -2,7 +2,7 @@ use recallflow_lib::{
     commands::generation::{
         parse_generated_quiz_json, validate_generation_request, GenerationSource,
     },
-    models::GenerateQuizRequest,
+    models::{AiProvider, GenerateQuizRequest},
 };
 use serde_json::json;
 
@@ -32,11 +32,15 @@ fn generation_request_requires_material_and_api_key() {
     let missing_material = GenerateQuizRequest {
         material: Some("  ".to_owned()),
         source_url: None,
+        provider: AiProvider::Openai,
+        question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
     let missing_key = GenerateQuizRequest {
         material: Some("Useful study notes".to_owned()),
         source_url: None,
+        provider: AiProvider::Openai,
+        question_count: 8,
         api_key: "  ".to_owned(),
     };
 
@@ -55,16 +59,22 @@ fn generation_request_accepts_one_readable_url_source() {
     let valid_url = GenerateQuizRequest {
         material: None,
         source_url: Some("https://example.com/lecture".to_owned()),
+        provider: AiProvider::Openai,
+        question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
     let invalid_url = GenerateQuizRequest {
         material: None,
         source_url: Some("ftp://example.com/lecture".to_owned()),
+        provider: AiProvider::Openai,
+        question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
     let conflicting_sources = GenerateQuizRequest {
         material: Some("Useful study notes".to_owned()),
         source_url: Some("https://example.com/lecture".to_owned()),
+        provider: AiProvider::Openai,
+        question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
 
@@ -83,9 +93,40 @@ fn generation_request_accepts_one_readable_url_source() {
 }
 
 #[test]
+fn generation_request_validates_provider_and_question_count() {
+    let unsupported_provider: GenerateQuizRequest = serde_json::from_value(json!({
+        "material": "Useful study notes",
+        "provider": "gemini",
+        "questionCount": 8,
+        "apiKey": "request-only-key"
+    }))
+    .expect("unknown providers should reach command validation");
+    let invalid_count = GenerateQuizRequest {
+        material: Some("Useful study notes".to_owned()),
+        source_url: None,
+        provider: AiProvider::Openai,
+        question_count: 26,
+        api_key: "request-only-key".to_owned(),
+    };
+
+    assert!(validate_generation_request(&unsupported_provider)
+        .err()
+        .expect("unsupported provider should fail")
+        .contains("only available quiz provider"));
+    assert!(matches!(
+        unsupported_provider.provider,
+        AiProvider::Unsupported
+    ));
+    assert!(validate_generation_request(&invalid_count)
+        .err()
+        .expect("out-of-range count should fail")
+        .contains("between 3 and 25"));
+}
+
+#[test]
 fn generated_quiz_must_match_the_shared_contract() {
     let valid_json = valid_generated_quiz().to_string();
-    let quiz = parse_generated_quiz_json(&valid_json).expect("valid quiz should parse");
+    let quiz = parse_generated_quiz_json(&valid_json, 8).expect("valid quiz should parse");
 
     assert_eq!(quiz.title, "Generated quiz");
     assert_eq!(quiz.questions.len(), 8);
@@ -95,5 +136,6 @@ fn generated_quiz_must_match_the_shared_contract() {
         "questions": []
     })
     .to_string();
-    assert!(parse_generated_quiz_json(&invalid_json).is_err());
+    assert!(parse_generated_quiz_json(&invalid_json, 8).is_err());
+    assert!(parse_generated_quiz_json(&valid_json, 7).is_err());
 }
