@@ -59,6 +59,7 @@ pub struct ImportedQuiz {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateQuizRequest {
-    pub material: String,
+    pub material: Option<String>,
+    pub source_url: Option<String>,
     pub api_key: String,
 }
