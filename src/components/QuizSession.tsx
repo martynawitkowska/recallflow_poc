@@ -19,9 +19,12 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+  const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
-  const isLastQuestion = currentIndex === file.quiz.questions.length - 1;
+  const isLastQuestion = currentIndex === totalQuestions - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
+  const completedQuestions = currentIndex + (answerChecked ? 1 : 0);
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -50,6 +53,17 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
     setSelectedAnswers([answer]);
   };
 
+  const checkAnswer = () => {
+    if (selectedAnswers.length === 0 || answerChecked) {
+      return;
+    }
+
+    setAnswerChecked(true);
+    if (isCorrect) {
+      setCorrectCount((current) => current + 1);
+    }
+  };
+
   const showNextQuestion = () => {
     if (!answerChecked || isLastQuestion) {
       return;
@@ -58,7 +72,7 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
     setSelectedAnswers([]);
     setAnswerChecked(false);
     setCurrentIndex((current) =>
-      Math.min(current + 1, file.quiz.questions.length - 1),
+      Math.min(current + 1, totalQuestions - 1),
     );
   };
 
@@ -68,9 +82,22 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
         <button className="secondary-button" onClick={onExit} type="button">
           ← Back to library
         </button>
-        <p className="eyebrow">
-          Question {currentIndex + 1} of {file.quiz.questions.length}
-        </p>
+        <div className="quiz-progress-summary">
+          <p className="eyebrow">
+            Question {currentIndex + 1} of {totalQuestions}
+          </p>
+          <p>
+            Correct <strong>{correctCount}</strong> of {totalQuestions}
+          </p>
+        </div>
+        <progress
+          aria-label="Quiz progress"
+          className="quiz-progress"
+          max={totalQuestions}
+          value={completedQuestions}
+        >
+          {completedQuestions} of {totalQuestions} questions completed
+        </progress>
         <h1 id="quiz-session-title" ref={titleRef} tabIndex={-1}>
           {file.quiz.title}
         </h1>
@@ -123,7 +150,7 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
           <button
             className="primary-button quiz-check-button"
             disabled={selectedAnswers.length === 0 || answerChecked}
-            onClick={() => setAnswerChecked(true)}
+            onClick={checkAnswer}
             type="button"
           >
             {answerChecked ? "Answer checked" : "Check answer"}

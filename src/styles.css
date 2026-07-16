@@ -481,6 +481,33 @@ h1 {
   outline: none;
 }
 
+.quiz-progress-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quiz-progress-summary p {
+  margin: 0;
+}
+
+.quiz-progress-summary p:last-child {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.quiz-progress-summary strong {
+  color: var(--color-accent);
+}
+
+.quiz-progress {
+  width: 100%;
+  height: 0.55rem;
+  margin: 0.75rem 0 1.25rem;
+  accent-color: var(--color-accent);
+}
+
 .quiz-question {
   padding: clamp(1.5rem, 5vw, 2.5rem);
   border: 1px solid var(--color-border);
