@@ -4,19 +4,42 @@ RecallFlow is a local-first desktop application built with React 19, TypeScript,
 
 ## Development
 
-Install dependencies and start the desktop application:
+Install the JavaScript and Rust dependencies, then start the desktop app with
+hot reload:
 
 ```sh
-npm install
-npm run tauri dev
+npm ci
+npm run desktop:dev
 ```
 
-Run the frontend and Rust checks:
+The browser-only Vite preview is useful for layout work, but desktop IPC
+features intentionally report that the Tauri app is required:
 
 ```sh
-npm run build
-cd src-tauri
-cargo fmt --check
-cargo check
-cargo test
+npm run dev
 ```
+
+## Validation
+
+Run the complete frontend and Rust validation workflow:
+
+```sh
+npm run check
+```
+
+This runs the TypeScript/Vite production build, Rust formatting check,
+`cargo check`, and the Rust test suite.
+
+## Packaging
+
+Create the native installer or application bundle for the current operating
+system:
+
+```sh
+npm run desktop:build
+```
+
+Artifacts are written below `src-tauri/target/release/bundle/`. Packaging for
+another operating system must run on that operating system with its required
+Tauri prerequisites installed. Release signing and distribution credentials
+are intentionally not stored in this repository.

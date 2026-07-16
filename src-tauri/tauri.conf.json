@@ -22,6 +22,10 @@
     ]
   },
   "bundle": {
-    "active": false
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "shortDescription": "A local-first active recall study application",
+    "icon": ["icons/icon.png"]
   }
 }

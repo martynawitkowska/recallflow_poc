@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "check": "npm run build && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
