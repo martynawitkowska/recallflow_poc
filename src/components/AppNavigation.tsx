@@ -1,3 +1,5 @@
+import Icon, { type IconName } from "./Icon";
+
 export type ViewKey = "library" | "import" | "settings";
 
 type AppNavigationProps = {
@@ -5,10 +7,10 @@ type AppNavigationProps = {
   onNavigate: (view: ViewKey) => void;
 };
 
-const items: Array<{ key: ViewKey; label: string }> = [
-  { key: "library", label: "Library" },
-  { key: "import", label: "Add quiz" },
-  { key: "settings", label: "AI settings" },
+const items: Array<{ key: ViewKey; label: string; icon: IconName }> = [
+  { key: "library", label: "Library", icon: "book" },
+  { key: "import", label: "Add quiz", icon: "upload" },
+  { key: "settings", label: "AI settings", icon: "key" },
 ];
 
 export default function AppNavigation({
@@ -16,7 +18,7 @@ export default function AppNavigation({
   onNavigate,
 }: AppNavigationProps) {
   return (
-    <nav aria-label="Main navigation">
+    <nav className="app-navigation" aria-label="Main navigation">
       {items.map((item) => (
         <button
           aria-current={activeView === item.key ? "page" : undefined}
@@ -25,6 +27,7 @@ export default function AppNavigation({
           onClick={() => onNavigate(item.key)}
           type="button"
         >
+          <Icon name={item.icon} size={16} />
           {item.label}
         </button>
       ))}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
+import Icon from "./components/Icon";
 import { useAppInfo } from "./hooks/useAppInfo";
 
 export default function App() {
@@ -9,19 +10,22 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header>
+      <header className="app-header">
         <button
           className="brand"
           onClick={() => setActiveView("library")}
           type="button"
         >
-          <strong>RecallFlow</strong>
-          <small>Local-first learning</small>
+          <span className="brand-mark"><Icon name="logo" size={26} /></span>
+          <span>
+            <strong>RecallFlow</strong>
+            <small>Local-first learning</small>
+          </span>
         </button>
         <AppNavigation activeView={activeView} onNavigate={setActiveView} />
       </header>
 
-      <main>
+      <main className="app-content">
         {activeView === "library" && (
           <section>
             <p className="eyebrow">Your study system</p>
