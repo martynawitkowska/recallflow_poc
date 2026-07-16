@@ -284,16 +284,28 @@ h1 {
   background: linear-gradient(145deg, var(--color-surface-soft), var(--color-surface));
 }
 
+.library-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .library-card-icon {
   width: 2.75rem;
   height: 2.75rem;
-  margin-bottom: 1rem;
   border-radius: var(--radius-md);
+}
+
+.question-count {
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 750;
 }
 
 .library-card h2 {
   overflow: hidden;
-  margin: 0.35rem 0 0.5rem;
+  margin: 1rem 0 0.5rem;
   font-size: 1.2rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -305,10 +317,65 @@ h1 {
   font-size: 0.8rem;
 }
 
-.library-file-name {
+.library-description {
+  min-height: 2.5rem;
+  line-height: 1.55;
+}
+
+.library-metadata {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.library-metadata div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.library-metadata dt {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.library-metadata dd {
   overflow: hidden;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.question-preview summary {
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.question-preview ol {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 14rem;
+  margin: 0.85rem 0 0;
+  padding: 0.85rem 0.85rem 0.85rem 2.25rem;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.question-preview li {
+  padding-left: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .session-note {

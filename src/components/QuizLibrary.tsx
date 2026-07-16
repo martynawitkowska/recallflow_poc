@@ -38,15 +38,45 @@ export default function QuizLibrary({ quizzes, onAddQuiz }: QuizLibraryProps) {
       <div className="library-grid">
         {quizzes.map((file) => (
           <article className="library-card" key={file.id}>
-            <span className="library-card-icon">
-              <Icon name="book" size={22} />
-            </span>
-            <p className="library-file-name">{file.name}</p>
+            <div className="library-card-top">
+              <span className="library-card-icon">
+                <Icon name="book" size={22} />
+              </span>
+              <span className="question-count">
+                {file.quiz.questions.length} question
+                {file.quiz.questions.length === 1 ? "" : "s"}
+              </span>
+            </div>
             <h2>{file.quiz.title}</h2>
-            <p>
-              {file.quiz.questions.length} question
-              {file.quiz.questions.length === 1 ? "" : "s"}
+            <p className="library-description">
+              {file.quiz.description || "No quiz description provided."}
             </p>
+            <dl className="library-metadata">
+              <div>
+                <dt>Source</dt>
+                <dd title={file.name}>{file.name}</dd>
+              </div>
+              <div>
+                <dt>File size</dt>
+                <dd>
+                  {file.size < 1024
+                    ? `${file.size} B`
+                    : `${(file.size / 1024).toFixed(1)} KB`}
+                </dd>
+              </div>
+              <div>
+                <dt>Imported</dt>
+                <dd>{new Date(file.importedAt).toLocaleString()}</dd>
+              </div>
+            </dl>
+            <details className="question-preview">
+              <summary>Preview questions</summary>
+              <ol>
+                {file.quiz.questions.map((question) => (
+                  <li key={question.id}>{question.question}</li>
+                ))}
+              </ol>
+            </details>
           </article>
         ))}
       </div>
