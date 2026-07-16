@@ -108,35 +108,38 @@ pub fn validate_generation_request(
 }
 
 pub fn parse_generated_quiz_json(
-    json: &str,
+    response: &str,
     expected_question_count: usize,
 ) -> Result<QuizFile, String> {
+    let json = extract_json_object(response)?;
     let quiz: QuizFile = serde_json::from_str(json).map_err(|_| INVALID_QUIZ_ERROR.to_owned())?;
+    let quiz = normalize_quiz(quiz);
 
-    if quiz.title.trim().is_empty() || quiz.questions.len() != expected_question_count {
+    if quiz.title.is_empty() || quiz.questions.len() != expected_question_count {
         return Err(INVALID_QUIZ_ERROR.to_owned());
     }
 
     let mut question_ids = HashSet::new();
     for question in &quiz.questions {
-        let answers = question
-            .answers
-            .iter()
-            .map(|answer| answer.trim())
-            .collect::<Vec<_>>();
-        let unique_answers = answers.iter().copied().collect::<HashSet<_>>();
+        let unique_answers = question.answers.iter().collect::<HashSet<_>>();
 
-        if question.id.trim().is_empty()
-            || !question_ids.insert(question.id.trim())
-            || question.question.trim().is_empty()
-            || answers.len() < 2
-            || answers.iter().any(|answer| answer.is_empty())
-            || unique_answers.len() != answers.len()
+        if question.id.is_empty()
+            || !question_ids.insert(&question.id)
+            || question.question.is_empty()
+            || question.answers.len() < 2
+            || question.answers.iter().any(String::is_empty)
+            || unique_answers.len() != question.answers.len()
             || question.correct_answers.is_empty()
             || question
                 .correct_answers
                 .iter()
-                .any(|answer| !answers.contains(&answer.trim()))
+                .collect::<HashSet<_>>()
+                .len()
+                != question.correct_answers.len()
+            || question
+                .correct_answers
+                .iter()
+                .any(|answer| !question.answers.contains(answer))
         {
             return Err(INVALID_QUIZ_ERROR.to_owned());
         }
@@ -147,7 +150,7 @@ pub fn parse_generated_quiz_json(
             }
             QuestionType::TrueFalse
                 if question.correct_answers.len() != 1
-                    || answers.as_slice() != ["True", "False"] =>
+                    || question.answers.as_slice() != ["True", "False"] =>
             {
                 return Err(INVALID_QUIZ_ERROR.to_owned());
             }
@@ -156,6 +159,55 @@ pub fn parse_generated_quiz_json(
     }
 
     Ok(quiz)
+}
+
+fn extract_json_object(response: &str) -> Result<&str, String> {
+    let response = response.trim();
+    let response = response
+        .strip_prefix("```json")
+        .or_else(|| response.strip_prefix("```"))
+        .unwrap_or(response)
+        .trim();
+    let response = response.strip_suffix("```").unwrap_or(response).trim();
+    let start = response
+        .find('{')
+        .ok_or_else(|| INVALID_QUIZ_ERROR.to_owned())?;
+    let end = response
+        .rfind('}')
+        .ok_or_else(|| INVALID_QUIZ_ERROR.to_owned())?;
+
+    if end <= start {
+        return Err(INVALID_QUIZ_ERROR.to_owned());
+    }
+
+    Ok(&response[start..=end])
+}
+
+fn normalize_quiz(mut quiz: QuizFile) -> QuizFile {
+    quiz.title = quiz.title.trim().to_owned();
+    quiz.description = quiz
+        .description
+        .take()
+        .map(|description| description.trim().to_owned())
+        .filter(|description| !description.is_empty());
+
+    for question in &mut quiz.questions {
+        question.id = question.id.trim().to_owned();
+        question.question = question.question.trim().to_owned();
+        for answer in &mut question.answers {
+            *answer = answer.trim().to_owned();
+        }
+        for answer in &mut question.correct_answers {
+            *answer = answer.trim().to_owned();
+        }
+        question.explanation = question
+            .explanation
+            .take()
+            .map(|explanation| explanation.trim().to_owned())
+            .filter(|explanation| !explanation.is_empty());
+    }
+
+    quiz
 }
 
 pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, String> {
