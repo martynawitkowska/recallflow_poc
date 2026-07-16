@@ -3,7 +3,7 @@ import Icon, { type IconName } from "./Icon";
 export type ViewKey = "library" | "import" | "settings";
 
 type AppNavigationProps = {
-  activeView: ViewKey;
+  activeView: ViewKey | "quiz";
   onNavigate: (view: ViewKey) => void;
 };
 
