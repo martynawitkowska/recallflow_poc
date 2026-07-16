@@ -15,14 +15,23 @@ const questionTypeLabels = {
 
 export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const questionRef = useRef<HTMLHeadingElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
-  const question = file.quiz.questions[0];
+  const question = file.quiz.questions[currentIndex];
+  const isLastQuestion = currentIndex === file.quiz.questions.length - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
 
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (currentIndex > 0) {
+      questionRef.current?.focus();
+    }
+  }, [currentIndex]);
 
   const selectAnswer = (answer: string) => {
     if (answerChecked) {
@@ -41,6 +50,18 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
     setSelectedAnswers([answer]);
   };
 
+  const showNextQuestion = () => {
+    if (!answerChecked || isLastQuestion) {
+      return;
+    }
+
+    setSelectedAnswers([]);
+    setAnswerChecked(false);
+    setCurrentIndex((current) =>
+      Math.min(current + 1, file.quiz.questions.length - 1),
+    );
+  };
+
   return (
     <section className="quiz-session" aria-labelledby="quiz-session-title">
       <header className="quiz-session-header">
@@ -48,7 +69,7 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
           ← Back to library
         </button>
         <p className="eyebrow">
-          Question 1 of {file.quiz.questions.length}
+          Question {currentIndex + 1} of {file.quiz.questions.length}
         </p>
         <h1 id="quiz-session-title" ref={titleRef} tabIndex={-1}>
           {file.quiz.title}
@@ -57,7 +78,9 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
 
       <article className="quiz-question" aria-labelledby="quiz-question-title">
         <p className="question-type">{questionTypeLabels[question.type]}</p>
-        <h2 id="quiz-question-title">{question.question}</h2>
+        <h2 id="quiz-question-title" ref={questionRef} tabIndex={-1}>
+          {question.question}
+        </h2>
         <fieldset className="quiz-answer-list" disabled={answerChecked}>
           <legend>
             {question.type === "multiple_choice"
@@ -128,6 +151,19 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
                     "No explanation was provided for this question."}
                 </p>
               </section>
+              <div className="quiz-question-navigation">
+                {isLastQuestion ? (
+                  <p>Final question complete.</p>
+                ) : (
+                  <button
+                    className="primary-button"
+                    onClick={showNextQuestion}
+                    type="button"
+                  >
+                    Next question →
+                  </button>
+                )}
+              </div>
             </>
           )}
         </div>
