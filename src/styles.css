@@ -35,3 +35,31 @@ h1 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.status-card {
+  max-width: 32rem;
+  padding: 1.5rem;
+  border: 1px solid #c7d5ce;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.status-card h2 {
+  margin-top: 0;
+}
+
+button {
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  color: #fff;
+  background: #315b48;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid #7bb697;
+  outline-offset: 3px;
+}
