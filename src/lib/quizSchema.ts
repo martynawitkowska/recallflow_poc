@@ -1,7 +1,10 @@
-export type QuestionType =
-  | "single_choice"
-  | "multiple_choice"
-  | "true_false";
+export const QUESTION_TYPES = [
+  "single_choice",
+  "multiple_choice",
+  "true_false",
+] as const;
+
+export type QuestionType = (typeof QUESTION_TYPES)[number];
 
 export type QuizQuestion = {
   id: string;
