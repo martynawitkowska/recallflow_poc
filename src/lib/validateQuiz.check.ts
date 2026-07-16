@@ -50,3 +50,11 @@ expectError(
 if (!EXTERNAL_QUIZ_PROMPT.includes(QUIZ_SCHEMA_REFERENCE)) {
   throw new Error("Expected the external generation prompt to include the schema example.");
 }
+
+if (
+  !EXTERNAL_QUIZ_PROMPT.includes(
+    "downloadable JSON file named recallflow-quiz.json",
+  )
+) {
+  throw new Error("Expected the external generation prompt to request a JSON download.");
+}

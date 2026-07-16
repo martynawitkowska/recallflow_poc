@@ -28,14 +28,14 @@ export default function ExternalQuizReference() {
         <p>
           RecallFlow does not send your material anywhere from this screen. Copy
           the prompt into your preferred AI chat, add your study material, then
-          save its JSON response and import it above.
+          download its generated JSON file and import it above.
         </p>
       </header>
 
       <ol className="reference-steps">
         <li>Copy the prompt and paste it into ChatGPT, Claude, Gemini, or another AI chat.</li>
         <li>Add your notes, transcript, article text, or accessible video link.</li>
-        <li>Save the JSON-only response as a <strong>.json</strong> file and import it here.</li>
+        <li>Download <strong>recallflow-quiz.json</strong> and import it here.</li>
       </ol>
 
       <article className="reference-card">

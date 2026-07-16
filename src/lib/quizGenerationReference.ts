@@ -31,13 +31,16 @@ export const QUIZ_SCHEMA_EXAMPLE = {
 
 export const QUIZ_SCHEMA_REFERENCE = JSON.stringify(QUIZ_SCHEMA_EXAMPLE, null, 2);
 
-export const EXTERNAL_QUIZ_PROMPT = `Create a RecallFlow quiz as valid JSON only.
+export const EXTERNAL_QUIZ_PROMPT = `Create a RecallFlow quiz and provide it as a downloadable JSON file named recallflow-quiz.json.
+
+The file must contain valid JSON only.
 
 Use this exact structure:
 ${QUIZ_SCHEMA_REFERENCE}
 
 Rules:
-- Return only JSON. Do not wrap it in Markdown or add commentary.
+- Attach the completed quiz as a downloadable .json file named recallflow-quiz.json.
+- Put only JSON in the file. Do not wrap it in Markdown or add commentary.
 - Include a non-empty title and at least one question.
 - Give every question a unique, non-empty id.
 - Use only these question types: single_choice, multiple_choice, true_false.
@@ -48,4 +51,4 @@ Rules:
 - description and explanation are optional strings. Do not include null values or extra fields.
 - Make every question useful for active recall and grounded only in the supplied material.
 
-Create 10 questions from the material I paste after this prompt. If I provide a link you cannot access, ask me to paste the transcript, notes, or article text instead.`;
+Create 10 questions from the material I paste after this prompt. If I provide a link you cannot access, ask me to paste the transcript, notes, or article text instead. When the quiz is complete, create recallflow-quiz.json and present it for download.`;
