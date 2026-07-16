@@ -14,6 +14,7 @@ export type GenerateQuizRequest = {
   material?: string;
   sourceUrl?: string;
   provider: AiProvider;
+  model?: string;
   questionCount: number;
   apiKey: string;
 };

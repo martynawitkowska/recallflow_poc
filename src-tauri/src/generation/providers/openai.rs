@@ -1,10 +1,18 @@
 use super::super::GenerationPrompt;
 use serde::Deserialize;
+use std::time::Duration;
 
-const MODEL: &str = "gpt-5.4-mini";
+const DEFAULT_MODEL: &str = "gpt-5.4-mini";
+const ALLOWED_MODELS: &[&str] = &[DEFAULT_MODEL];
 const RESPONSES_ENDPOINT: &str = "https://api.openai.com/v1/responses";
+const REQUEST_TIMEOUT_SECONDS: u64 = 120;
+const MAX_RESPONSE_BYTES: usize = 1_000_000;
 const GENERATION_ERROR: &str =
     "OpenAI could not generate the quiz. Check your connection and try again.";
+const TIMEOUT_ERROR: &str =
+    "OpenAI took too long to generate the quiz. Try again with a shorter source.";
+const RESPONSE_TOO_LARGE_ERROR: &str =
+    "OpenAI returned too much data. Try again with fewer questions.";
 const INCOMPLETE_RESPONSE_ERROR: &str =
     "OpenAI could not complete the quiz. Try again with a shorter or clearer source.";
 const REFUSAL_ERROR: &str =
@@ -36,10 +44,28 @@ enum OpenAiContentItem {
     Other,
 }
 
-fn build_payload(prompt: &GenerationPrompt) -> serde_json::Value {
+fn validate_model(model: Option<&str>) -> Result<&'static str, String> {
+    let model = model
+        .map(str::trim)
+        .filter(|model| !model.is_empty())
+        .unwrap_or(DEFAULT_MODEL);
+
+    ALLOWED_MODELS
+        .iter()
+        .copied()
+        .find(|allowed| *allowed == model)
+        .ok_or_else(|| {
+            format!(
+                "Choose a supported OpenAI model: {}.",
+                ALLOWED_MODELS.join(", ")
+            )
+        })
+}
+
+fn build_payload(model: &str, prompt: &GenerationPrompt) -> serde_json::Value {
     let max_output_tokens = (prompt.question_count * 320).max(3_200);
     let mut payload = serde_json::json!({
-        "model": MODEL,
+        "model": model,
         "store": false,
         "reasoning": { "effort": "low" },
         "instructions": prompt.instructions,
@@ -103,38 +129,96 @@ fn extract_generated_json(response: OpenAiResponse) -> Result<String, String> {
     Err(EMPTY_RESPONSE_ERROR.to_owned())
 }
 
-pub(super) async fn generate(api_key: &str, prompt: &GenerationPrompt) -> Result<String, String> {
-    let response = reqwest::Client::new()
+fn status_error(status: reqwest::StatusCode) -> String {
+    match status {
+        reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
+            "OpenAI rejected the API key. Check it and try again.".to_owned()
+        }
+        reqwest::StatusCode::TOO_MANY_REQUESTS => {
+            "OpenAI is rate limiting requests. Wait a moment and try again.".to_owned()
+        }
+        reqwest::StatusCode::BAD_REQUEST => {
+            "OpenAI could not process this request. Check the source and try again.".to_owned()
+        }
+        reqwest::StatusCode::NOT_FOUND => {
+            "The selected OpenAI model is unavailable. Choose a supported model and try again."
+                .to_owned()
+        }
+        reqwest::StatusCode::REQUEST_TIMEOUT => TIMEOUT_ERROR.to_owned(),
+        status if status.is_server_error() => {
+            "OpenAI is temporarily unavailable. Wait a moment and try again.".to_owned()
+        }
+        _ => GENERATION_ERROR.to_owned(),
+    }
+}
+
+fn parse_response(body: &[u8]) -> Result<OpenAiResponse, String> {
+    if body.len() > MAX_RESPONSE_BYTES {
+        return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
+    }
+
+    serde_json::from_slice(body).map_err(|_| GENERATION_ERROR.to_owned())
+}
+
+pub(super) async fn generate(
+    api_key: &str,
+    model: Option<&str>,
+    prompt: &GenerationPrompt,
+) -> Result<String, String> {
+    let model = validate_model(model)?;
+    let mut response = reqwest::Client::new()
         .post(RESPONSES_ENDPOINT)
         .bearer_auth(api_key)
-        .json(&build_payload(prompt))
+        .json(&build_payload(model, prompt))
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECONDS))
         .send()
         .await
-        .map_err(|_| GENERATION_ERROR.to_owned())?;
+        .map_err(|error| {
+            if error.is_timeout() {
+                TIMEOUT_ERROR.to_owned()
+            } else {
+                GENERATION_ERROR.to_owned()
+            }
+        })?;
 
-    if response.status() == reqwest::StatusCode::UNAUTHORIZED
-        || response.status() == reqwest::StatusCode::FORBIDDEN
+    let status = response.status();
+    if !status.is_success() {
+        return Err(status_error(status));
+    }
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_RESPONSE_BYTES as u64)
     {
-        return Err("OpenAI rejected the API key. Check it and try again.".to_owned());
-    }
-    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        return Err("OpenAI is rate limiting requests. Wait a moment and try again.".to_owned());
-    }
-    if !response.status().is_success() {
-        return Err(GENERATION_ERROR.to_owned());
+        return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
     }
 
-    let response: OpenAiResponse = response
-        .json()
+    let mut body = Vec::with_capacity(
+        response
+            .content_length()
+            .unwrap_or_default()
+            .min(MAX_RESPONSE_BYTES as u64) as usize,
+    );
+    while let Some(chunk) = response
+        .chunk()
         .await
-        .map_err(|_| GENERATION_ERROR.to_owned())?;
+        .map_err(|_| GENERATION_ERROR.to_owned())?
+    {
+        if body.len() + chunk.len() > MAX_RESPONSE_BYTES {
+            return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    let response = parse_response(&body)?;
 
     extract_generated_json(response)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{build_payload, extract_generated_json, GenerationPrompt, OpenAiResponse};
+    use super::{
+        build_payload, extract_generated_json, parse_response, status_error, validate_model,
+        GenerationPrompt, OpenAiResponse, MAX_RESPONSE_BYTES,
+    };
     use crate::generation::GenerationSource;
     use serde_json::json;
 
@@ -143,8 +227,8 @@ mod tests {
         let url_prompt =
             GenerationPrompt::new(GenerationSource::Url("https://example.com/lecture"), 12);
         let material_prompt = GenerationPrompt::new(GenerationSource::Material("Study notes"), 8);
-        let url_payload = build_payload(&url_prompt);
-        let material_payload = build_payload(&material_prompt);
+        let url_payload = build_payload("gpt-5.4-mini", &url_prompt);
+        let material_payload = build_payload("gpt-5.4-mini", &material_prompt);
 
         assert_eq!(material_payload["model"], "gpt-5.4-mini");
         assert_eq!(material_payload["store"], false);
@@ -163,6 +247,35 @@ mod tests {
             .expect("prompt should be text")
             .contains("exactly 12"));
         assert!(material_payload.get("tools").is_none());
+    }
+
+    #[test]
+    fn model_allowlist_accepts_only_the_configured_model() {
+        assert_eq!(
+            validate_model(None).expect("default model should be allowed"),
+            "gpt-5.4-mini"
+        );
+        assert_eq!(
+            validate_model(Some(" gpt-5.4-mini ")).expect("whitespace should be ignored"),
+            "gpt-5.4-mini"
+        );
+        assert!(validate_model(Some("gpt-5.6"))
+            .expect_err("unconfigured model should be rejected")
+            .contains("supported OpenAI model"));
+    }
+
+    #[test]
+    fn provider_failures_are_actionable_and_response_size_is_limited() {
+        assert!(status_error(reqwest::StatusCode::UNAUTHORIZED).contains("API key"));
+        assert!(status_error(reqwest::StatusCode::NOT_FOUND).contains("model"));
+        assert!(status_error(reqwest::StatusCode::INTERNAL_SERVER_ERROR)
+            .contains("temporarily unavailable"));
+
+        let oversized_body = vec![b' '; MAX_RESPONSE_BYTES + 1];
+        assert!(parse_response(&oversized_body)
+            .err()
+            .expect("oversized response should be rejected")
+            .contains("too much data"));
     }
 
     #[test]

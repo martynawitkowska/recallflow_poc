@@ -31,6 +31,7 @@ fn generation_request_requires_material_and_api_key() {
         material: Some("  ".to_owned()),
         source_url: None,
         provider: AiProvider::Openai,
+        model: None,
         question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
@@ -38,6 +39,7 @@ fn generation_request_requires_material_and_api_key() {
         material: Some("Useful study notes".to_owned()),
         source_url: None,
         provider: AiProvider::Openai,
+        model: None,
         question_count: 8,
         api_key: "  ".to_owned(),
     };
@@ -58,6 +60,7 @@ fn generation_request_accepts_one_readable_url_source() {
         material: None,
         source_url: Some("https://example.com/lecture".to_owned()),
         provider: AiProvider::Openai,
+        model: None,
         question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
@@ -65,6 +68,7 @@ fn generation_request_accepts_one_readable_url_source() {
         material: None,
         source_url: Some("ftp://example.com/lecture".to_owned()),
         provider: AiProvider::Openai,
+        model: None,
         question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
@@ -72,6 +76,7 @@ fn generation_request_accepts_one_readable_url_source() {
         material: Some("Useful study notes".to_owned()),
         source_url: Some("https://example.com/lecture".to_owned()),
         provider: AiProvider::Openai,
+        model: None,
         question_count: 8,
         api_key: "request-only-key".to_owned(),
     };
@@ -103,6 +108,7 @@ fn generation_request_validates_provider_and_question_count() {
         material: Some("Useful study notes".to_owned()),
         source_url: None,
         provider: AiProvider::Openai,
+        model: None,
         question_count: 26,
         api_key: "request-only-key".to_owned(),
     };
@@ -119,6 +125,35 @@ fn generation_request_validates_provider_and_question_count() {
         .err()
         .expect("out-of-range count should fail")
         .contains("between 3 and 25"));
+}
+
+#[test]
+fn generation_request_rejects_oversized_sources() {
+    let oversized_material = GenerateQuizRequest {
+        material: Some("a".repeat(14_001)),
+        source_url: None,
+        provider: AiProvider::Openai,
+        model: None,
+        question_count: 8,
+        api_key: "request-only-key".to_owned(),
+    };
+    let oversized_url = GenerateQuizRequest {
+        material: None,
+        source_url: Some(format!("https://example.com/{}", "a".repeat(2_048))),
+        provider: AiProvider::Openai,
+        model: None,
+        question_count: 8,
+        api_key: "request-only-key".to_owned(),
+    };
+
+    assert!(validate_generation_request(&oversized_material)
+        .err()
+        .expect("oversized material should fail")
+        .contains("14000 characters or fewer"));
+    assert!(validate_generation_request(&oversized_url)
+        .err()
+        .expect("oversized URL should fail")
+        .contains("source URL is too long"));
 }
 
 #[test]

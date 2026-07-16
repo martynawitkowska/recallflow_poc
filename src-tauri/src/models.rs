@@ -70,6 +70,7 @@ pub struct GenerateQuizRequest {
     pub material: Option<String>,
     pub source_url: Option<String>,
     pub provider: AiProvider,
+    pub model: Option<String>,
     pub question_count: i64,
     pub api_key: String,
 }
