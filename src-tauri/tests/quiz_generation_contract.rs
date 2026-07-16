@@ -137,3 +137,42 @@ fn generated_quiz_must_match_the_shared_contract() {
     assert!(parse_generated_quiz_json(&invalid_json, 8).is_err());
     assert!(parse_generated_quiz_json(&valid_json, 7).is_err());
 }
+
+#[test]
+fn provider_json_is_extracted_and_normalized_before_validation() {
+    let mut generated = valid_generated_quiz();
+    generated["title"] = json!("  Generated quiz  ");
+    generated["description"] = json!("   ");
+    generated["questions"][0]["id"] = json!(" q1 ");
+    generated["questions"][0]["question"] = json!("  Question 1?  ");
+    generated["questions"][0]["answers"] = json!([" Correct ", " Incorrect "]);
+    generated["questions"][0]["correctAnswers"] = json!([" Correct "]);
+    generated["questions"][0]["explanation"] = json!("   ");
+    let wrapped = format!("Here is the quiz:\n```json\n{generated}\n```\n");
+
+    let quiz = parse_generated_quiz_json(&wrapped, 8)
+        .expect("wrapped provider JSON should normalize into a valid quiz");
+
+    assert_eq!(quiz.title, "Generated quiz");
+    assert_eq!(quiz.description, None);
+    assert_eq!(quiz.questions[0].id, "q1");
+    assert_eq!(quiz.questions[0].question, "Question 1?");
+    assert_eq!(quiz.questions[0].answers, ["Correct", "Incorrect"]);
+    assert_eq!(quiz.questions[0].correct_answers, ["Correct"]);
+    assert_eq!(quiz.questions[0].explanation, None);
+}
+
+#[test]
+fn normalized_provider_json_still_rejects_semantic_errors() {
+    let mut duplicate_answers = valid_generated_quiz();
+    duplicate_answers["questions"][0]["answers"] = json!(["Answer", " Answer "]);
+    duplicate_answers["questions"][0]["correctAnswers"] = json!(["Answer"]);
+
+    let mut duplicate_correct_answers = valid_generated_quiz();
+    duplicate_correct_answers["questions"][0]["type"] = json!("multiple_choice");
+    duplicate_correct_answers["questions"][0]["correctAnswers"] = json!(["Correct", " Correct "]);
+
+    assert!(parse_generated_quiz_json(&duplicate_answers.to_string(), 8).is_err());
+    assert!(parse_generated_quiz_json(&duplicate_correct_answers.to_string(), 8).is_err());
+    assert!(parse_generated_quiz_json("The provider returned no JSON.", 8).is_err());
+}
