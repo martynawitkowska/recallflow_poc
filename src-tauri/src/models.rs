@@ -45,3 +45,13 @@ pub struct QuizFile {
     pub description: Option<String>,
     pub questions: Vec<QuizQuestion>,
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedQuiz {
+    pub id: String,
+    pub name: String,
+    pub size: i64,
+    pub imported_at: String,
+    pub quiz: QuizFile,
+}
