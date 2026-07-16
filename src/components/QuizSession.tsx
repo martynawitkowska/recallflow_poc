@@ -14,12 +14,25 @@ const questionTypeLabels = {
 
 export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const question = file.quiz.questions[0];
 
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
+
+  const selectAnswer = (answer: string) => {
+    if (question.type === "multiple_choice") {
+      setSelectedAnswers((current) =>
+        current.includes(answer)
+          ? current.filter((selected) => selected !== answer)
+          : [...current, answer],
+      );
+      return;
+    }
+
+    setSelectedAnswers([answer]);
+  };
 
   return (
     <section className="quiz-session" aria-labelledby="quiz-session-title">
@@ -38,21 +51,25 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
       <article className="quiz-question" aria-labelledby="quiz-question-title">
         <p className="question-type">{questionTypeLabels[question.type]}</p>
         <h2 id="quiz-question-title">{question.question}</h2>
-        {question.type === "single_choice" ? (
+        {question.type !== "true_false" ? (
           <fieldset className="quiz-answer-list">
-            <legend>Choose one answer</legend>
+            <legend>
+              {question.type === "multiple_choice"
+                ? "Choose every answer that applies"
+                : "Choose one answer"}
+            </legend>
             {question.answers.map((answer) => (
               <label
                 className={`quiz-answer-option ${
-                  selectedAnswer === answer ? "selected" : ""
+                  selectedAnswers.includes(answer) ? "selected" : ""
                 }`}
                 key={answer}
               >
                 <input
-                  checked={selectedAnswer === answer}
+                  checked={selectedAnswers.includes(answer)}
                   name={`question-${question.id}`}
-                  onChange={() => setSelectedAnswer(answer)}
-                  type="radio"
+                  onChange={() => selectAnswer(answer)}
+                  type={question.type === "multiple_choice" ? "checkbox" : "radio"}
                   value={answer}
                 />
                 <span>{answer}</span>
