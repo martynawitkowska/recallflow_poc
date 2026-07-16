@@ -1,4 +1,9 @@
 import { validateQuiz } from "./validateQuiz.ts";
+import {
+  EXTERNAL_QUIZ_PROMPT,
+  QUIZ_SCHEMA_EXAMPLE,
+  QUIZ_SCHEMA_REFERENCE,
+} from "./quizGenerationReference.ts";
 
 const validQuiz = {
   title: "Biology",
@@ -28,6 +33,7 @@ function expectError(payload: unknown, text: string) {
 }
 
 expectValid(validQuiz);
+expectValid(QUIZ_SCHEMA_EXAMPLE);
 expectError({ ...validQuiz, title: "" }, "title");
 expectError(
   { ...validQuiz, questions: [...validQuiz.questions, validQuiz.questions[0]] },
@@ -40,3 +46,7 @@ expectError(
   },
   "match values from answers",
 );
+
+if (!EXTERNAL_QUIZ_PROMPT.includes(QUIZ_SCHEMA_REFERENCE)) {
+  throw new Error("Expected the external generation prompt to include the schema example.");
+}
