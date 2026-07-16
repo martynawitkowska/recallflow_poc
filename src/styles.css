@@ -39,6 +39,7 @@ button {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
 .file-picker:focus-within {
   outline: 2px solid var(--color-focus);
@@ -604,6 +605,18 @@ h1 {
   font-weight: 750;
 }
 
+.generation-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.generation-options > div {
+  display: grid;
+  gap: 0.65rem;
+}
+
 .source-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -635,7 +648,8 @@ h1 {
 }
 
 .generation-form textarea,
-.generation-form input {
+.generation-form input,
+.generation-form select {
   width: 100%;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -653,6 +667,10 @@ h1 {
 
 .generation-form input {
   padding: 0.75rem 0.85rem;
+}
+
+.generation-form select {
+  padding: 0.75rem 2rem 0.75rem 0.85rem;
 }
 
 .generation-form textarea::placeholder,
@@ -869,6 +887,10 @@ h1 {
 
   .reference-card-heading .secondary-button {
     align-self: flex-start;
+  }
+
+  .generation-options {
+    grid-template-columns: 1fr;
   }
 }
 

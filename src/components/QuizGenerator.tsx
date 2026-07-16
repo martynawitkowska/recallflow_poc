@@ -1,7 +1,10 @@
 import { useQuizGeneration } from "../hooks/useQuizGeneration";
 import {
   MAX_MATERIAL_CHARS,
+  MAX_QUESTION_COUNT,
   MAX_SOURCE_URL_CHARS,
+  MIN_QUESTION_COUNT,
+  type AiProvider,
 } from "../lib/quizGeneration";
 
 export default function QuizGenerator() {
@@ -15,7 +18,7 @@ export default function QuizGenerator() {
         <h2 id="quiz-generator-title">Generate from notes or a URL</h2>
         <p>
           Give RecallFlow study material or a public lecture or article page,
-          then ask OpenAI for an eight-question quiz.
+          then choose how many questions to generate.
         </p>
       </header>
 
@@ -76,6 +79,43 @@ export default function QuizGenerator() {
             </p>
           </>
         )}
+
+        <div className="generation-options">
+          <div>
+            <label htmlFor="quiz-provider">AI provider</label>
+            <select
+              disabled={isLoading}
+              id="quiz-provider"
+              onChange={(event) =>
+                generation.setProvider(event.target.value as AiProvider)
+              }
+              value={generation.provider}
+            >
+              <option value="openai">OpenAI</option>
+              <option disabled value="gemini">Google Gemini — coming soon</option>
+              <option disabled value="anthropic">Anthropic — coming soon</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="question-count">Questions</label>
+            <input
+              disabled={isLoading}
+              id="question-count"
+              max={MAX_QUESTION_COUNT}
+              min={MIN_QUESTION_COUNT}
+              onChange={(event) =>
+                generation.setQuestionCount(Number(event.target.value))
+              }
+              step={1}
+              type="number"
+              value={generation.questionCount}
+            />
+          </div>
+        </div>
+        <p className="field-hint">
+          OpenAI is available now. Additional providers will unlock after their
+          integrations are enabled.
+        </p>
 
         <label htmlFor="openai-api-key">OpenAI API key</label>
         <input

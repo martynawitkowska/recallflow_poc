@@ -1,9 +1,10 @@
-use crate::models::{GenerateQuizRequest, QuestionType, QuizFile};
+use crate::models::{AiProvider, GenerateQuizRequest, QuestionType, QuizFile};
 use serde::Deserialize;
 use std::collections::HashSet;
 
 const OPENAI_MODEL: &str = "gpt-5.4-mini";
-const QUESTION_COUNT: usize = 8;
+const MIN_QUESTION_COUNT: i64 = 3;
+const MAX_QUESTION_COUNT: i64 = 25;
 const MAX_MATERIAL_CHARS: usize = 14_000;
 const MAX_SOURCE_URL_CHARS: usize = 2_048;
 const INVALID_QUIZ_ERROR: &str =
@@ -38,6 +39,14 @@ pub enum GenerationSource<'a> {
 pub fn validate_generation_request(
     request: &GenerateQuizRequest,
 ) -> Result<GenerationSource<'_>, String> {
+    if request.provider != AiProvider::Openai {
+        return Err("OpenAI is the only available quiz provider right now.".to_owned());
+    }
+    if !(MIN_QUESTION_COUNT..=MAX_QUESTION_COUNT).contains(&request.question_count) {
+        return Err(format!(
+            "Choose between {MIN_QUESTION_COUNT} and {MAX_QUESTION_COUNT} questions."
+        ));
+    }
     if request.api_key.trim().is_empty() {
         return Err("Enter an OpenAI API key before generating a quiz.".to_owned());
     }
@@ -82,10 +91,13 @@ pub fn validate_generation_request(
     }
 }
 
-pub fn parse_generated_quiz_json(json: &str) -> Result<QuizFile, String> {
+pub fn parse_generated_quiz_json(
+    json: &str,
+    expected_question_count: usize,
+) -> Result<QuizFile, String> {
     let quiz: QuizFile = serde_json::from_str(json).map_err(|_| INVALID_QUIZ_ERROR.to_owned())?;
 
-    if quiz.title.trim().is_empty() || quiz.questions.len() != QUESTION_COUNT {
+    if quiz.title.trim().is_empty() || quiz.questions.len() != expected_question_count {
         return Err(INVALID_QUIZ_ERROR.to_owned());
     }
 
@@ -130,28 +142,32 @@ pub fn parse_generated_quiz_json(json: &str) -> Result<QuizFile, String> {
     Ok(quiz)
 }
 
-fn build_generation_payload(source: GenerationSource<'_>) -> serde_json::Value {
+fn build_generation_payload(
+    source: GenerationSource<'_>,
+    question_count: usize,
+) -> serde_json::Value {
     let (prompt, uses_web_search) = match source {
         GenerationSource::Material(material) => (
             format!(
-                "Create exactly {QUESTION_COUNT} active-recall questions grounded only in the study material below. Mix supported question types when appropriate.\n\nStudy material:\n{material}"
+                "Create exactly {question_count} active-recall questions grounded only in the study material below. Mix supported question types when appropriate.\n\nStudy material:\n{material}"
             ),
             false,
         ),
         GenerationSource::Url(source_url) => (
             format!(
-                "Use web search to read the exact public lecture or article URL below. Create exactly {QUESTION_COUNT} active-recall questions grounded only in that page's content. If the page cannot be read or lacks enough study content, do not invent a quiz.\n\nSource URL:\n{source_url}"
+                "Use web search to read the exact public lecture or article URL below. Create exactly {question_count} active-recall questions grounded only in that page's content. If the page cannot be read or lacks enough study content, do not invent a quiz.\n\nSource URL:\n{source_url}"
             ),
             true,
         ),
     };
+    let max_output_tokens = (question_count * 320).max(3_200);
     let mut payload = serde_json::json!({
         "model": OPENAI_MODEL,
         "store": false,
         "reasoning": { "effort": "low" },
         "instructions": "Create a precise RecallFlow quiz from the provided source. Use unique question IDs, at least two unique non-empty answers per question, and copy every correctAnswers value exactly from answers. single_choice and true_false questions must have one correct answer. true_false answers must be ordered as True, then False. Use plausible distractors and do not add facts absent from the source.",
         "input": prompt,
-        "max_output_tokens": 3_200,
+        "max_output_tokens": max_output_tokens,
         "text": {
             "format": {
                 "type": "json_schema",
@@ -197,7 +213,8 @@ fn build_generation_payload(source: GenerationSource<'_>) -> serde_json::Value {
 #[tauri::command]
 pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, String> {
     let source = validate_generation_request(&request)?;
-    let payload = build_generation_payload(source);
+    let question_count = request.question_count as usize;
+    let payload = build_generation_payload(source, question_count);
 
     let response = reqwest::Client::new()
         .post("https://api.openai.com/v1/responses")
@@ -236,7 +253,7 @@ pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, Str
             "OpenAI did not return a quiz. Try again with a different source.".to_owned()
         })?;
 
-    parse_generated_quiz_json(&generated_json)
+    parse_generated_quiz_json(&generated_json, question_count)
 }
 
 #[cfg(test)]
@@ -246,11 +263,16 @@ mod tests {
     #[test]
     fn generation_payload_uses_web_search_only_for_urls() {
         let url_payload =
-            build_generation_payload(GenerationSource::Url("https://example.com/lecture"));
-        let material_payload = build_generation_payload(GenerationSource::Material("Study notes"));
+            build_generation_payload(GenerationSource::Url("https://example.com/lecture"), 12);
+        let material_payload =
+            build_generation_payload(GenerationSource::Material("Study notes"), 8);
 
         assert_eq!(url_payload["tools"][0]["type"], "web_search");
         assert_eq!(url_payload["tool_choice"], "required");
+        assert!(url_payload["input"]
+            .as_str()
+            .expect("prompt should be text")
+            .contains("exactly 12"));
         assert!(material_payload.get("tools").is_none());
     }
 }

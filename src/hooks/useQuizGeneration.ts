@@ -1,8 +1,12 @@
 import { useCallback, useState, type FormEvent } from "react";
 import {
   generateQuiz,
+  DEFAULT_QUESTION_COUNT,
   MAX_MATERIAL_CHARS,
+  MAX_QUESTION_COUNT,
   MAX_SOURCE_URL_CHARS,
+  MIN_QUESTION_COUNT,
+  type AiProvider,
 } from "../lib/quizGeneration";
 import type { QuizFile } from "../lib/quizSchema";
 
@@ -27,6 +31,8 @@ export function useQuizGeneration() {
   const [sourceMode, setSourceMode] = useState<QuizSourceMode>("material");
   const [material, setMaterial] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [provider, setProvider] = useState<AiProvider>("openai");
+  const [questionCount, setQuestionCount] = useState(DEFAULT_QUESTION_COUNT);
   const [apiKey, setApiKey] = useState("");
   const [state, setState] = useState<QuizGenerationState>({ status: "idle" });
 
@@ -72,13 +78,24 @@ export function useQuizGeneration() {
         });
         return;
       }
+      if (
+        !Number.isInteger(questionCount) ||
+        questionCount < MIN_QUESTION_COUNT ||
+        questionCount > MAX_QUESTION_COUNT
+      ) {
+        setState({
+          status: "error",
+          message: `Choose between ${MIN_QUESTION_COUNT} and ${MAX_QUESTION_COUNT} questions.`,
+        });
+        return;
+      }
 
       setState({ status: "loading" });
       try {
         const quiz = await generateQuiz(
           sourceMode === "material"
-            ? { material, apiKey }
-            : { sourceUrl, apiKey },
+            ? { material, apiKey, provider, questionCount }
+            : { sourceUrl, apiKey, provider, questionCount },
         );
         setApiKey("");
         setState({ status: "success", quiz });
@@ -92,16 +109,20 @@ export function useQuizGeneration() {
         });
       }
     },
-    [apiKey, material, sourceMode, sourceUrl],
+    [apiKey, material, provider, questionCount, sourceMode, sourceUrl],
   );
 
   return {
     apiKey,
     material,
+    provider,
+    questionCount,
     sourceMode,
     sourceUrl,
     setApiKey,
     setMaterial,
+    setProvider,
+    setQuestionCount,
     setSourceMode,
     setSourceUrl,
     state,

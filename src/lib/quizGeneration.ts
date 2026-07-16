@@ -4,10 +4,17 @@ import { validateQuiz } from "./validateQuiz";
 
 export const MAX_MATERIAL_CHARS = 14_000;
 export const MAX_SOURCE_URL_CHARS = 2_048;
+export const MIN_QUESTION_COUNT = 3;
+export const MAX_QUESTION_COUNT = 25;
+export const DEFAULT_QUESTION_COUNT = 8;
+
+export type AiProvider = "openai";
 
 export type GenerateQuizRequest = {
   material?: string;
   sourceUrl?: string;
+  provider: AiProvider;
+  questionCount: number;
   apiKey: string;
 };
 
