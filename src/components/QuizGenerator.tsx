@@ -1,5 +1,8 @@
 import { useQuizGeneration } from "../hooks/useQuizGeneration";
-import { MAX_MATERIAL_CHARS } from "../lib/quizGeneration";
+import {
+  MAX_MATERIAL_CHARS,
+  MAX_SOURCE_URL_CHARS,
+} from "../lib/quizGeneration";
 
 export default function QuizGenerator() {
   const generation = useQuizGeneration();
@@ -9,28 +12,70 @@ export default function QuizGenerator() {
     <section className="quiz-generator" aria-labelledby="quiz-generator-title">
       <header>
         <p className="eyebrow">AI quiz builder</p>
-        <h2 id="quiz-generator-title">Generate from notes</h2>
+        <h2 id="quiz-generator-title">Generate from notes or a URL</h2>
         <p>
-          Paste study material and RecallFlow will ask OpenAI for an
-          eight-question quiz.
+          Give RecallFlow study material or a public lecture or article page,
+          then ask OpenAI for an eight-question quiz.
         </p>
       </header>
 
-      <form className="generation-form" onSubmit={generation.submit}>
-        <label htmlFor="study-material">Study material</label>
-        <textarea
-          disabled={isLoading}
-          id="study-material"
-          maxLength={MAX_MATERIAL_CHARS + 1}
-          onChange={(event) => generation.setMaterial(event.target.value)}
-          placeholder="Paste notes, a transcript, or article text…"
-          rows={10}
-          value={generation.material}
-        />
-        <p className="field-hint character-count">
-          {generation.material.length.toLocaleString()} /{" "}
-          {MAX_MATERIAL_CHARS.toLocaleString()} characters
-        </p>
+      <form className="generation-form" noValidate onSubmit={generation.submit}>
+        <div className="source-options" aria-label="Quiz source">
+          <button
+            aria-pressed={generation.sourceMode === "material"}
+            disabled={isLoading}
+            onClick={() => generation.setSourceMode("material")}
+            type="button"
+          >
+            Paste notes
+          </button>
+          <button
+            aria-pressed={generation.sourceMode === "url"}
+            disabled={isLoading}
+            onClick={() => generation.setSourceMode("url")}
+            type="button"
+          >
+            Use a URL
+          </button>
+        </div>
+
+        {generation.sourceMode === "material" ? (
+          <>
+            <label htmlFor="study-material">Study material</label>
+            <textarea
+              disabled={isLoading}
+              id="study-material"
+              maxLength={MAX_MATERIAL_CHARS + 1}
+              onChange={(event) => generation.setMaterial(event.target.value)}
+              placeholder="Paste notes, a transcript, or article text…"
+              rows={10}
+              value={generation.material}
+            />
+            <p className="field-hint character-count">
+              {generation.material.length.toLocaleString()} /{" "}
+              {MAX_MATERIAL_CHARS.toLocaleString()} characters
+            </p>
+          </>
+        ) : (
+          <>
+            <label htmlFor="source-url">Lecture or article URL</label>
+            <input
+              disabled={isLoading}
+              id="source-url"
+              inputMode="url"
+              maxLength={MAX_SOURCE_URL_CHARS + 1}
+              onChange={(event) => generation.setSourceUrl(event.target.value)}
+              placeholder="https://example.com/lecture"
+              spellCheck={false}
+              type="url"
+              value={generation.sourceUrl}
+            />
+            <p className="field-hint">
+              The page must be public and readable without signing in. OpenAI
+              will use web search to access it.
+            </p>
+          </>
+        )}
 
         <label htmlFor="openai-api-key">OpenAI API key</label>
         <input
@@ -44,8 +89,8 @@ export default function QuizGenerator() {
           value={generation.apiKey}
         />
         <p className="field-hint">
-          Your material is sent to OpenAI only after you press Generate. The
-          key is used for this request and is not saved.
+          Your source is sent to OpenAI only after you press Generate. The key
+          is used for this request and is not saved.
         </p>
 
         <button className="primary-button" disabled={isLoading} type="submit">
@@ -55,7 +100,11 @@ export default function QuizGenerator() {
 
       <div className="generation-status" aria-live="polite">
         {generation.state.status === "loading" && (
-          <p role="status">Creating questions from your material…</p>
+          <p role="status">
+            {generation.sourceMode === "url"
+              ? "Reading the page and creating questions…"
+              : "Creating questions from your material…"}
+          </p>
         )}
         {generation.state.status === "error" && (
           <p role="alert">{generation.state.message}</p>
