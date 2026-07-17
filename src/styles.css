@@ -492,24 +492,6 @@ h1 {
   margin-bottom: 1rem;
 }
 
-.quiz-preferences label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.quiz-preferences select {
-  padding: 0.55rem 1.8rem 0.55rem 0.7rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  background: var(--color-surface-soft);
-  font: inherit;
-}
-
 .quiz-preferences button[aria-pressed="true"] {
   border-color: var(--color-accent);
   color: var(--color-accent);
@@ -729,16 +711,6 @@ h1 {
 .mnemonic-generator-controls {
   display: flex;
   gap: 0.75rem;
-}
-
-.mnemonic-provider-field {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.mnemonic-provider-field > span {
-  color: var(--color-muted);
-  font-size: 0.82rem;
 }
 
 .mnemonic-generator-controls input {
@@ -1561,10 +1533,6 @@ h1 {
   .quiz-preferences {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .quiz-preferences label {
-    justify-content: space-between;
   }
 
   .quiz-summary-score {

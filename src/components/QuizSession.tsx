@@ -2,11 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
 import { useMnemonicSave } from "../hooks/useMnemonicSave";
 import {
-  readingFontOptions,
-  type ReadingFont,
-} from "../lib/appPreferences";
-import {
-  getMnemonicModelOption,
   getMnemonicProviderOption,
   type MnemonicModel,
   type MnemonicProvider,
@@ -28,9 +23,7 @@ type QuizSessionProps = {
   onExit: () => void;
   onFinish: (result: QuizResult) => void;
   onFocusModeChange: (enabled: boolean) => void;
-  onReadingFontChange: (font: ReadingFont) => void;
   onSaveMnemonic: (questionId: string, mnemonic: string) => Promise<void>;
-  readingFont: ReadingFont;
 };
 
 const questionTypeLabels = {
@@ -48,9 +41,7 @@ export default function QuizSession({
   onExit,
   onFinish,
   onFocusModeChange,
-  onReadingFontChange,
   onSaveMnemonic,
-  readingFont,
 }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const questionRef = useRef<HTMLHeadingElement>(null);
@@ -67,10 +58,6 @@ export default function QuizSession({
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
   const mnemonicProviderOption = getMnemonicProviderOption(mnemonicProvider);
-  const mnemonicModelOption = getMnemonicModelOption(
-    mnemonicProvider,
-    mnemonicModel,
-  );
   const generatedMnemonic =
     mnemonicGeneration.state.status === "success"
       ? mnemonicGeneration.state.mnemonic
@@ -174,26 +161,7 @@ export default function QuizSession({
 
   return (
     <section className="quiz-session" aria-labelledby="quiz-session-title">
-      <div
-        aria-label="Reading preferences"
-        className="quiz-preferences"
-        role="group"
-      >
-        <label>
-          Reading font
-          <select
-            onChange={(event) =>
-              onReadingFontChange(event.target.value as ReadingFont)
-            }
-            value={readingFont}
-          >
-            {readingFontOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="quiz-preferences">
         <button
           aria-pressed={focusMode}
           className="secondary-button"
@@ -320,15 +288,6 @@ export default function QuizSession({
                       ? "This quiz already has a saved mnemonic. Enter an API key only if you want a replacement."
                       : `Ask ${mnemonicProviderOption.label} for a short mnemonic tied to this question and its correct answer.`}
                   </p>
-                  <div className="mnemonic-provider-field">
-                    <span>AI provider and model</span>
-                    <strong>
-                      {mnemonicProviderOption.label} · {mnemonicModelOption.label}
-                    </strong>
-                    <p className="field-hint">
-                      Change this selection in AI settings.
-                    </p>
-                  </div>
                   <label htmlFor="mnemonic-api-key">
                     {mnemonicProviderOption.keyLabel}
                   </label>

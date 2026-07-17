@@ -34,8 +34,8 @@ This runs the TypeScript/Vite production build, Rust formatting check,
 
 Open **Settings** to choose the application font and whether new quizzes start
 in focus mode. Preferences are validated, stored locally in the app profile,
-and applied without sending data outside RecallFlow. The font can also be
-changed and focus mode can be exited while taking a quiz.
+and applied without sending data outside RecallFlow. Focus mode can still be
+exited during a quiz.
 
 ## AI provider selection
 

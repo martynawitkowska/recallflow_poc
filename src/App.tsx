@@ -208,12 +208,6 @@ export default function App() {
               void attemptSave.save(activeQuiz.id, result);
             }}
             onFocusModeChange={setFocusMode}
-            onReadingFontChange={(readingFont) =>
-              setAppPreferences((current) => ({
-                ...current,
-                readingFont,
-              }))
-            }
             onSaveMnemonic={async (questionId, mnemonic) => {
               const savedMnemonic = await library.saveMnemonic(
                 activeQuiz.id,
@@ -239,7 +233,6 @@ export default function App() {
             mnemonicModel={aiSelection.models[aiSelection.provider]}
             mnemonicProvider={aiSelection.provider}
             quiz={activeQuiz}
-            readingFont={appPreferences.readingFont}
           />
         )}
 
