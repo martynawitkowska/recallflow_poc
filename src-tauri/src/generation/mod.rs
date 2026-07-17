@@ -1,6 +1,8 @@
 mod providers;
 
-use crate::models::{AiProvider, GenerateQuizRequest, QuestionType, QuizFile};
+use crate::models::{
+    AiProvider, GenerateMnemonicRequest, GenerateQuizRequest, QuestionType, QuizFile,
+};
 use std::collections::HashSet;
 
 const MIN_QUESTION_COUNT: i64 = 3;
@@ -9,7 +11,11 @@ const MAX_MATERIAL_CHARS: usize = 14_000;
 const MAX_SOURCE_URL_CHARS: usize = 2_048;
 const INVALID_QUIZ_ERROR: &str =
     "The AI provider returned an invalid quiz. Try again with a clearer source.";
+const INVALID_MNEMONIC_ERROR: &str = "The AI provider did not return a usable mnemonic. Try again.";
+const MAX_MNEMONIC_CONTEXT_CHARS: usize = 8_000;
+const MAX_MNEMONIC_CHARS: usize = 1_000;
 const QUIZ_INSTRUCTIONS: &str = "Create a precise RecallFlow quiz from the provided source. Return only valid JSON matching the requested schema. Use unique question IDs, at least two unique non-empty answers per question, and copy every correctAnswers value exactly from answers. single_choice and true_false questions must have one correct answer. true_false answers must be ordered as True, then False. Use plausible distractors and do not add facts absent from the source.";
+const MNEMONIC_INSTRUCTIONS: &str = "Create one vivid mnemonic that helps the learner remember the correct answer. Use a rhyme, acronym, memorable image, or tiny story. Respond in the same language as the question, use no more than three short sentences, and return only the mnemonic.";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GenerationSource<'a> {
@@ -22,6 +28,12 @@ pub(crate) struct GenerationPrompt {
     input: String,
     question_count: usize,
     uses_web_search: bool,
+}
+
+pub(crate) struct MnemonicPrompt {
+    instructions: &'static str,
+    input: String,
+    max_output_tokens: usize,
 }
 
 impl GenerationPrompt {
@@ -48,6 +60,76 @@ impl GenerationPrompt {
             uses_web_search,
         }
     }
+}
+
+impl MnemonicPrompt {
+    fn new(request: &GenerateMnemonicRequest) -> Self {
+        let explanation = request
+            .explanation
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or("No explanation was provided.");
+        let correct_answers = request
+            .correct_answers
+            .iter()
+            .map(|answer| answer.trim())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        Self {
+            instructions: MNEMONIC_INSTRUCTIONS,
+            input: format!(
+                "Question: {}\nCorrect answer: {correct_answers}\nExplanation: {explanation}",
+                request.question.trim()
+            ),
+            max_output_tokens: 220,
+        }
+    }
+}
+
+pub fn validate_mnemonic_request(request: &GenerateMnemonicRequest) -> Result<(), String> {
+    if request.provider == AiProvider::Unsupported {
+        return Err("The selected mnemonic provider is not available yet.".to_owned());
+    }
+    if request.api_key.trim().is_empty() {
+        return Err("Enter an API key before generating a mnemonic.".to_owned());
+    }
+    if request.question.trim().is_empty()
+        || request.correct_answers.is_empty()
+        || request
+            .correct_answers
+            .iter()
+            .any(|answer| answer.trim().is_empty())
+    {
+        return Err("A question and its correct answer are required.".to_owned());
+    }
+
+    let context_chars = request.question.chars().count()
+        + request
+            .correct_answers
+            .iter()
+            .map(|answer| answer.chars().count())
+            .sum::<usize>()
+        + request
+            .explanation
+            .as_deref()
+            .map(str::chars)
+            .map(Iterator::count)
+            .unwrap_or_default();
+    if context_chars > MAX_MNEMONIC_CONTEXT_CHARS {
+        return Err("This question is too long for mnemonic generation.".to_owned());
+    }
+
+    Ok(())
+}
+
+pub fn parse_generated_mnemonic(response: &str) -> Result<String, String> {
+    let mnemonic = response.trim();
+    if mnemonic.is_empty() || mnemonic.chars().count() > MAX_MNEMONIC_CHARS {
+        return Err(INVALID_MNEMONIC_ERROR.to_owned());
+    }
+    Ok(mnemonic.to_owned())
 }
 
 pub fn validate_generation_request(
@@ -223,4 +305,18 @@ pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, Str
     .await?;
 
     parse_generated_quiz_json(&generated_json, question_count)
+}
+
+pub async fn generate_mnemonic(request: GenerateMnemonicRequest) -> Result<String, String> {
+    validate_mnemonic_request(&request)?;
+    let prompt = MnemonicPrompt::new(&request);
+    let generated = providers::generate_mnemonic(
+        request.provider,
+        request.model.as_deref(),
+        request.api_key.trim(),
+        &prompt,
+    )
+    .await?;
+
+    parse_generated_mnemonic(&generated)
 }
