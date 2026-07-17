@@ -125,11 +125,19 @@ pub fn validate_mnemonic_request(request: &GenerateMnemonicRequest) -> Result<()
 }
 
 pub fn parse_generated_mnemonic(response: &str) -> Result<String, String> {
-    let mnemonic = response.trim();
-    if mnemonic.is_empty() || mnemonic.chars().count() > MAX_MNEMONIC_CHARS {
-        return Err(INVALID_MNEMONIC_ERROR.to_owned());
+    sanitize_mnemonic(response).ok_or_else(|| INVALID_MNEMONIC_ERROR.to_owned())
+}
+
+pub(crate) fn sanitize_mnemonic(value: &str) -> Option<String> {
+    if value
+        .chars()
+        .any(|character| character.is_control() && !character.is_whitespace())
+    {
+        return None;
     }
-    Ok(mnemonic.to_owned())
+
+    let mnemonic = value.split_whitespace().collect::<Vec<_>>().join(" ");
+    (!mnemonic.is_empty() && mnemonic.chars().count() <= MAX_MNEMONIC_CHARS).then_some(mnemonic)
 }
 
 pub fn validate_generation_request(

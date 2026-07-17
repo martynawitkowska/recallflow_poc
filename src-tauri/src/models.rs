@@ -100,3 +100,11 @@ pub struct GenerateMnemonicRequest {
     pub model: Option<String>,
     pub api_key: String,
 }
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveMnemonicRequest {
+    pub quiz_id: String,
+    pub question_id: String,
+    pub mnemonic: String,
+}

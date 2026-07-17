@@ -63,9 +63,10 @@ fn mnemonic_request_rejects_unsupported_or_oversized_context() {
 #[test]
 fn mnemonic_response_is_trimmed_and_bounded() {
     assert_eq!(
-        parse_generated_mnemonic("  Recall by calling the answer back.  ").unwrap(),
+        parse_generated_mnemonic("  Recall by\n calling\t the answer back.  ").unwrap(),
         "Recall by calling the answer back."
     );
     assert!(parse_generated_mnemonic("   ").is_err());
+    assert!(parse_generated_mnemonic("Unsafe\0control").is_err());
     assert!(parse_generated_mnemonic(&"a".repeat(1_001)).is_err());
 }

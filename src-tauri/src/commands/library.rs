@@ -1,4 +1,8 @@
-use crate::{models::ImportedQuiz, state::DatabaseState};
+use crate::{
+    generation::sanitize_mnemonic,
+    models::{ImportedQuiz, SaveMnemonicRequest},
+    state::DatabaseState,
+};
 use sqlx::{Row, SqlitePool};
 use tauri::State;
 
@@ -7,6 +11,9 @@ const READ_ERROR: &str =
 const WRITE_ERROR: &str =
     "RecallFlow could not update the local quiz library. Restart the app and try again.";
 const INVALID_QUIZ_ERROR: &str = "RecallFlow could not save an invalid quiz.";
+const INVALID_MNEMONIC_ERROR: &str = "RecallFlow could not save an invalid mnemonic.";
+const QUIZ_NOT_FOUND_ERROR: &str = "This quiz is no longer in the local library.";
+const QUESTION_NOT_FOUND_ERROR: &str = "This question is no longer in the local quiz.";
 
 #[tauri::command]
 pub async fn list_imported_quizzes(
@@ -21,6 +28,14 @@ pub async fn save_imported_quiz(
     quiz: ImportedQuiz,
 ) -> Result<(), String> {
     save_imported_quiz_to_pool(state.pool(), &quiz).await
+}
+
+#[tauri::command]
+pub async fn save_quiz_mnemonic(
+    state: State<'_, DatabaseState>,
+    request: SaveMnemonicRequest,
+) -> Result<ImportedQuiz, String> {
+    save_quiz_mnemonic_to_pool(state.pool(), request).await
 }
 
 #[tauri::command]
@@ -99,6 +114,69 @@ pub async fn save_imported_quiz_to_pool(
     .map_err(|_| WRITE_ERROR.to_owned())?;
 
     Ok(())
+}
+
+pub async fn save_quiz_mnemonic_to_pool(
+    pool: &SqlitePool,
+    request: SaveMnemonicRequest,
+) -> Result<ImportedQuiz, String> {
+    let quiz_id = request.quiz_id.trim();
+    let question_id = request.question_id.trim();
+    let mnemonic =
+        sanitize_mnemonic(&request.mnemonic).ok_or_else(|| INVALID_MNEMONIC_ERROR.to_owned())?;
+    if quiz_id.is_empty() || question_id.is_empty() {
+        return Err(INVALID_MNEMONIC_ERROR.to_owned());
+    }
+
+    let mut transaction = pool.begin().await.map_err(|_| WRITE_ERROR.to_owned())?;
+    let row = sqlx::query(
+        "SELECT id, name, size, imported_at, quiz_json
+         FROM imported_quizzes
+         WHERE id = ?",
+    )
+    .bind(quiz_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|_| READ_ERROR.to_owned())?
+    .ok_or_else(|| QUIZ_NOT_FOUND_ERROR.to_owned())?;
+    let quiz_json: String = row
+        .try_get("quiz_json")
+        .map_err(|_| READ_ERROR.to_owned())?;
+    let mut imported_quiz = ImportedQuiz {
+        id: row.try_get("id").map_err(|_| READ_ERROR.to_owned())?,
+        name: row.try_get("name").map_err(|_| READ_ERROR.to_owned())?,
+        size: row.try_get("size").map_err(|_| READ_ERROR.to_owned())?,
+        imported_at: row
+            .try_get("imported_at")
+            .map_err(|_| READ_ERROR.to_owned())?,
+        quiz: serde_json::from_str(&quiz_json).map_err(|_| READ_ERROR.to_owned())?,
+    };
+    let question = imported_quiz
+        .quiz
+        .questions
+        .iter_mut()
+        .find(|question| question.id == question_id)
+        .ok_or_else(|| QUESTION_NOT_FOUND_ERROR.to_owned())?;
+
+    if question.mnemonic.as_deref() != Some(&mnemonic) {
+        question.mnemonic = Some(mnemonic);
+        let quiz_json =
+            serde_json::to_string(&imported_quiz.quiz).map_err(|_| WRITE_ERROR.to_owned())?;
+        imported_quiz.size = i64::try_from(quiz_json.len()).map_err(|_| WRITE_ERROR.to_owned())?;
+        sqlx::query("UPDATE imported_quizzes SET size = ?, quiz_json = ? WHERE id = ?")
+            .bind(imported_quiz.size)
+            .bind(quiz_json)
+            .bind(&imported_quiz.id)
+            .execute(&mut *transaction)
+            .await
+            .map_err(|_| WRITE_ERROR.to_owned())?;
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(|_| WRITE_ERROR.to_owned())?;
+    Ok(imported_quiz)
 }
 
 pub async fn delete_imported_quiz_from_pool(
