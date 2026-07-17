@@ -5,6 +5,7 @@ import { validateQuiz } from "./validateQuiz.ts";
 
 export const WEB_PREVIEW_STORAGE_KEY = "recallflow.pages.data.v1";
 export const MAX_WEB_PREVIEW_QUIZ_BYTES = 500 * 1024;
+const WEB_PREVIEW_HEALTH_KEY = "recallflow.pages.health-check";
 
 const STORAGE_VERSION = 1;
 const SEED_QUIZ_ID = "recallflow-preview-sample";
@@ -159,6 +160,38 @@ function writeData(storage: WebStorage, data: PreviewData): void {
   try {
     storage.setItem(WEB_PREVIEW_STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
+    throw storageError(error);
+  }
+}
+
+export function checkWebPreviewStorage(
+  storage: WebStorage = browserStorage(),
+): void {
+  const marker = "recallflow-storage-check";
+  let previous: string | null = null;
+  let previousRead = false;
+
+  try {
+    previous = storage.getItem(WEB_PREVIEW_HEALTH_KEY);
+    previousRead = true;
+    storage.setItem(WEB_PREVIEW_HEALTH_KEY, marker);
+    if (storage.getItem(WEB_PREVIEW_HEALTH_KEY) !== marker) {
+      throw new Error("Browser storage did not preserve the health check.");
+    }
+    if (previous === null) {
+      storage.removeItem(WEB_PREVIEW_HEALTH_KEY);
+    } else {
+      storage.setItem(WEB_PREVIEW_HEALTH_KEY, previous);
+    }
+  } catch (error) {
+    if (previousRead) {
+      try {
+        if (previous === null) storage.removeItem(WEB_PREVIEW_HEALTH_KEY);
+        else storage.setItem(WEB_PREVIEW_HEALTH_KEY, previous);
+      } catch {
+        // The actionable storage error below covers failed cleanup as well.
+      }
+    }
     throw storageError(error);
   }
 }

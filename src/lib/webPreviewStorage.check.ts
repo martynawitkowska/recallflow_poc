@@ -1,4 +1,5 @@
 import {
+  checkWebPreviewStorage,
   deleteWebPreviewQuiz,
   listWebPreviewAttempts,
   listWebPreviewQuizzes,
@@ -46,6 +47,12 @@ function expectError(run: () => void, message: string) {
 }
 
 const storage = new MemoryStorage();
+storage.setItem("recallflow.pages.health-check", "existing-value");
+checkWebPreviewStorage(storage);
+expect(
+  storage.getItem("recallflow.pages.health-check") === "existing-value",
+  "The storage health check should restore an existing value.",
+);
 const [sample] = listWebPreviewQuizzes(storage);
 expect(sample?.quiz.questions.length === 3, "First load should seed the sample quiz.");
 
@@ -87,6 +94,12 @@ expect(
   "Invalid or outdated storage should reset safely.",
 );
 
+storage.setItem(WEB_PREVIEW_STORAGE_KEY, "not valid JSON");
+expect(
+  listWebPreviewQuizzes(storage)[0]?.id === "recallflow-preview-sample",
+  "Corrupt storage should reset safely.",
+);
+
 deleteWebPreviewQuiz("recallflow-preview-sample", storage);
 expect(listWebPreviewQuizzes(storage).length === 0, "The sample quiz may be removed.");
 resetWebPreviewData(storage);
@@ -104,3 +117,16 @@ expectError(
 const fullStorage = new MemoryStorage();
 fullStorage.failWrites = true;
 expectError(() => listWebPreviewQuizzes(fullStorage), "storage is full");
+expectError(() => checkWebPreviewStorage(fullStorage), "storage is full");
+
+const unavailableStorage: WebStorage = {
+  getItem() {
+    throw new Error("private browser detail");
+  },
+  setItem() {},
+  removeItem() {},
+};
+expectError(
+  () => checkWebPreviewStorage(unavailableStorage),
+  "storage is unavailable",
+);
