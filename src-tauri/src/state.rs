@@ -209,4 +209,25 @@ mod tests {
             assert!(!state.status(provider).unwrap().configured);
         }
     }
+
+    #[test]
+    fn api_key_validation_enforces_the_minimum_length_boundary() {
+        let state = SecretState::default();
+
+        assert_eq!(
+            state
+                .save(AiProvider::Openai, "1234567890123456789".to_owned())
+                .unwrap_err(),
+            INVALID_API_KEY_ERROR
+        );
+        assert_eq!(
+            state
+                .save(AiProvider::Openai, "12345678901234567890".to_owned())
+                .unwrap(),
+            ApiKeyStatus {
+                configured: true,
+                masked_key: Some("••••••••7890".to_owned()),
+            }
+        );
+    }
 }

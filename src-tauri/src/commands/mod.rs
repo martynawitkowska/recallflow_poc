@@ -43,4 +43,23 @@ mod tests {
             error
         );
     }
+
+    #[test]
+    fn normalized_credentials_are_redacted_without_matching_empty_secrets() {
+        let api_key = "sk-REFL69-NEVER-EXPOSE-1234567890";
+        let fallback = "The provider request failed safely.";
+
+        assert_eq!(
+            redact_secret_error(
+                format!("Provider rejected credential {api_key}"),
+                &format!("  {api_key}  "),
+                fallback,
+            ),
+            fallback
+        );
+        assert_eq!(
+            redact_secret_error("Actionable error".to_owned(), "", fallback),
+            "Actionable error"
+        );
+    }
 }
