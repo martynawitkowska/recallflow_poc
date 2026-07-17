@@ -4,6 +4,7 @@ import type { QuizLibraryState } from "../hooks/useQuizLibrary";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import { MAX_LECTURE_TITLE_CHARS } from "../lib/quizGeneration";
 import { MAX_VIDEO_URL_CHARS } from "../lib/quizSchema";
+import ExternalLink from "./ExternalLink";
 import Icon from "./Icon";
 import QuizStatisticsModal from "./QuizStatisticsModal";
 
@@ -221,13 +222,9 @@ export default function QuizLibrary({
                   {file.quiz.description || "No quiz description provided."}
                 </p>
                 {file.quiz.videoUrl && (
-                  <a
-                    href={file.quiz.videoUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
+                  <ExternalLink href={file.quiz.videoUrl}>
                     Link to lecture video
-                  </a>
+                  </ExternalLink>
                 )}
               </div>
               <span className="question-count">
