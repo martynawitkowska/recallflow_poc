@@ -9,6 +9,7 @@ const questions: QuizQuestion[] = [
     answers: ["A", "B"],
     correctAnswers: ["A"],
     explanation: "A is the requested answer.",
+    mnemonic: "A is the answer to ask for.",
   },
   {
     id: "multiple",
@@ -16,6 +17,7 @@ const questions: QuizQuestion[] = [
     question: "Choose A and B.",
     answers: ["A", "B", "C"],
     correctAnswers: ["A", "B"],
+    mnemonic: "Saved B mnemonic.",
   },
   {
     id: "missing",
@@ -28,7 +30,7 @@ const questions: QuizQuestion[] = [
 
 const selectedAnswers = ["B", "A"];
 const mnemonics = {
-  multiple: "B and C belong together.",
+  multiple: "A and B belong together.",
 };
 const result = calculateQuizResult(
   questions,
@@ -54,12 +56,16 @@ if (
   throw new Error("Expected result details to preserve question context for review.");
 }
 
-if (result.details[0].mnemonic !== undefined) {
-  throw new Error("Expected questions without generated mnemonics to stay empty.");
+if (result.details[0].mnemonic !== "A is the answer to ask for.") {
+  throw new Error("Expected saved mnemonics in the result detail.");
 }
 
-if (result.details[1].mnemonic !== "B and C belong together.") {
-  throw new Error("Expected generated mnemonic in the result detail.");
+if (result.details[1].mnemonic !== "A and B belong together.") {
+  throw new Error("Expected a newly generated mnemonic to replace the saved copy.");
+}
+
+if (result.details[2].mnemonic !== undefined) {
+  throw new Error("Expected questions without mnemonics to stay empty.");
 }
 
 selectedAnswers.push("C");
@@ -68,6 +74,6 @@ if (result.details[1].selectedAnswers.length !== 2) {
   throw new Error("Expected result details to preserve an answer snapshot.");
 }
 
-if (result.details[1].mnemonic !== "B and C belong together.") {
+if (result.details[1].mnemonic !== "A and B belong together.") {
   throw new Error("Expected result details to preserve a mnemonic snapshot.");
 }
