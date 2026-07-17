@@ -47,6 +47,11 @@ Rules:
 - Use only these question types: single_choice, multiple_choice, true_false.
 - Give every question at least two unique, non-empty answers.
 - correctAnswers must exactly match values from answers.
+- Write concise answer choices that directly answer the question in parallel form.
+- Make every choice self-contained, grammatical, and clear. Do not copy transcript fragments, missing referents, speaker-centric phrasing, or slang into an answer.
+- Do not include choices that are paraphrases of each other. When a question asks for a specific number of cases or items, include that many distinct correct answers.
+- Put reasoning only in explanation. Do not write explanatory sentences as answer choices or repeat the term being asked about. For “What does X mean?”, use choices like “Lower bound”, not “X means lower bound”.
+- Make distractors the same kind and level of detail as the correct answer. Do not reveal the answer through wording, length, or grammar.
 - single_choice and true_false questions must have exactly one correct answer.
 - For true_false questions, use exactly ["True", "False"] as the answers.
 - description, explanation, and videoUrl are optional. videoUrl must be a complete http:// or https:// URL. Do not include null values or extra fields.

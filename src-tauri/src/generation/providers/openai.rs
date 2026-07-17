@@ -497,6 +497,7 @@ mod tests {
         let prompt = CandidatePrompt::new(&chunks[0], 30);
         let payload = build_candidate_payload("gpt-5.5", &prompt);
         let input = payload["input"].as_str().unwrap();
+        let instructions = payload["instructions"].as_str().unwrap();
 
         assert_eq!(payload["model"], "gpt-5.5");
         assert_eq!(payload["store"], false);
@@ -504,6 +505,10 @@ mod tests {
         assert!(input.contains("PRIMARY:"));
         assert!(!input.contains("END-OF-TRANSCRIPT"));
         assert!(input.contains("candidate_limit: 30"));
+        assert!(instructions.contains("answer choices that directly answer the question"));
+        assert!(instructions.contains("not X means lower bound"));
+        assert!(instructions.contains("self-contained, grammatical"));
+        assert!(instructions.contains("paraphrases of each other"));
         assert_eq!(
             payload["text"]["format"]["schema"]["properties"]["candidates"]["maxItems"],
             30
