@@ -40,7 +40,9 @@ export default function Settings({
   return (
     <section className="narrow-page" aria-labelledby="settings-title">
       <p className="eyebrow">Application preferences</p>
-      <h1 id="settings-title">Settings</h1>
+      <h1 id="settings-title" tabIndex={-1}>
+        Settings
+      </h1>
       <p className="lede">
         Personalize reading and study sessions, then choose the AI used for
         mnemonic generation.

@@ -41,9 +41,30 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
+summary:focus-visible,
+.reference-preview:focus-visible,
 .file-picker:focus-within {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 20;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  color: #03110c;
+  background: var(--color-accent);
+  font-weight: 750;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  outline: 2px solid var(--color-text);
+  outline-offset: 3px;
+  transform: translateY(0);
 }
 
 #root,
@@ -661,6 +682,11 @@ h1 {
   color: var(--color-accent);
   background: rgba(16, 185, 129, 0.06);
   line-height: 1.5;
+}
+
+.answer-feedback:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .answer-feedback.incorrect {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
@@ -86,7 +86,9 @@ const loadAiSelection = (): AiSelection => {
 };
 
 export default function App() {
+  const mainRef = useRef<HTMLElement>(null);
   const [activeView, setActiveView] = useState<ActiveView>("library");
+  const previousViewRef = useRef<ActiveView>(activeView);
   const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [repairMode, setRepairMode] = useState(false);
@@ -144,6 +146,16 @@ export default function App() {
       // The selection still applies for the current session.
     }
   }, [aiSelection]);
+
+  useEffect(() => {
+    if (previousViewRef.current === activeView) {
+      return;
+    }
+
+    previousViewRef.current = activeView;
+    mainRef.current?.querySelector<HTMLElement>("h1")?.focus();
+  }, [activeView]);
+
   const handleImported = useCallback(
     async (file: ValidatedQuizFile) => {
       await library.addQuiz(file);
@@ -159,6 +171,9 @@ export default function App() {
         focusMode ? " focus-mode" : ""
       }`}
     >
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       {!focusMode && (
         <header className="app-header">
           <button
@@ -176,11 +191,16 @@ export default function App() {
         </header>
       )}
 
-      <main className="app-content">
+      <main
+        className="app-content"
+        id="main-content"
+        ref={mainRef}
+        tabIndex={-1}
+      >
         {activeView === "library" && (
           <section>
             <p className="eyebrow">Your study system</p>
-            <h1>Library</h1>
+            <h1 tabIndex={-1}>Library</h1>
             <p className="lede">Browse the quizzes ready for active recall.</p>
             <QuizLibrary
               onAddQuiz={() => navigate("import")}
@@ -273,7 +293,7 @@ export default function App() {
         {activeView === "import" && (
           <section className="narrow-page">
             <p className="eyebrow">Add study material</p>
-            <h1>Add a quiz</h1>
+            <h1 tabIndex={-1}>Add a quiz</h1>
             <p className="lede">
               Import a local quiz, generate one from pasted material, or use an
               external AI chat.
