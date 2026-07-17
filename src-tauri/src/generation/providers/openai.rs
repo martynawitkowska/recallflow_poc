@@ -332,6 +332,20 @@ pub(super) async fn generate(
     send(api_key, build_payload(model, prompt), QUIZ_FAILURES).await
 }
 
+pub(super) async fn generate_candidates(
+    api_key: &str,
+    model: Option<&str>,
+    prompt: &CandidatePrompt,
+) -> Result<String, String> {
+    let model = validate_model(model)?;
+    send(
+        api_key,
+        build_candidate_payload(model, prompt),
+        QUIZ_FAILURES,
+    )
+    .await
+}
+
 pub(super) async fn generate_mnemonic(
     api_key: &str,
     model: Option<&str>,
@@ -390,6 +404,7 @@ mod tests {
             &CandidatePrompt {
                 instructions: "Extract.",
                 input: "chunk".to_owned(),
+                chunk_id: "chunk-0001".to_owned(),
             },
         );
         let verification = build_verification_payload(
