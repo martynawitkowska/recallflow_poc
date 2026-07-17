@@ -33,13 +33,11 @@ export default function QuizLibrary({
   const [managementFeedback, setManagementFeedback] =
     useState<ManagementFeedback | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [confirmingQuizId, setConfirmingQuizId] = useState<string | null>(null);
 
   const removeQuiz = async (file: LibraryQuiz) => {
-    if (!window.confirm(`Remove "${file.quiz.title}" from your local library?`)) {
-      return;
-    }
-
     setPendingAction(file.id);
+    setConfirmingQuizId(null);
     setManagementFeedback(null);
     try {
       await onRemoveQuiz(file.id);
@@ -209,16 +207,37 @@ export default function QuizLibrary({
               >
                 Start quiz
               </button>
-              <button
-                aria-label={`Remove ${file.quiz.title}`}
-                className="danger-button"
-                disabled={pendingAction !== null}
-                onClick={() => void removeQuiz(file)}
-                type="button"
-              >
-                <Icon name="trash" size={15} />
-                {pendingAction === file.id ? "Removing…" : "Remove"}
-              </button>
+              {confirmingQuizId === file.id ? (
+                <>
+                  <button
+                    className="secondary-button"
+                    disabled={pendingAction !== null}
+                    onClick={() => setConfirmingQuizId(null)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="danger-button"
+                    disabled={pendingAction !== null}
+                    onClick={() => void removeQuiz(file)}
+                    type="button"
+                  >
+                    Confirm remove
+                  </button>
+                </>
+              ) : (
+                <button
+                  aria-label={`Remove ${file.quiz.title}`}
+                  className="danger-button"
+                  disabled={pendingAction !== null}
+                  onClick={() => setConfirmingQuizId(file.id)}
+                  type="button"
+                >
+                  <Icon name="trash" size={15} />
+                  Remove
+                </button>
+              )}
             </div>
           </article>
         ))}
