@@ -889,11 +889,13 @@ h1 {
 }
 
 .quiz-history-card h2,
+.quiz-history-card h3,
 .quiz-history-card p {
   margin: 0;
 }
 
-.quiz-history-card h2 {
+.quiz-history-card h2,
+.quiz-history-card h3 {
   font-size: 1.05rem;
 }
 

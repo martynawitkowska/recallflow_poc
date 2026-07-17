@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { QuizAttemptsState } from "../hooks/useQuizAttempts";
 import type { LibraryQuiz } from "../lib/quizLibrary";
+import { calculatePerformanceMetrics } from "../lib/quizPerformance";
 import Icon from "./Icon";
 
 type QuizHistoryProps = {
@@ -16,12 +17,7 @@ export default function QuizHistory({
 }: QuizHistoryProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const attempts = state.status === "success" ? state.attempts : [];
-  const answered = attempts.reduce((total, attempt) => total + attempt.total, 0);
-  const correct = attempts.reduce((total, attempt) => total + attempt.score, 0);
-  const retention = answered ? Math.round((correct / answered) * 100) : 0;
-  const quizzesPracticed = new Set(
-    attempts.map((attempt) => attempt.quizId),
-  ).size;
+  const performance = calculatePerformanceMetrics(attempts);
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -81,25 +77,57 @@ export default function QuizHistory({
           >
             <p>
               <span>Study sessions</span>
-              <strong>{attempts.length}</strong>
+              <strong>{performance.aggregate.sessions}</strong>
             </p>
             <p>
               <span>Quizzes practiced</span>
-              <strong>{quizzesPracticed}</strong>
+              <strong>{performance.quizzes.length}</strong>
             </p>
             <p>
               <span>Correct answers</span>
-              <strong>{correct} / {answered}</strong>
+              <strong>
+                {performance.aggregate.correct} / {performance.aggregate.answered}
+              </strong>
             </p>
             <p>
               <span>Overall retention</span>
-              <strong>{retention}%</strong>
+              <strong>{performance.aggregate.accuracy}%</strong>
             </p>
           </div>
           <p className="quiz-summary-message">
             Overall retention is the percentage of correct answers across all
             saved sessions.
           </p>
+          <section aria-labelledby="quiz-performance-title">
+            <h2 className="quiz-history-count" id="quiz-performance-title">
+              Performance by quiz
+            </h2>
+            <ol className="quiz-history-list" role="list">
+              {performance.quizzes.map((metrics) => {
+                const quizTitle =
+                  quizzes.find((quiz) => quiz.id === metrics.quizId)?.quiz.title ??
+                  "Saved quiz";
+
+                return (
+                  <li key={metrics.quizId}>
+                    <article className="quiz-history-card">
+                      <div>
+                        <h3>{quizTitle}</h3>
+                        <p>
+                          {metrics.sessions} saved {metrics.sessions === 1 ? "session" : "sessions"}
+                          {" · "}{metrics.correct} / {metrics.answered} correct
+                        </p>
+                      </div>
+                      <p className="quiz-history-score">
+                        <strong>{metrics.accuracy}%</strong>
+                        <span>accuracy</span>
+                      </p>
+                    </article>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
           <p className="quiz-history-count">
             {state.attempts.length} saved{" "}
             {state.attempts.length === 1 ? "session" : "sessions"}
