@@ -1,4 +1,5 @@
 import {
+  MAX_VIDEO_URL_CHARS,
   QUESTION_TYPES,
   type QuestionType,
   type QuizFile,
@@ -33,6 +34,25 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
 
   if (payload.description !== undefined && typeof payload.description !== "string") {
     return invalid("The optional description must be a string.");
+  }
+
+  const videoUrl = typeof payload.videoUrl === "string" ? payload.videoUrl.trim() : undefined;
+  if (payload.videoUrl !== undefined && typeof payload.videoUrl !== "string") {
+    return invalid("The optional videoUrl must be a string.");
+  }
+  if (videoUrl) {
+    try {
+      const url = new URL(videoUrl);
+      if (
+        videoUrl.length > MAX_VIDEO_URL_CHARS ||
+        (url.protocol !== "http:" && url.protocol !== "https:") ||
+        !url.hostname
+      ) {
+        return invalid("The optional videoUrl must be a complete http:// or https:// URL.");
+      }
+    } catch {
+      return invalid("The optional videoUrl must be a complete http:// or https:// URL.");
+    }
   }
 
   if (!Array.isArray(payload.questions) || payload.questions.length === 0) {
@@ -137,6 +157,7 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
         typeof payload.description === "string"
           ? payload.description.trim() || undefined
           : undefined,
+      videoUrl: videoUrl || undefined,
       questions,
     },
   };

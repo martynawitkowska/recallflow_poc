@@ -21,6 +21,7 @@ fn sample_quiz() -> ImportedQuiz {
         quiz: QuizFile {
             title: "RecallFlow".to_owned(),
             description: None,
+            video_url: None,
             questions: vec![
                 QuizQuestion {
                     id: "q1".to_owned(),

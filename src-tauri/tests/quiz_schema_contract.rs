@@ -6,6 +6,7 @@ fn quiz_schema_round_trips_the_frontend_contract() {
     let payload = json!({
         "title": "Biology",
         "description": "Cell structure review",
+        "videoUrl": "https://www.youtube.com/watch?v=biology",
         "questions": [
             {
                 "id": "cell-1",

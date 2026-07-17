@@ -6,11 +6,19 @@ import {
   MAX_SOURCE_URL_CHARS,
   mergeGenerationProgress,
   type GenerateQuizRequest,
+  validateOptionalVideoUrl,
   validateQuizGenerationRequest,
 } from "./quizGeneration.ts";
 
 if (countCharacters("A🧠B") !== 3) {
   throw new Error("Expected transcript limits to count Unicode characters.");
+}
+
+if (validateOptionalVideoUrl("") !== null || validateOptionalVideoUrl(" https://youtu.be/demo ") !== null) {
+  throw new Error("Expected empty and HTTPS video links to be valid.");
+}
+if (!validateOptionalVideoUrl("javascript:alert(1)")) {
+  throw new Error("Expected unsafe video URL schemes to be rejected.");
 }
 
 const validMaterialRequest: GenerateQuizRequest = {

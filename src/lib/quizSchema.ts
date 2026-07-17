@@ -19,5 +19,8 @@ export type QuizQuestion = {
 export type QuizFile = {
   title: string;
   description?: string;
+  videoUrl?: string;
   questions: QuizQuestion[];
 };
+
+export const MAX_VIDEO_URL_CHARS = 2_048;

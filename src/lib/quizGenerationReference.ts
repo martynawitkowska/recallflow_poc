@@ -3,6 +3,7 @@ import type { QuizFile } from "./quizSchema";
 export const QUIZ_SCHEMA_EXAMPLE = {
   title: "Biology review",
   description: "A short active-recall quiz about cell biology.",
+  videoUrl: "https://www.youtube.com/watch?v=example",
   questions: [
     {
       id: "q1",
@@ -48,7 +49,7 @@ Rules:
 - correctAnswers must exactly match values from answers.
 - single_choice and true_false questions must have exactly one correct answer.
 - For true_false questions, use exactly ["True", "False"] as the answers.
-- description and explanation are optional strings. Do not include null values or extra fields.
+- description, explanation, and videoUrl are optional. videoUrl must be a complete http:// or https:// URL. Do not include null values or extra fields.
 - Make every question useful for active recall and grounded only in the supplied material.
 
 Create 10 questions from the material I paste after this prompt. If I provide a link you cannot access, ask me to paste the transcript, notes, or article text instead. When the quiz is complete, create recallflow-quiz.json and present it for download.`;

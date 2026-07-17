@@ -1,7 +1,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { invokeIpc } from "./ipc.ts";
-import type { QuizFile } from "./quizSchema.ts";
+import { MAX_VIDEO_URL_CHARS, type QuizFile } from "./quizSchema.ts";
 import { validateQuiz } from "./validateQuiz.ts";
 
 export const MAX_MATERIAL_CHARS = 500_000;
@@ -83,6 +83,24 @@ export function mergeGenerationProgress(
 
 export function countCharacters(value: string): number {
   return Array.from(value).length;
+}
+
+export function validateOptionalVideoUrl(value: string): string | null {
+  const normalized = value.trim();
+  if (!normalized) return null;
+  try {
+    const url = new URL(normalized);
+    if (
+      normalized.length > MAX_VIDEO_URL_CHARS ||
+      (url.protocol !== "http:" && url.protocol !== "https:") ||
+      !url.hostname
+    ) {
+      return "Enter a complete http:// or https:// video URL.";
+    }
+  } catch {
+    return "Enter a complete http:// or https:// video URL.";
+  }
+  return null;
 }
 
 export function generationProgressLabel(progress: GenerationProgress): string {
