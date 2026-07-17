@@ -179,8 +179,8 @@ export function useQuizLibrary() {
   const clearQuizzes = useCallback(async () => {
     ++requestId.current;
     await clearImportedQuizzes();
-    setState({ status: "success", quizzes: [] });
-  }, []);
+    await loadQuizzes();
+  }, [loadQuizzes]);
 
   return {
     state,

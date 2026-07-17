@@ -4,6 +4,7 @@ import type { QuizLibraryState } from "../hooks/useQuizLibrary";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import { MAX_LECTURE_TITLE_CHARS } from "../lib/quizGeneration";
 import { MAX_VIDEO_URL_CHARS } from "../lib/quizSchema";
+import { isPagesPreview } from "../lib/runtime";
 import ExternalLink from "./ExternalLink";
 import Icon from "./Icon";
 import QuizStatisticsModal from "./QuizStatisticsModal";
@@ -78,7 +79,9 @@ export default function QuizLibrary({
       await onClearQuizzes();
       setManagementFeedback({
         kind: "success",
-        message: "The local library was cleared.",
+        message: isPagesPreview
+          ? "The browser preview was reset to the sample quiz."
+          : "The local library was cleared.",
       });
     } catch (error) {
       setManagementFeedback({ kind: "error", message: actionErrorMessage(error) });
@@ -163,6 +166,15 @@ export default function QuizLibrary({
           <Icon name="upload" size={16} />
           Add a quiz
         </button>
+        {isPagesPreview && (
+          <button
+            className="secondary-button"
+            onClick={() => void clearLibrary()}
+            type="button"
+          >
+            Restore sample quiz
+          </button>
+        )}
       </section>
     );
   }
@@ -191,7 +203,7 @@ export default function QuizLibrary({
                 onClick={() => void clearLibrary()}
                 type="button"
               >
-                Confirm clear
+                {isPagesPreview ? "Confirm reset" : "Confirm clear"}
               </button>
             </>
           ) : (
@@ -202,7 +214,13 @@ export default function QuizLibrary({
               type="button"
             >
               <Icon name="trash" size={16} />
-              {pendingAction === "clear" ? "Clearing…" : "Clear library"}
+              {pendingAction === "clear"
+                ? isPagesPreview
+                  ? "Resetting…"
+                  : "Clearing…"
+                : isPagesPreview
+                  ? "Reset preview"
+                  : "Clear library"}
             </button>
           )}
           <button className="primary-button" onClick={onAddQuiz} type="button">
@@ -382,7 +400,11 @@ export default function QuizLibrary({
           state={attemptsState}
         />
       )}
-      <p className="session-note">Quizzes are stored locally on this device.</p>
+      <p className="session-note">
+        {isPagesPreview
+          ? "Preview quizzes and results are stored only in this browser."
+          : "Quizzes are stored locally on this device."}
+      </p>
     </section>
   );
 }
