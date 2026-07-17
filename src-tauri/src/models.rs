@@ -73,6 +73,8 @@ pub struct QuizAttempt {
 #[serde(rename_all = "lowercase")]
 pub enum AiProvider {
     Openai,
+    Gemini,
+    Claude,
     #[serde(other)]
     Unsupported,
 }

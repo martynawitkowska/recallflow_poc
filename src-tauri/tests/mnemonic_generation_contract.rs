@@ -16,7 +16,13 @@ fn valid_request() -> GenerateMnemonicRequest {
 
 #[test]
 fn mnemonic_request_requires_question_answer_and_key() {
-    assert!(validate_mnemonic_request(&valid_request()).is_ok());
+    for provider in [AiProvider::Openai, AiProvider::Gemini, AiProvider::Claude] {
+        assert!(validate_mnemonic_request(&GenerateMnemonicRequest {
+            provider,
+            ..valid_request()
+        })
+        .is_ok());
+    }
 
     let missing_question = GenerateMnemonicRequest {
         question: "  ".to_owned(),
@@ -41,7 +47,7 @@ fn mnemonic_request_rejects_unsupported_or_oversized_context() {
     let unsupported: GenerateMnemonicRequest = serde_json::from_value(serde_json::json!({
         "question": "Question?",
         "correctAnswers": ["Answer"],
-        "provider": "gemini",
+        "provider": "unsupported",
         "apiKey": "request-only-key"
     }))
     .expect("unknown providers should reach command validation");

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
 import { useMnemonicSave } from "../hooks/useMnemonicSave";
+import {
+  getMnemonicProviderOption,
+  mnemonicProviderOptions,
+  type MnemonicProvider,
+} from "../lib/mnemonicGeneration";
 import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import {
@@ -55,11 +60,14 @@ export default function QuizSession({
   const [generatedMnemonics, setGeneratedMnemonics] = useState<
     Readonly<Record<string, string>>
   >({});
+  const [mnemonicProvider, setMnemonicProvider] =
+    useState<MnemonicProvider>("openai");
   const [mnemonicApiKey, setMnemonicApiKey] = useState("");
   const mnemonicGeneration = useMnemonicGeneration();
   const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
+  const mnemonicProviderOption = getMnemonicProviderOption(mnemonicProvider);
   const generatedMnemonic =
     mnemonicGeneration.state.status === "success"
       ? mnemonicGeneration.state.mnemonic
@@ -126,7 +134,8 @@ export default function QuizSession({
       question: question.question,
       correctAnswers: question.correctAnswers,
       explanation: question.explanation,
-      provider: "openai",
+      provider: mnemonicProvider,
+      model: mnemonicProviderOption.model,
       apiKey: mnemonicApiKey,
     });
     if (generated) {
@@ -136,6 +145,18 @@ export default function QuizSession({
       }));
       setMnemonicApiKey("");
     }
+  };
+
+  const changeMnemonicProvider = (provider: MnemonicProvider) => {
+    setMnemonicProvider(provider);
+    setMnemonicApiKey("");
+    mnemonicGeneration.reset();
+    mnemonicSave.reset();
+    setGeneratedMnemonics((current) => {
+      const next = { ...current };
+      delete next[question.id];
+      return next;
+    });
   };
 
   const saveMnemonic = async () => {
@@ -308,9 +329,36 @@ export default function QuizSession({
                   <p>
                     {usingSavedMnemonic
                       ? "This quiz already has a saved mnemonic. Enter an API key only if you want a replacement."
-                      : "Ask OpenAI for a short mnemonic tied to this question and its correct answer."}
+                      : `Ask ${mnemonicProviderOption.label} for a short mnemonic tied to this question and its correct answer.`}
                   </p>
-                  <label htmlFor="mnemonic-api-key">OpenAI API key</label>
+                  <div className="mnemonic-provider-field">
+                    <label htmlFor="mnemonic-provider">AI provider</label>
+                    <select
+                      disabled={
+                        mnemonicGeneration.state.status === "loading" ||
+                        mnemonicSave.state.status === "saving"
+                      }
+                      id="mnemonic-provider"
+                      onChange={(event) =>
+                        changeMnemonicProvider(
+                          event.target.value as MnemonicProvider,
+                        )
+                      }
+                      value={mnemonicProvider}
+                    >
+                      {mnemonicProviderOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="field-hint">
+                      Uses {mnemonicProviderOption.modelLabel}.
+                    </p>
+                  </div>
+                  <label htmlFor="mnemonic-api-key">
+                    {mnemonicProviderOption.keyLabel}
+                  </label>
                   <div className="mnemonic-generator-controls">
                     <input
                       autoComplete="off"
@@ -320,7 +368,7 @@ export default function QuizSession({
                       }
                       id="mnemonic-api-key"
                       onChange={(event) => setMnemonicApiKey(event.target.value)}
-                      placeholder="sk-…"
+                      placeholder={mnemonicProviderOption.keyPlaceholder}
                       spellCheck={false}
                       type="password"
                       value={mnemonicApiKey}
@@ -343,8 +391,7 @@ export default function QuizSession({
                     </button>
                   </div>
                   <p className="field-hint">
-                    The question and answer are sent only after you press the
-                    button. The API key is not saved.
+                    The question and answer are sent to {mnemonicProviderOption.label} only after you press the button. The API key is not saved.
                   </p>
                   <div className="mnemonic-generation-status" aria-live="polite">
                     {mnemonicGeneration.state.status === "loading" && (
