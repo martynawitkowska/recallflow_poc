@@ -53,8 +53,10 @@ data in local SQLite. The current generation UI uses request-only API keys;
 the credential foundation also provides separate Rust session slots and
 encrypted Stronghold records for each provider, restoring valid saved records
 into session memory before the desktop UI starts. Provider keys are not saved
-to local storage or SQLite. See the [security model](docs/security-model.md)
-for the data-flow, automatic-unlock tradeoff, and review steps.
+to local storage or SQLite. The credential API can also migrate the former
+password-protected OpenAI vault or explicitly reset an unreadable current
+vault. See the [security model](docs/security-model.md) for the data-flow,
+automatic-unlock tradeoff, and review steps.
 
 ## Packaging
 

@@ -1,7 +1,6 @@
 # RecallFlow security model
 
-This document describes the current implementation. It does not describe
-planned vault migration or recovery behavior as if it already exists.
+This document describes the current implementation.
 
 ## Data stored on the device
 
@@ -84,9 +83,27 @@ both the vault and the same app profile. An operating-system credential store
 or user-entered master password would provide a stronger boundary but is not
 part of the approved automatic-unlock design.
 
-REFL-66 owns missing-password, legacy-vault, and corrupted-vault recovery.
-Until that recovery flow and the key-management UI are complete, the current
-generation UI remains request-only.
+### Legacy migration and recovery
+
+The former RecallFlow build used `recallflow-secrets.hold`, an OpenAI-only
+Stronghold snapshot unlocked with a user-entered master password and the
+legacy salt file. The migration API accepts that password, selects the legacy
+KDF path internally, reads and validates the old OpenAI record, then saves it
+to the current automatic vault and Rust session. Only after those steps
+succeed does RecallFlow remove the old snapshot and its local migration flag.
+A wrong password, missing record, invalid record, or current-vault save failure
+leaves the legacy snapshot in place.
+
+Recovery of the current automatic vault is explicit because it is destructive.
+The reset API unloads the active snapshot, removes the current vault file,
+clears all three Rust session slots, and removes the automatic password only
+after the Rust reset succeeds. Missing vault files are treated as already
+reset. RecallFlow never resets an unreadable vault automatically during
+startup.
+
+The key-management UI is separate related work, so the current generation UI
+remains request-only. These migration and reset operations are available
+through the desktop credential API for that UI to orchestrate.
 
 ## Network disclosure
 
@@ -119,19 +136,28 @@ Failure path:
 2. Restart RecallFlow and confirm the failed key was not restored.
 3. Inspect the two local-storage preference records and SQLite schema and
    confirm neither contains an API-key field.
+4. Attempt legacy migration with a wrong password or invalid stored record and
+   confirm the legacy vault remains available for another attempt.
+5. Confirm a current vault is removed only after an explicit reset and that
+   the app remains usable with empty session key slots afterward.
 
 Automated Rust coverage:
 
 - `cargo test --manifest-path src-tauri/Cargo.toml state::tests` verifies empty
   startup state, provider isolation, masked status, targeted removal, and
-  invalid key/provider rejection.
+  invalid key/provider rejection, including clearing every provider during an
+  explicit vault reset.
+- `cargo test --manifest-path src-tauri/Cargo.toml vault::tests` verifies that
+  current and legacy passwords select their matching salt paths, salt creation
+  is stable, and vault-file removal is idempotent.
 
 Automated Stronghold contract coverage:
 
 - `npm run check:api-key-storage` verifies key normalization and that OpenAI,
   Gemini, and Claude use distinct encrypted record names. It also verifies
   successful startup restoration, missing records, provider failure isolation,
-  and secret-free restoration reports.
+  secret-free restoration reports, migration ordering, and preservation of an
+  invalid legacy vault.
 - `npm run build` verifies the Stronghold JavaScript and Tauri IPC contracts
   compile together.
 
