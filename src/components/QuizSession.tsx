@@ -9,6 +9,7 @@ import {
 
 type QuizSessionProps = {
   focusMode: boolean;
+  isRepair: boolean;
   quiz: LibraryQuiz;
   onExit: () => void;
   onFinish: (result: QuizResult) => void;
@@ -33,6 +34,7 @@ const questionTypeLabels = {
 
 export default function QuizSession({
   focusMode,
+  isRepair,
   quiz: file,
   onExit,
   onFinish,
@@ -147,7 +149,8 @@ export default function QuizSession({
         </button>
         <div className="quiz-progress-summary">
           <p className="eyebrow">
-            Question {currentIndex + 1} of {totalQuestions}
+            {isRepair ? "Repair question" : "Question"} {currentIndex + 1} of{" "}
+            {totalQuestions}
           </p>
           <p>
             Correct <strong>{result.score}</strong> of {totalQuestions}

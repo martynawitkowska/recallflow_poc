@@ -78,7 +78,23 @@ fn attempts_round_trip_update_idempotently_and_follow_quiz_deletion() {
             .expect("retry should update the same attempt");
         assert_eq!(
             list_quiz_attempts_from_pool(&pool).await.unwrap(),
-            vec![attempt]
+            vec![attempt.clone()]
+        );
+
+        let repair_attempt = QuizAttempt {
+            id: "attempt-2".to_owned(),
+            quiz_id: quiz.id.clone(),
+            completed_at: "2026-07-17T12:00:00.000Z".to_owned(),
+            score: 0,
+            total: 1,
+            incorrect_question_ids: vec!["q2".to_owned()],
+        };
+        save_quiz_attempt_to_pool(&pool, &repair_attempt)
+            .await
+            .expect("targeted repair attempt should save");
+        assert_eq!(
+            list_quiz_attempts_from_pool(&pool).await.unwrap(),
+            vec![repair_attempt, attempt]
         );
 
         delete_imported_quiz_from_pool(&pool, &quiz.id)
@@ -118,6 +134,18 @@ fn invalid_attempts_are_rejected() {
 
         assert_eq!(
             save_quiz_attempt_to_pool(&pool, &invalid).await,
+            Err("RecallFlow could not save an invalid quiz result.".to_owned())
+        );
+
+        let oversized = QuizAttempt {
+            id: "oversized".to_owned(),
+            score: 3,
+            total: 3,
+            incorrect_question_ids: vec![],
+            ..invalid
+        };
+        assert_eq!(
+            save_quiz_attempt_to_pool(&pool, &oversized).await,
             Err("RecallFlow could not save an invalid quiz result.".to_owned())
         );
     });
