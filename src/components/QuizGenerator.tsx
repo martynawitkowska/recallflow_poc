@@ -28,7 +28,6 @@ export default function QuizGenerator({
       className="quiz-generator"
     >
       <header>
-        <p className="eyebrow">AI quiz builder</p>
         <h2 id="quiz-generator-title">Generate from notes or a URL</h2>
         <p>
           Give RecallFlow study material or a public lecture or article page,
@@ -168,7 +167,6 @@ export default function QuizGenerator({
           <article className="generated-quiz">
             <div className="generated-quiz-heading">
               <div>
-                <p className="eyebrow">Generated draft</p>
                 <h3>{generation.state.quiz.title}</h3>
               </div>
               <span>{generation.state.quiz.questions.length} questions</span>

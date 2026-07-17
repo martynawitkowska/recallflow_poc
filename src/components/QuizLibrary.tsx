@@ -166,19 +166,18 @@ export default function QuizLibrary({
       <div className="library-grid">
         {quizzes.map((file) => (
           <article className="library-card" key={file.id}>
-            <div className="library-card-top">
-              <span className="library-card-icon">
-                <Icon name="book" size={22} />
-              </span>
+            <div className="library-card-summary">
+              <div>
+                <h2>{file.quiz.title}</h2>
+                <p className="library-description">
+                  {file.quiz.description || "No quiz description provided."}
+                </p>
+              </div>
               <span className="question-count">
                 {file.quiz.questions.length} question
                 {file.quiz.questions.length === 1 ? "" : "s"}
               </span>
             </div>
-            <h2>{file.quiz.title}</h2>
-            <p className="library-description">
-              {file.quiz.description || "No quiz description provided."}
-            </p>
             <dl className="library-metadata">
               <div>
                 <dt>Source</dt>
@@ -197,63 +196,65 @@ export default function QuizLibrary({
                 <dd>{new Date(file.importedAt).toLocaleString()}</dd>
               </div>
             </dl>
-            <details className="question-preview">
-              <summary>Preview questions</summary>
-              <ol>
-                {file.quiz.questions.map((question) => (
-                  <li key={question.id}>{question.question}</li>
-                ))}
-              </ol>
-            </details>
-            <div className="library-card-actions">
-              <button
-                className="primary-button"
-                disabled={pendingAction !== null}
-                onClick={() => onStartQuiz(file)}
-                type="button"
-              >
-                Start quiz
-              </button>
-              <button
-                aria-label={`Statistics for ${file.quiz.title}`}
-                className="secondary-button"
-                disabled={pendingAction !== null}
-                onClick={() => setStatisticsQuiz(file)}
-                type="button"
-              >
-                Statistics
-              </button>
-              {confirmingQuizId === file.id ? (
-                <>
-                  <button
-                    className="secondary-button"
-                    disabled={pendingAction !== null}
-                    onClick={() => setConfirmingQuizId(null)}
-                    type="button"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="danger-button"
-                    disabled={pendingAction !== null}
-                    onClick={() => void removeQuiz(file)}
-                    type="button"
-                  >
-                    Confirm remove
-                  </button>
-                </>
-              ) : (
+            <div className="library-card-footer">
+              <details className="question-preview">
+                <summary>Preview questions</summary>
+                <ol>
+                  {file.quiz.questions.map((question) => (
+                    <li key={question.id}>{question.question}</li>
+                  ))}
+                </ol>
+              </details>
+              <div className="library-card-actions">
                 <button
-                  aria-label={`Remove ${file.quiz.title}`}
-                  className="danger-button"
+                  className="primary-button"
                   disabled={pendingAction !== null}
-                  onClick={() => setConfirmingQuizId(file.id)}
+                  onClick={() => onStartQuiz(file)}
                   type="button"
                 >
-                  <Icon name="trash" size={15} />
-                  Remove
+                  Start quiz
                 </button>
-              )}
+                <button
+                  aria-label={`Statistics for ${file.quiz.title}`}
+                  className="secondary-button"
+                  disabled={pendingAction !== null}
+                  onClick={() => setStatisticsQuiz(file)}
+                  type="button"
+                >
+                  Statistics
+                </button>
+                {confirmingQuizId === file.id ? (
+                  <>
+                    <button
+                      className="secondary-button"
+                      disabled={pendingAction !== null}
+                      onClick={() => setConfirmingQuizId(null)}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="danger-button"
+                      disabled={pendingAction !== null}
+                      onClick={() => void removeQuiz(file)}
+                      type="button"
+                    >
+                      Confirm remove
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    aria-label={`Remove ${file.quiz.title}`}
+                    className="danger-button"
+                    disabled={pendingAction !== null}
+                    onClick={() => setConfirmingQuizId(file.id)}
+                    type="button"
+                  >
+                    <Icon name="trash" size={15} />
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
           </article>
         ))}

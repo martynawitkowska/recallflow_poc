@@ -186,7 +186,7 @@ export default function QuizSession({
           ← Back to library
         </button>
         <div className="quiz-progress-summary">
-          <p className="eyebrow">
+          <p className="quiz-question-position">
             {isRepair ? "Repair question" : "Question"} {currentIndex + 1} of{" "}
             {totalQuestions}
           </p>
