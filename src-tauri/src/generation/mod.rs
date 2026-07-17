@@ -1,3 +1,4 @@
+mod evidence;
 mod orchestration;
 mod providers;
 mod segmentation;
@@ -457,7 +458,6 @@ fn normalize_candidate(candidate: &mut QuestionCandidate) {
     candidate.topic = candidate.topic.trim().to_owned();
     candidate.question = candidate.question.trim().to_owned();
     candidate.explanation = candidate.explanation.trim().to_owned();
-    candidate.evidence_quote = candidate.evidence_quote.trim().to_owned();
     for answer in &mut candidate.answers {
         *answer = answer.trim().to_owned();
     }
