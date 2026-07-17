@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import AiSettings from "./components/AiSettings";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
@@ -21,10 +22,23 @@ import { useQuizLibrary } from "./hooks/useQuizLibrary";
 import { useQuizAttemptSave } from "./hooks/useQuizAttemptSave";
 import { useQuizAttempts } from "./hooks/useQuizAttempts";
 import type { LibraryQuiz } from "./lib/quizLibrary";
+import {
+  createDefaultMnemonicModels,
+  isMnemonicModelForProvider,
+  isMnemonicProvider,
+  type MnemonicModel,
+  type MnemonicProvider,
+} from "./lib/mnemonicProviders";
 import type { QuizResult } from "./lib/quizResults";
 
 type ActiveView = ViewKey | "quiz" | "summary";
 const READING_FONT_STORAGE_KEY = "recallflow-reading-font";
+const AI_SELECTION_STORAGE_KEY = "recallflow-ai-selection";
+
+type AiSelection = {
+  models: Record<MnemonicProvider, MnemonicModel>;
+  provider: MnemonicProvider;
+};
 
 const loadReadingFont = (): ReadingFont => {
   try {
@@ -37,6 +51,38 @@ const loadReadingFont = (): ReadingFont => {
   }
 };
 
+const loadAiSelection = (): AiSelection => {
+  const defaults: AiSelection = {
+    models: createDefaultMnemonicModels(),
+    provider: "openai",
+  };
+
+  try {
+    const saved = JSON.parse(
+      window.localStorage.getItem(AI_SELECTION_STORAGE_KEY) ?? "null",
+    ) as { models?: Record<string, string>; provider?: string } | null;
+    if (!saved) {
+      return defaults;
+    }
+
+    const savedProvider = saved.provider ?? "";
+    const provider = isMnemonicProvider(savedProvider)
+      ? savedProvider
+      : defaults.provider;
+    const models = { ...defaults.models };
+    for (const candidate of ["openai", "gemini", "claude"] as const) {
+      const model = saved.models?.[candidate] ?? "";
+      if (isMnemonicModelForProvider(candidate, model)) {
+        models[candidate] = model;
+      }
+    }
+
+    return { models, provider };
+  } catch {
+    return defaults;
+  }
+};
+
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>("library");
   const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
@@ -44,6 +90,7 @@ export default function App() {
   const [repairMode, setRepairMode] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [readingFont, setReadingFont] = useState(loadReadingFont);
+  const [aiSelection, setAiSelection] = useState(loadAiSelection);
   const { state, retry } = useAppInfo();
   const attemptSave = useQuizAttemptSave();
   const attempts = useQuizAttempts(activeView === "history");
@@ -80,6 +127,17 @@ export default function App() {
       // The preference still applies for the current session.
     }
   }, [readingFont]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        AI_SELECTION_STORAGE_KEY,
+        JSON.stringify(aiSelection),
+      );
+    } catch {
+      // The selection still applies for the current session.
+    }
+  }, [aiSelection]);
   const handleImported = useCallback(
     async (file: ValidatedQuizFile) => {
       await library.addQuiz(file);
@@ -165,6 +223,8 @@ export default function App() {
                   : current,
               );
             }}
+            mnemonicModel={aiSelection.models[aiSelection.provider]}
+            mnemonicProvider={aiSelection.provider}
             quiz={activeQuiz}
             readingFont={readingFont}
           />
@@ -222,13 +282,19 @@ export default function App() {
         )}
 
         {activeView === "settings" && (
-          <section>
-            <p className="eyebrow">Provider configuration</p>
-            <h1>AI settings</h1>
-            <p className="lede">
-              Provider settings will be available when AI features are enabled.
-            </p>
-          </section>
+          <AiSettings
+            model={aiSelection.models[aiSelection.provider]}
+            onModelChange={(model) =>
+              setAiSelection((current) => ({
+                ...current,
+                models: { ...current.models, [current.provider]: model },
+              }))
+            }
+            onProviderChange={(provider) =>
+              setAiSelection((current) => ({ ...current, provider }))
+            }
+            provider={aiSelection.provider}
+          />
         )}
       </main>
     </div>

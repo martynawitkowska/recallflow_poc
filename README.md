@@ -30,6 +30,15 @@ npm run check
 This runs the TypeScript/Vite production build, Rust formatting check,
 `cargo check`, and the Rust test suite.
 
+## AI provider selection
+
+Open **AI settings** to choose the provider and mnemonic model. RecallFlow
+remembers the selected model separately for OpenAI, Google Gemini, and
+Anthropic Claude, then uses the active pair for new mnemonic requests.
+
+This preference contains no credentials. API keys are still entered only when
+requesting a mnemonic and are not stored by the provider selection setting.
+
 ## Packaging
 
 Create the native installer or application bundle for the current operating

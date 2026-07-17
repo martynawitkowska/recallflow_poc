@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
 import { useMnemonicSave } from "../hooks/useMnemonicSave";
 import {
+  getMnemonicModelOption,
   getMnemonicProviderOption,
-  mnemonicProviderOptions,
+  type MnemonicModel,
   type MnemonicProvider,
-} from "../lib/mnemonicGeneration";
+} from "../lib/mnemonicProviders";
 import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import {
@@ -17,6 +18,8 @@ import {
 type QuizSessionProps = {
   focusMode: boolean;
   isRepair: boolean;
+  mnemonicModel: MnemonicModel;
+  mnemonicProvider: MnemonicProvider;
   quiz: LibraryQuiz;
   onExit: () => void;
   onFinish: (result: QuizResult) => void;
@@ -43,6 +46,8 @@ const questionTypeLabels = {
 export default function QuizSession({
   focusMode,
   isRepair,
+  mnemonicModel,
+  mnemonicProvider,
   quiz: file,
   onExit,
   onFinish,
@@ -60,14 +65,16 @@ export default function QuizSession({
   const [generatedMnemonics, setGeneratedMnemonics] = useState<
     Readonly<Record<string, string>>
   >({});
-  const [mnemonicProvider, setMnemonicProvider] =
-    useState<MnemonicProvider>("openai");
   const [mnemonicApiKey, setMnemonicApiKey] = useState("");
   const mnemonicGeneration = useMnemonicGeneration();
   const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
   const mnemonicProviderOption = getMnemonicProviderOption(mnemonicProvider);
+  const mnemonicModelOption = getMnemonicModelOption(
+    mnemonicProvider,
+    mnemonicModel,
+  );
   const generatedMnemonic =
     mnemonicGeneration.state.status === "success"
       ? mnemonicGeneration.state.mnemonic
@@ -135,7 +142,7 @@ export default function QuizSession({
       correctAnswers: question.correctAnswers,
       explanation: question.explanation,
       provider: mnemonicProvider,
-      model: mnemonicProviderOption.model,
+      model: mnemonicModel,
       apiKey: mnemonicApiKey,
     });
     if (generated) {
@@ -146,18 +153,6 @@ export default function QuizSession({
       }));
       setMnemonicApiKey("");
     }
-  };
-
-  const changeMnemonicProvider = (provider: MnemonicProvider) => {
-    setMnemonicProvider(provider);
-    setMnemonicApiKey("");
-    mnemonicGeneration.reset();
-    mnemonicSave.reset();
-    setGeneratedMnemonics((current) => {
-      const next = { ...current };
-      delete next[question.id];
-      return next;
-    });
   };
 
   const saveMnemonic = async () => {
@@ -330,28 +325,12 @@ export default function QuizSession({
                       : `Ask ${mnemonicProviderOption.label} for a short mnemonic tied to this question and its correct answer.`}
                   </p>
                   <div className="mnemonic-provider-field">
-                    <label htmlFor="mnemonic-provider">AI provider</label>
-                    <select
-                      disabled={
-                        mnemonicGeneration.state.status === "loading" ||
-                        mnemonicSave.state.status === "saving"
-                      }
-                      id="mnemonic-provider"
-                      onChange={(event) =>
-                        changeMnemonicProvider(
-                          event.target.value as MnemonicProvider,
-                        )
-                      }
-                      value={mnemonicProvider}
-                    >
-                      {mnemonicProviderOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <span>AI provider and model</span>
+                    <strong>
+                      {mnemonicProviderOption.label} · {mnemonicModelOption.label}
+                    </strong>
                     <p className="field-hint">
-                      Uses {mnemonicProviderOption.modelLabel}.
+                      Change this selection in AI settings.
                     </p>
                   </div>
                   <label htmlFor="mnemonic-api-key">

@@ -3,7 +3,7 @@ use serde::Deserialize;
 use std::time::Duration;
 
 const DEFAULT_MODEL: &str = "claude-sonnet-4-6";
-const ALLOWED_MODELS: &[&str] = &[DEFAULT_MODEL];
+const ALLOWED_MODELS: &[&str] = &[DEFAULT_MODEL, "claude-haiku-4-5", "claude-opus-4-8"];
 const MESSAGES_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
 const REQUEST_TIMEOUT_SECONDS: u64 = 120;
 const MAX_RESPONSE_BYTES: usize = 1_000_000;
@@ -171,6 +171,9 @@ mod tests {
     #[test]
     fn model_allowlist_and_errors_are_provider_specific() {
         assert_eq!(validate_model(None).unwrap(), "claude-sonnet-4-6");
+        for model in ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-8"] {
+            assert_eq!(validate_model(Some(model)).unwrap(), model);
+        }
         assert!(validate_model(Some("claude-unlisted")).is_err());
         assert!(status_error(reqwest::StatusCode::UNAUTHORIZED).contains("API key"));
         assert!(status_error(reqwest::StatusCode::NOT_FOUND).contains("model"));
