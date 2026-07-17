@@ -104,7 +104,7 @@ fn generation_request_validates_provider_and_question_count() {
 #[test]
 fn generation_request_rejects_oversized_sources() {
     let oversized_material = GenerateQuizRequest {
-        material: Some("a".repeat(14_001)),
+        material: Some("a".repeat(500_001)),
         source_url: None,
         provider: AiProvider::Openai,
         model: None,
@@ -120,10 +120,27 @@ fn generation_request_rejects_oversized_sources() {
 
     assert!(validate_generation_request(&oversized_material)
         .expect_err("oversized material should fail")
-        .contains("14000 characters or fewer"));
+        .contains("500000 characters or fewer"));
     assert!(validate_generation_request(&oversized_url)
         .expect_err("oversized URL should fail")
         .contains("source URL is too long"));
+}
+
+#[test]
+fn generation_request_accepts_long_material_without_truncation() {
+    let material = "ż".repeat(500_000);
+    let request = GenerateQuizRequest {
+        material: Some(material.clone()),
+        source_url: None,
+        provider: AiProvider::Openai,
+        model: None,
+        question_count: 8,
+    };
+
+    assert!(matches!(
+        validate_generation_request(&request),
+        Ok(GenerationSource::Material(value)) if value == material
+    ));
 }
 
 #[test]
