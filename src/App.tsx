@@ -98,7 +98,9 @@ export default function App() {
   const { state, retry } = useAppInfo();
   const isOnline = useOnlineStatus();
   const attemptSave = useQuizAttemptSave();
-  const attempts = useQuizAttempts(activeView === "history");
+  const attempts = useQuizAttempts(
+    activeView === "history" || activeView === "library",
+  );
   const library = useQuizLibrary();
   const navigate = useCallback((view: ViewKey) => {
     setFocusMode(false);
@@ -208,10 +210,12 @@ export default function App() {
             <h1 tabIndex={-1}>Library</h1>
             <p className="lede">Browse the quizzes ready for active recall.</p>
             <QuizLibrary
+              attemptsState={attempts.state}
               onAddQuiz={() => navigate("import")}
               onClearQuizzes={library.clearQuizzes}
               onRemoveQuiz={library.removeQuiz}
               onRetry={library.retry}
+              onRetryStatistics={attempts.retry}
               onStartQuiz={startQuiz}
               state={library.state}
             />
