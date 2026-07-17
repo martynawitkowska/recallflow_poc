@@ -113,6 +113,14 @@ fn status_error(status: reqwest::StatusCode) -> String {
     }
 }
 
+fn parse_response(body: &[u8]) -> Result<GeminiResponse, String> {
+    if body.len() > MAX_RESPONSE_BYTES {
+        return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
+    }
+
+    serde_json::from_slice(body).map_err(|_| GENERATION_ERROR.to_owned())
+}
+
 async fn send(api_key: &str, model: &str, payload: serde_json::Value) -> Result<String, String> {
     let endpoint =
         format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent");
@@ -153,7 +161,7 @@ async fn send(api_key: &str, model: &str, payload: serde_json::Value) -> Result<
         }
         body.extend_from_slice(&chunk);
     }
-    let response = serde_json::from_slice(&body).map_err(|_| GENERATION_ERROR.to_owned())?;
+    let response = parse_response(&body)?;
 
     extract_text(response)
 }
@@ -169,7 +177,10 @@ pub(super) async fn generate_mnemonic(
 
 #[cfg(test)]
 mod tests {
-    use super::{build_payload, extract_text, status_error, validate_model, GeminiResponse};
+    use super::{
+        build_payload, extract_text, parse_response, status_error, validate_model,
+        GENERATION_ERROR, MAX_RESPONSE_BYTES, RESPONSE_TOO_LARGE_ERROR,
+    };
     use crate::generation::MnemonicPrompt;
     use serde_json::json;
 
@@ -209,19 +220,51 @@ mod tests {
 
     #[test]
     fn response_returns_text_parts_and_rejects_empty_output() {
-        let response: GeminiResponse = serde_json::from_value(json!({
+        let body = json!({
             "candidates": [{ "content": { "parts": [
                 { "text": "  First image. " },
                 { "text": "Second image." }
             ] } }]
-        }))
-        .unwrap();
-        let empty: GeminiResponse = serde_json::from_value(json!({ "candidates": [] })).unwrap();
+        })
+        .to_string();
+        let empty_body = json!({ "candidates": [] }).to_string();
+        let response = parse_response(body.as_bytes()).unwrap();
+        let empty = parse_response(empty_body.as_bytes()).unwrap();
 
         assert_eq!(
             extract_text(response).unwrap(),
             "First image.\nSecond image."
         );
         assert!(extract_text(empty).is_err());
+    }
+
+    #[test]
+    fn response_parser_bounds_untrusted_bodies_and_hides_raw_content() {
+        let secret = "AIza-REFL71-NEVER-EXPOSE";
+        let malformed = parse_response(format!("{{\"secret\":\"{secret}\"").as_bytes())
+            .err()
+            .expect("malformed JSON should fail safely");
+        let oversized = parse_response(&vec![b' '; MAX_RESPONSE_BYTES + 1])
+            .err()
+            .expect("oversized response should fail safely");
+
+        assert_eq!(malformed, GENERATION_ERROR);
+        assert!(!malformed.contains(secret));
+        assert_eq!(oversized, RESPONSE_TOO_LARGE_ERROR);
+    }
+
+    #[test]
+    fn status_failures_cover_auth_rate_limit_timeout_server_and_fallback() {
+        for (status, expected) in [
+            (reqwest::StatusCode::FORBIDDEN, "API key"),
+            (reqwest::StatusCode::TOO_MANY_REQUESTS, "rate limiting"),
+            (reqwest::StatusCode::BAD_REQUEST, "model"),
+            (reqwest::StatusCode::REQUEST_TIMEOUT, "too long"),
+            (reqwest::StatusCode::BAD_GATEWAY, "temporarily unavailable"),
+            (reqwest::StatusCode::IM_A_TEAPOT, "could not generate"),
+        ] {
+            let error = status_error(status);
+            assert!(error.contains(expected), "status={status}, error={error:?}");
+        }
     }
 }

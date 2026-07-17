@@ -41,6 +41,10 @@ SQLite integration coverage recreates the shipped library-only schema and
 verifies that initialization preserves its quizzes while adding attempt
 storage. Separate persistence checks close and reopen a file-backed database.
 
+Provider tests pass bounded, synthetic JSON envelopes directly to the private
+OpenAI, Gemini, and Claude parsers and exercise HTTP failure classification.
+They do not contact provider APIs or include real credentials or study data.
+
 ## Application preferences
 
 Open **Settings** to choose the application font and whether new quizzes start
