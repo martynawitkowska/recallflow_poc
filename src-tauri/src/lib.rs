@@ -46,7 +46,6 @@ pub fn run() {
             commands::library::delete_imported_quiz,
             commands::library::clear_imported_quizzes,
             commands::secrets::delete_ai_api_key,
-            commands::secrets::get_ai_api_key_status,
             commands::secrets::save_ai_api_key,
         ])
         .run(tauri::generate_context!())
