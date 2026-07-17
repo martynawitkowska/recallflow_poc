@@ -1,3 +1,4 @@
+mod orchestration;
 mod providers;
 mod segmentation;
 
@@ -101,9 +102,11 @@ pub(crate) struct VerificationBatch {
     pub decisions: Vec<VerificationDecision>,
 }
 
+#[derive(Clone)]
 pub(crate) struct CandidatePrompt {
     instructions: &'static str,
     input: String,
+    chunk_id: String,
 }
 
 pub(crate) struct VerificationPrompt {
@@ -134,6 +137,27 @@ impl GenerationPrompt {
             question_count,
             uses_web_search,
         }
+    }
+}
+
+impl CandidatePrompt {
+    fn new(chunk: &segmentation::TranscriptChunk) -> Self {
+        const INSTRUCTIONS: &str = "Extract zero, one, or two durable questions from the supplied transcript chunk. Use only the supplied source. Prefer definitions, principles, mechanisms, comparisons, procedures, and explicitly qualified causal relationships. Exclude classroom logistics, jokes, personal anecdotes, slide navigation, lecture-order questions, and unresolved references. Never say according to the lecture, notes, or speaker. Preserve populations, conditions, uncertainty, and other qualifications. Every candidate must use the supplied chunk_id and quote exact evidence from the PRIMARY region. An empty candidates array is correct when the source has no independently testable knowledge.";
+        let primary = &chunk.context[chunk.primary_context_bytes.clone()];
+        let before = &chunk.context[..chunk.primary_context_bytes.start];
+        let after = &chunk.context[chunk.primary_context_bytes.end..];
+        Self {
+            instructions: INSTRUCTIONS,
+            input: format!(
+                "chunk_id: {}\nCONTEXT BEFORE:\n{}\nPRIMARY:\n{}\nCONTEXT AFTER:\n{}",
+                chunk.id, before, primary, after
+            ),
+            chunk_id: chunk.id.clone(),
+        }
+    }
+
+    fn chunk_id(&self) -> &str {
+        &self.chunk_id
     }
 }
 

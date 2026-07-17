@@ -34,3 +34,15 @@ pub(super) async fn generate_mnemonic(
         }
     }
 }
+
+pub(super) async fn generate_candidates(
+    provider: AiProvider,
+    model: Option<&str>,
+    api_key: &str,
+    prompt: &super::CandidatePrompt,
+) -> Result<String, String> {
+    match provider {
+        AiProvider::Openai => openai::generate_candidates(api_key, model, prompt).await,
+        _ => Err("The selected quiz provider is not available yet.".to_owned()),
+    }
+}
