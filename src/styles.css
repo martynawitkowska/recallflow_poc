@@ -1165,15 +1165,6 @@ h1 {
   color: var(--color-text);
 }
 
-.settings-selection {
-  margin-top: 0.5rem;
-  padding: 0.85rem;
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  border-radius: var(--radius-md);
-  background: rgba(16, 185, 129, 0.05);
-}
-
-.settings-selection p,
 .settings-privacy {
   margin: 0.35rem 0 0;
   color: var(--color-muted);
