@@ -11,6 +11,18 @@ export type QuizPerformanceMetrics = PerformanceMetrics & {
   quizId: string;
 };
 
+export type RetentionLevel = "Needs review" | "Developing" | "Strong";
+
+export function calculateRetentionScore(correct: number, answered: number) {
+  return answered > 0
+    ? Math.max(0, Math.min(100, Math.round((correct / answered) * 100)))
+    : 0;
+}
+
+export function getRetentionLevel(score: number): RetentionLevel {
+  return score >= 80 ? "Strong" : score >= 60 ? "Developing" : "Needs review";
+}
+
 function summarize(attempts: readonly QuizAttempt[]): PerformanceMetrics {
   const correct = attempts.reduce((total, attempt) => total + attempt.score, 0);
   const answered = attempts.reduce((total, attempt) => total + attempt.total, 0);
@@ -19,7 +31,7 @@ function summarize(attempts: readonly QuizAttempt[]): PerformanceMetrics {
     sessions: attempts.length,
     correct,
     answered,
-    accuracy: answered ? Math.round((correct / answered) * 100) : 0,
+    accuracy: calculateRetentionScore(correct, answered),
   };
 }
 

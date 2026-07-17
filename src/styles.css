@@ -755,6 +755,16 @@ h1 {
   font-size: 1.5rem;
 }
 
+.quiz-summary-score small {
+  color: var(--color-muted);
+}
+
+.retention-progress {
+  width: 100%;
+  height: 0.55rem;
+  accent-color: var(--color-accent);
+}
+
 .quiz-attempt-save-status {
   min-height: 2.5rem;
   margin-top: 1.5rem;
@@ -920,6 +930,10 @@ h1 {
 .quiz-history-score span {
   color: var(--color-muted);
   font-size: 0.72rem;
+}
+
+.quiz-history-score .retention-progress {
+  width: 8rem;
 }
 
 .narrow-page {

@@ -1,5 +1,9 @@
 import type { QuizAttempt } from "./quizAttempts.ts";
-import { calculatePerformanceMetrics } from "./quizPerformance.ts";
+import {
+  calculatePerformanceMetrics,
+  calculateRetentionScore,
+  getRetentionLevel,
+} from "./quizPerformance.ts";
 
 const attempts: QuizAttempt[] = [
   {
@@ -52,4 +56,23 @@ if (
 const empty = calculatePerformanceMetrics([]);
 if (empty.aggregate.accuracy !== 0 || empty.quizzes.length !== 0) {
   throw new Error("Expected empty history to produce safe zero metrics.");
+}
+
+if (
+  calculateRetentionScore(0, 0) !== 0 ||
+  calculateRetentionScore(3, 2) !== 100 ||
+  calculateRetentionScore(-1, 2) !== 0
+) {
+  throw new Error("Expected retention scores to stay within zero to 100.");
+}
+
+for (const [score, expected] of [
+  [59, "Needs review"],
+  [60, "Developing"],
+  [79, "Developing"],
+  [80, "Strong"],
+] as const) {
+  if (getRetentionLevel(score) !== expected) {
+    throw new Error(`Unexpected retention level for ${score}%.`);
+  }
 }
