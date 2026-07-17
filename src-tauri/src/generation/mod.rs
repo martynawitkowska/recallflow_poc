@@ -5,11 +5,13 @@ mod segmentation;
 mod selection;
 mod verification;
 
+pub(crate) use orchestration::CancellationFlag;
+
 use crate::models::{
     AiProvider, GenerateMnemonicRequest, GenerateQuizRequest, QuestionType, QuizFile,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 const MIN_QUESTION_COUNT: i64 = 3;
 const MAX_QUESTION_COUNT: i64 = 25;
@@ -109,6 +111,7 @@ pub(crate) struct VerificationBatch {
 pub(crate) struct CandidatePrompt {
     instructions: &'static str,
     input: String,
+    #[cfg(test)]
     chunk_id: String,
 }
 
@@ -125,7 +128,7 @@ pub(crate) struct DuplicatePrompt {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum GenerationCompletion {
+pub enum GenerationCompletion {
     Full,
     QualityLimited,
     IncompleteCoverage,
@@ -135,11 +138,32 @@ pub(crate) enum GenerationCompletion {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct GroundedGenerationResult {
+pub struct GroundedGenerationResult {
     pub quiz: Option<QuizFile>,
     pub completion: GenerationCompletion,
     pub quality: selection::QualityMetadata,
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum GenerationStage {
+    PreparingTranscript,
+    GeneratingCandidates,
+    VerifyingQuestions,
+    SelectingQuestions,
+    Complete,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct GenerationProgress {
+    pub run_id: String,
+    pub stage: GenerationStage,
+    pub completed: usize,
+    pub total: Option<usize>,
+}
+
+pub(crate) type ProgressReporter = Arc<dyn Fn(GenerationProgress) + Send + Sync>;
 
 impl GenerationPrompt {
     fn new(source: GenerationSource<'_>, question_count: usize) -> Self {
@@ -179,10 +203,12 @@ impl CandidatePrompt {
                 "chunk_id: {}\nCONTEXT BEFORE:\n{}\nPRIMARY:\n{}\nCONTEXT AFTER:\n{}",
                 chunk.id, before, primary, after
             ),
+            #[cfg(test)]
             chunk_id: chunk.id.clone(),
         }
     }
 
+    #[cfg(test)]
     fn chunk_id(&self) -> &str {
         &self.chunk_id
     }
@@ -553,6 +579,8 @@ pub async fn generate_quiz(
         request,
         api_key,
         orchestration::CancellationFlag::default(),
+        "internal",
+        None,
     )
     .await?;
     result.quiz.ok_or_else(|| {
@@ -565,17 +593,47 @@ pub(crate) async fn generate_quiz_with_cancellation(
     request: GenerateQuizRequest,
     api_key: &str,
     cancellation: orchestration::CancellationFlag,
+    run_id: &str,
+    reporter: Option<ProgressReporter>,
 ) -> Result<GroundedGenerationResult, String> {
+    report_progress(
+        &reporter,
+        run_id,
+        GenerationStage::PreparingTranscript,
+        0,
+        None,
+    );
     let source = validate_generation_request(&request)?;
     let question_count = request.question_count as usize;
     let GenerationSource::Material(material) = source else {
+        report_progress(
+            &reporter,
+            run_id,
+            GenerationStage::GeneratingCandidates,
+            0,
+            Some(1),
+        );
         let prompt = GenerationPrompt::new(source, question_count);
         let generated_json =
             providers::generate(request.provider, request.model.as_deref(), api_key, &prompt)
                 .await?;
+        report_progress(
+            &reporter,
+            run_id,
+            GenerationStage::GeneratingCandidates,
+            1,
+            Some(1),
+        );
+        report_progress(
+            &reporter,
+            run_id,
+            GenerationStage::SelectingQuestions,
+            0,
+            Some(1),
+        );
         let quiz = parse_generated_quiz_json(&generated_json, question_count)?;
         let selected_count = quiz.questions.len();
-        return Ok(GroundedGenerationResult {
+        let result = GroundedGenerationResult {
             quiz: Some(quiz),
             completion: if selected_count == question_count {
                 GenerationCompletion::Full
@@ -588,16 +646,38 @@ pub(crate) async fn generate_quiz_with_cancellation(
                 selected_count,
                 ..Default::default()
             },
-        });
+        };
+        report_progress(&reporter, run_id, GenerationStage::Complete, 1, Some(1));
+        return Ok(result);
     };
 
     let (_, chunks) = segmentation::segment_transcript(material)?;
+    report_progress(
+        &reporter,
+        run_id,
+        GenerationStage::GeneratingCandidates,
+        0,
+        Some(chunks.len()),
+    );
+    let generation_progress = reporter.as_ref().map(|reporter| {
+        let reporter = reporter.clone();
+        let run_id = run_id.to_owned();
+        Arc::new(move |completed, total| {
+            reporter(GenerationProgress {
+                run_id: run_id.clone(),
+                stage: GenerationStage::GeneratingCandidates,
+                completed,
+                total: Some(total),
+            });
+        }) as Arc<dyn Fn(usize, usize) + Send + Sync>
+    });
     let generated = orchestration::generate_candidates_for_chunks(
         chunks.clone(),
         request.provider,
         request.model.clone(),
         api_key.to_owned(),
         cancellation.clone(),
+        generation_progress,
     )
     .await;
     if cancellation.is_cancelled() {
@@ -617,6 +697,26 @@ pub(crate) async fn generate_quiz_with_cancellation(
     let (validated, deterministic_rejections) =
         evidence::validate_candidate_set(candidates, &chunks);
     let validated_count = validated.len();
+    let verification_batches = validated_count.div_ceil(8);
+    report_progress(
+        &reporter,
+        run_id,
+        GenerationStage::VerifyingQuestions,
+        0,
+        Some(verification_batches),
+    );
+    let verification_progress = reporter.as_ref().map(|reporter| {
+        let reporter = reporter.clone();
+        let run_id = run_id.to_owned();
+        Arc::new(move |completed, total| {
+            reporter(GenerationProgress {
+                run_id: run_id.clone(),
+                stage: GenerationStage::VerifyingQuestions,
+                completed,
+                total: Some(total),
+            });
+        }) as Arc<dyn Fn(usize, usize) + Send + Sync>
+    });
     let verified = verification::verify_with_provider(
         validated,
         &chunks,
@@ -624,6 +724,7 @@ pub(crate) async fn generate_quiz_with_cancellation(
         request.model.clone(),
         api_key.to_owned(),
         cancellation.clone(),
+        verification_progress,
     )
     .await;
     if cancellation.is_cancelled() || verified.cancelled {
@@ -632,6 +733,13 @@ pub(crate) async fn generate_quiz_with_cancellation(
     let semantic_rejection_count = validated_count - verified.accepted.len();
     let incomplete_verification = verified.failed_batches > 0;
     let (exact, exact_duplicate_count) = selection::exact_deduplicate(verified.accepted);
+    report_progress(
+        &reporter,
+        run_id,
+        GenerationStage::SelectingQuestions,
+        0,
+        Some(1),
+    );
 
     let known_ids = exact
         .iter()
@@ -673,11 +781,13 @@ pub(crate) async fn generate_quiz_with_cancellation(
         duplicate_analysis_incomplete,
     };
     if selected.is_empty() {
-        return Ok(GroundedGenerationResult {
+        let result = GroundedGenerationResult {
             quiz: None,
             completion: GenerationCompletion::QualityEmpty,
             quality,
-        });
+        };
+        report_progress(&reporter, run_id, GenerationStage::Complete, 1, Some(1));
+        return Ok(result);
     }
     let completion = if incomplete_coverage {
         GenerationCompletion::IncompleteCoverage
@@ -686,11 +796,30 @@ pub(crate) async fn generate_quiz_with_cancellation(
     } else {
         GenerationCompletion::Full
     };
-    Ok(GroundedGenerationResult {
+    let result = GroundedGenerationResult {
         quiz: Some(selection::finalize_quiz(selected)),
         completion,
         quality,
-    })
+    };
+    report_progress(&reporter, run_id, GenerationStage::Complete, 1, Some(1));
+    Ok(result)
+}
+
+fn report_progress(
+    reporter: &Option<ProgressReporter>,
+    run_id: &str,
+    stage: GenerationStage,
+    completed: usize,
+    total: Option<usize>,
+) {
+    if let Some(reporter) = reporter {
+        reporter(GenerationProgress {
+            run_id: run_id.to_owned(),
+            stage,
+            completed,
+            total,
+        });
+    }
 }
 
 fn cancelled_result(requested_count: usize) -> GroundedGenerationResult {
@@ -829,5 +958,25 @@ mod grounded_contract_tests {
             8,
         )
         .is_err());
+    }
+
+    #[test]
+    fn progress_events_are_content_free_and_run_scoped() {
+        let progress = super::GenerationProgress {
+            run_id: "run-1".to_owned(),
+            stage: super::GenerationStage::VerifyingQuestions,
+            completed: 2,
+            total: Some(4),
+        };
+        let value = serde_json::to_value(progress).unwrap();
+        assert_eq!(
+            value,
+            json!({
+                "runId": "run-1",
+                "stage": "verifying_questions",
+                "completed": 2,
+                "total": 4
+            })
+        );
     }
 }

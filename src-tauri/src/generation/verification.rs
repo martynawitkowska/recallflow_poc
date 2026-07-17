@@ -20,11 +20,26 @@ pub(crate) struct VerificationOutcome {
     pub cancelled: bool,
 }
 
+#[cfg(test)]
 pub(crate) async fn verify_candidates<F, Fut>(
     candidates: Vec<ValidatedCandidate>,
     chunks: &[TranscriptChunk],
     cancellation: CancellationFlag,
     verify: F,
+) -> VerificationOutcome
+where
+    F: Fn(VerificationPrompt) -> Fut + Clone + Send + Sync + 'static,
+    Fut: Future<Output = Result<String, CandidateCallError>> + Send + 'static,
+{
+    verify_candidates_with_progress(candidates, chunks, cancellation, verify, None).await
+}
+
+pub(crate) async fn verify_candidates_with_progress<F, Fut>(
+    candidates: Vec<ValidatedCandidate>,
+    chunks: &[TranscriptChunk],
+    cancellation: CancellationFlag,
+    verify: F,
+    on_progress: Option<Arc<dyn Fn(usize, usize) + Send + Sync>>,
 ) -> VerificationOutcome
 where
     F: Fn(VerificationPrompt) -> Fut + Clone + Send + Sync + 'static,
@@ -103,9 +118,23 @@ where
     }
 
     let mut ordered = vec![BatchResult::Failed; batch_index];
-    while let Some(result) = tasks.join_next().await {
-        if let Ok((index, result)) = result {
-            ordered[index] = result;
+    let mut completed = 0;
+    while !tasks.is_empty() {
+        tokio::select! {
+            _ = cancellation.cancelled() => {
+                tasks.abort_all();
+                while tasks.join_next().await.is_some() {}
+                break;
+            }
+            result = tasks.join_next() => {
+                if let Some(Ok((index, result))) = result {
+                    ordered[index] = result;
+                    completed += 1;
+                    if let Some(callback) = &on_progress {
+                        callback(completed, batch_index);
+                    }
+                }
+            }
         }
     }
 
@@ -135,16 +164,23 @@ pub(crate) async fn verify_with_provider(
     model: Option<String>,
     api_key: String,
     cancellation: CancellationFlag,
+    on_progress: Option<Arc<dyn Fn(usize, usize) + Send + Sync>>,
 ) -> VerificationOutcome {
-    verify_candidates(candidates, chunks, cancellation, move |prompt| {
-        let model = model.clone();
-        let api_key = api_key.clone();
-        async move {
-            providers::verify_candidates(provider, model.as_deref(), &api_key, &prompt)
-                .await
-                .map_err(|message| classify_provider_error(&message))
-        }
-    })
+    verify_candidates_with_progress(
+        candidates,
+        chunks,
+        cancellation,
+        move |prompt| {
+            let model = model.clone();
+            let api_key = api_key.clone();
+            async move {
+                providers::verify_candidates(provider, model.as_deref(), &api_key, &prompt)
+                    .await
+                    .map_err(|message| classify_provider_error(&message))
+            }
+        },
+        on_progress,
+    )
     .await
 }
 

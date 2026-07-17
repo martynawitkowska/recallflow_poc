@@ -1,6 +1,9 @@
 import { useQuizGeneration } from "../hooks/useQuizGeneration";
 import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
 import {
+  countCharacters,
+  generationOutcomeMessage,
+  generationProgressLabel,
   MAX_MATERIAL_CHARS,
   MAX_QUESTION_COUNT,
   MAX_SOURCE_URL_CHARS,
@@ -20,6 +23,7 @@ export default function QuizGenerator({
 }: QuizGeneratorProps) {
   const generation = useQuizGeneration(onSaveQuiz, isOnline);
   const isLoading = generation.state.status === "loading";
+  const materialCharacters = countCharacters(generation.material);
 
   return (
     <section
@@ -65,14 +69,13 @@ export default function QuizGenerator({
             <textarea
               disabled={isLoading}
               id="study-material"
-              maxLength={MAX_MATERIAL_CHARS + 1}
               onChange={(event) => generation.setMaterial(event.target.value)}
               placeholder="Paste notes, a transcript, or article text…"
               rows={10}
               value={generation.material}
             />
             <p className="field-hint character-count">
-              {generation.material.length.toLocaleString()} /{" "}
+              {materialCharacters.toLocaleString()} /{" "}
               {MAX_MATERIAL_CHARS.toLocaleString()} characters
             </p>
           </>
@@ -154,17 +157,53 @@ export default function QuizGenerator({
 
       <div className="generation-status">
         {generation.state.status === "loading" && (
-          <p role="status">
-            {generation.sourceMode === "url"
-              ? "Reading the page and creating questions…"
-              : "Creating questions from your material…"}
-          </p>
+          <div className="generation-progress" role="status" aria-live="polite">
+            <p>{generationProgressLabel(generation.state.progress)}</p>
+            {generation.state.progress.total !== undefined && (
+              <progress
+                aria-label={generationProgressLabel(generation.state.progress)}
+                max={Math.max(generation.state.progress.total, 1)}
+                value={generation.state.progress.completed}
+              />
+            )}
+            <button
+              disabled={generation.state.cancelling}
+              onClick={() => void generation.cancel()}
+              type="button"
+            >
+              {generation.state.cancelling ? "Cancelling…" : "Cancel"}
+            </button>
+          </div>
         )}
         {generation.state.status === "error" && (
           <p role="alert">{generation.state.message}</p>
         )}
+        {generation.state.status === "quality-empty" && (
+          <p role="status">{generation.state.message}</p>
+        )}
+        {generation.state.status === "cancelled" && (
+          <p role="status">{generation.state.message}</p>
+        )}
         {generation.state.status === "success" && (
           <article className="generated-quiz">
+            {generation.state.completion === "quality_limited" && (
+              <p className="generation-quality-message" role="status">
+                {generationOutcomeMessage({
+                  quiz: generation.state.quiz,
+                  completion: generation.state.completion,
+                  quality: generation.state.quality,
+                })}
+              </p>
+            )}
+            {generation.state.completion === "incomplete_coverage" && (
+              <p className="generation-quality-message" role="status">
+                {generationOutcomeMessage({
+                  quiz: generation.state.quiz,
+                  completion: generation.state.completion,
+                  quality: generation.state.quality,
+                })}
+              </p>
+            )}
             <div className="generated-quiz-heading">
               <div>
                 <h3>{generation.state.quiz.title}</h3>
