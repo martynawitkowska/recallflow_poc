@@ -1,4 +1,5 @@
 use crate::{
+    commands::redact_secret_error,
     models::{AiProvider, ApiKeyStatus},
     state::SecretState,
     vault::{remove_file_if_exists, CURRENT_VAULT_FILE, LEGACY_VAULT_FILE},
@@ -9,6 +10,8 @@ const VAULT_RESET_ERROR: &str =
     "RecallFlow could not reset the encrypted API key vault. Close other app windows and try again.";
 const LEGACY_CLEANUP_ERROR: &str =
     "RecallFlow migrated the API key but could not remove the old vault. Restart the app and try again.";
+const API_KEY_SAVE_ERROR: &str =
+    "RecallFlow could not save the API key for this session. Check the key and try again.";
 
 #[tauri::command]
 pub fn get_ai_api_key_status(
@@ -24,7 +27,10 @@ pub fn save_ai_api_key(
     api_key: String,
     state: State<'_, SecretState>,
 ) -> Result<ApiKeyStatus, String> {
-    state.save(provider, api_key)
+    let secret = api_key.clone();
+    state
+        .save(provider, api_key)
+        .map_err(|error| redact_secret_error(error, &secret, API_KEY_SAVE_ERROR))
 }
 
 #[tauri::command]

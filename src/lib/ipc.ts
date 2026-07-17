@@ -5,12 +5,45 @@ const DESKTOP_REQUIRED_MESSAGE =
 const REQUEST_FAILED_MESSAGE =
   "RecallFlow could not complete the desktop request. Restart the app and try again.";
 
-export function getForwardedCommandError(error: unknown): string | null {
+const SENSITIVE_ARGUMENT_NAME = /(?:api.?key|password|secret|token)/i;
+
+export function getSensitiveArgumentValues(
+  value: unknown,
+  argumentName = "",
+): string[] {
+  if (typeof value === "string") {
+    return SENSITIVE_ARGUMENT_NAME.test(argumentName) && value.trim()
+      ? [value, value.trim()]
+      : [];
+  }
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  return Object.entries(value).flatMap(([name, nestedValue]) =>
+    getSensitiveArgumentValues(nestedValue, name),
+  );
+}
+
+export function getForwardedCommandError(
+  error: unknown,
+  sensitiveValues: readonly string[] = [],
+): string | null {
   if (typeof error !== "string") {
     return null;
   }
 
-  return error.trim() || null;
+  const commandError = error.trim();
+  if (
+    !commandError ||
+    sensitiveValues.some(
+      (value) => value.length > 0 && commandError.includes(value),
+    )
+  ) {
+    return null;
+  }
+
+  return commandError;
 }
 
 export async function invokeIpc<T>(
@@ -31,7 +64,7 @@ export async function invokeIpc<T>(
     return await invoke<T>(command, args);
   } catch (error) {
     const commandError = forwardCommandError
-      ? getForwardedCommandError(error)
+      ? getForwardedCommandError(error, getSensitiveArgumentValues(args))
       : null;
     if (commandError) {
       throw new Error(commandError);

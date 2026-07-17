@@ -34,9 +34,11 @@ The current generation forms use request-only API keys:
    view is closed or the application exits.
 
 The key is not written to WebView local storage, SQLite, or application logs.
-User-facing provider errors use bounded messages and do not include raw
-provider response bodies. A process debugger or another program with access
-to RecallFlow's memory could still observe a key while a request is active.
+Provider adapters discard raw HTTP bodies and library error details. Rust
+command and WebView IPC boundaries also reject any error containing a submitted
+credential and show a fixed safe fallback instead. A process debugger or
+another program with access to RecallFlow's memory could still observe a key
+while a request is active.
 
 ## Rust session secret state
 
@@ -140,6 +142,9 @@ Failure path:
    confirm the legacy vault remains available for another attempt.
 5. Confirm a current vault is removed only after an explicit reset and that
    the app remains usable with empty session key slots afterward.
+6. Inject a recognizable fake API key into a simulated command failure and
+   confirm neither the returned error nor the WebView-visible message contains
+   it.
 
 Automated Rust coverage:
 
@@ -150,6 +155,9 @@ Automated Rust coverage:
 - `cargo test --manifest-path src-tauri/Cargo.toml vault::tests` verifies that
   current and legacy passwords select their matching salt paths, salt creation
   is stable, and vault-file removal is idempotent.
+- `cargo test --manifest-path src-tauri/Cargo.toml commands::tests` injects a
+  recognizable fake API key and verifies the Rust command boundary replaces a
+  credential-bearing error while preserving safe actionable errors.
 
 Automated Stronghold contract coverage:
 
@@ -158,6 +166,9 @@ Automated Stronghold contract coverage:
   successful startup restoration, missing records, provider failure isolation,
   secret-free restoration reports, migration ordering, and preservation of an
   invalid legacy vault.
+- `npm run check:ipc` injects a recognizable fake API key into a nested IPC
+  request and verifies a credential-bearing command error cannot be forwarded
+  to the WebView.
 - `npm run build` verifies the Stronghold JavaScript and Tauri IPC contracts
   compile together.
 
