@@ -69,17 +69,17 @@ async fn mocked_pipeline_never_bypasses_evidence_or_verification() {
     let generated = orchestrate_candidate_generation(
         chunks.clone(),
         CancellationFlag::default(),
-        |prompt| async move {
+        |_| async move {
             Ok(json!({ "candidates": [
                 {
-                    "candidate_id": "supported", "chunk_id": prompt.chunk_id(), "topic": "Energy",
+                    "topic": "Energy",
                     "question_type": "single_choice", "question": "What does ATP transfer within cells?",
                     "answers": ["Usable chemical energy", "Genetic information"],
                     "correct_answers": ["Usable chemical energy"], "explanation": "ATP transfers energy.",
                     "evidence_quote": "ATP transfers usable chemical energy within cells."
                 },
                 {
-                    "candidate_id": "fabricated", "chunk_id": prompt.chunk_id(), "topic": "Energy",
+                    "topic": "Energy",
                     "question_type": "single_choice", "question": "Where is ATP made?",
                     "answers": ["The nucleus", "The membrane"], "correct_answers": ["The nucleus"],
                     "explanation": "Not in the fixture.", "evidence_quote": "ATP is made in the nucleus."
@@ -108,7 +108,7 @@ async fn mocked_pipeline_never_bypasses_evidence_or_verification() {
     );
     let verified = verify_candidates(validated, &chunks, CancellationFlag::default(), |_| async {
         Ok(json!({ "decisions": [{
-            "candidate_id": "supported", "supported": true, "standalone": true,
+            "candidate_id": "chunk-0001-candidate-1", "supported": true, "standalone": true,
             "portable": true, "qualifications_preserved": true, "not_overgeneralized": true,
             "choices_unambiguous": true, "reason": "accepted"
         }] })
