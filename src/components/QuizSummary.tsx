@@ -61,7 +61,10 @@ export default function QuizSummary({
           : `${incorrectCount} ${incorrectCount === 1 ? "answer needs" : "answers need"} another pass.`}
       </p>
 
-      <div className="quiz-attempt-save-status">
+      <div
+        aria-busy={saveState.status === "saving"}
+        className="quiz-attempt-save-status"
+      >
         {saveState.status === "saving" && (
           <p role="status">Saving this session locally…</p>
         )}

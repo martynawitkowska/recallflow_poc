@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
 import { useMnemonicSave } from "../hooks/useMnemonicSave";
+import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
 import {
   getMnemonicProviderOption,
   type MnemonicModel,
@@ -16,6 +17,7 @@ import {
 
 type QuizSessionProps = {
   focusMode: boolean;
+  isOnline: boolean;
   isRepair: boolean;
   mnemonicModel: MnemonicModel;
   mnemonicProvider: MnemonicProvider;
@@ -34,6 +36,7 @@ const questionTypeLabels = {
 
 export default function QuizSession({
   focusMode,
+  isOnline,
   isRepair,
   mnemonicModel,
   mnemonicProvider,
@@ -54,7 +57,7 @@ export default function QuizSession({
     Readonly<Record<string, string>>
   >({});
   const [mnemonicApiKey, setMnemonicApiKey] = useState("");
-  const mnemonicGeneration = useMnemonicGeneration();
+  const mnemonicGeneration = useMnemonicGeneration(isOnline);
   const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
@@ -288,6 +291,7 @@ export default function QuizSession({
               </section>
               {!isCorrect && (
                 <section
+                  aria-busy={mnemonicGeneration.state.status === "loading"}
                   className="mnemonic-generator"
                   aria-labelledby="mnemonic-generator-title"
                 >
@@ -304,6 +308,7 @@ export default function QuizSession({
                     <input
                       autoComplete="off"
                       disabled={
+                        !isOnline ||
                         mnemonicGeneration.state.status === "loading" ||
                         mnemonicSave.state.status === "saving"
                       }
@@ -319,6 +324,7 @@ export default function QuizSession({
                     <button
                       className="secondary-button"
                       disabled={
+                        !isOnline ||
                         mnemonicGeneration.state.status === "loading" ||
                         mnemonicSave.state.status === "saving" ||
                         mnemonicApiKeyMissing
@@ -336,8 +342,11 @@ export default function QuizSession({
                     </button>
                   </div>
                   <p className="field-hint" id="mnemonic-api-key-hint">
-                    {mnemonicApiKeyMissing &&
-                      `An API key for ${mnemonicProviderOption.label} is required. `}
+                    {!isOnline
+                      ? `${OFFLINE_AI_MESSAGE} `
+                      : mnemonicApiKeyMissing
+                        ? `An API key for ${mnemonicProviderOption.label} is required. `
+                        : ""}
                     The question and answer are sent to {mnemonicProviderOption.label} only after you press the button. The API key is not saved.
                   </p>
                   <div className="mnemonic-generation-status">

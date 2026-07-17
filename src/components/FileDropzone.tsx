@@ -32,6 +32,7 @@ export default function FileDropzone({ state, onFile }: FileDropzoneProps) {
 
   return (
     <div
+      aria-busy={state.status === "loading"}
       className={`drop-zone${dragging ? " dragging" : ""}${success ? " success" : ""}`}
       onDragEnter={(event) => {
         event.preventDefault();

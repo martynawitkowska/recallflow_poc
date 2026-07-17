@@ -4,6 +4,7 @@ import {
   DEFAULT_QUESTION_COUNT,
   type AiProvider,
 } from "../lib/quizGeneration";
+import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
 import type { QuizFile } from "../lib/quizSchema";
 
 export type QuizGenerationState =
@@ -24,6 +25,7 @@ export type QuizSourceMode = "material" | "url";
 
 export function useQuizGeneration(
   onSaveQuiz: (quiz: QuizFile) => Promise<void>,
+  isOnline: boolean,
 ) {
   const [sourceMode, setSourceMode] = useState<QuizSourceMode>("material");
   const [material, setMaterial] = useState("");
@@ -36,6 +38,11 @@ export function useQuizGeneration(
   const submit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+
+      if (!isOnline) {
+        setState({ status: "error", message: OFFLINE_AI_MESSAGE });
+        return;
+      }
 
       setState({ status: "loading" });
       try {
@@ -56,7 +63,7 @@ export function useQuizGeneration(
         });
       }
     },
-    [apiKey, material, provider, questionCount, sourceMode, sourceUrl],
+    [apiKey, isOnline, material, provider, questionCount, sourceMode, sourceUrl],
   );
 
   const save = useCallback(async () => {

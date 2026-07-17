@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
+import ConnectivityStatus from "./components/ConnectivityStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
@@ -11,6 +12,7 @@ import QuizSummary from "./components/QuizSummary";
 import QuizSession from "./components/QuizSession";
 import Settings from "./components/Settings";
 import { useAppInfo } from "./hooks/useAppInfo";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import {
   useQuizFileImport,
   type ValidatedQuizFile,
@@ -96,6 +98,7 @@ export default function App() {
   const [appPreferences, setAppPreferences] = useState(loadAppPreferences);
   const [aiSelection, setAiSelection] = useState(loadAiSelection);
   const { state, retry } = useAppInfo();
+  const isOnline = useOnlineStatus();
   const attemptSave = useQuizAttemptSave();
   const attempts = useQuizAttempts(activeView === "history");
   const library = useQuizLibrary();
@@ -191,6 +194,8 @@ export default function App() {
         </header>
       )}
 
+      <ConnectivityStatus isOnline={isOnline} />
+
       <main
         className="app-content"
         id="main-content"
@@ -219,6 +224,7 @@ export default function App() {
         {activeView === "quiz" && activeQuiz && (
           <QuizSession
             focusMode={focusMode}
+            isOnline={isOnline}
             isRepair={repairMode}
             onExit={() => navigate("library")}
             onFinish={(result) => {
@@ -303,7 +309,10 @@ export default function App() {
               state={quizFileImport.state}
             />
             <div className="import-divider"><span>or</span></div>
-            <QuizGenerator onSaveQuiz={library.addGeneratedQuiz} />
+            <QuizGenerator
+              isOnline={isOnline}
+              onSaveQuiz={library.addGeneratedQuiz}
+            />
             <ExternalQuizReference />
           </section>
         )}
