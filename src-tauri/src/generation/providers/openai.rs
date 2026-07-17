@@ -342,12 +342,18 @@ mod tests {
 
     #[test]
     fn provider_failures_are_actionable_and_response_size_is_limited() {
-        assert!(status_error(reqwest::StatusCode::UNAUTHORIZED, QUIZ_FAILURES).contains("API key"));
-        assert!(status_error(reqwest::StatusCode::NOT_FOUND, QUIZ_FAILURES).contains("model"));
-        assert!(
-            status_error(reqwest::StatusCode::INTERNAL_SERVER_ERROR, QUIZ_FAILURES)
-                .contains("temporarily unavailable")
-        );
+        for (status, expected) in [
+            (reqwest::StatusCode::FORBIDDEN, "API key"),
+            (reqwest::StatusCode::TOO_MANY_REQUESTS, "rate limiting"),
+            (reqwest::StatusCode::BAD_REQUEST, "process this request"),
+            (reqwest::StatusCode::NOT_FOUND, "model"),
+            (reqwest::StatusCode::REQUEST_TIMEOUT, "too long"),
+            (reqwest::StatusCode::BAD_GATEWAY, "temporarily unavailable"),
+            (reqwest::StatusCode::IM_A_TEAPOT, "could not generate"),
+        ] {
+            let error = status_error(status, QUIZ_FAILURES);
+            assert!(error.contains(expected), "status={status}, error={error:?}");
+        }
 
         let oversized_body = vec![b' '; MAX_RESPONSE_BYTES + 1];
         assert!(parse_response(&oversized_body, QUIZ_FAILURES)
@@ -357,8 +363,36 @@ mod tests {
     }
 
     #[test]
+    fn malformed_and_empty_responses_fail_without_exposing_raw_content() {
+        let secret = "sk-REFL71-NEVER-EXPOSE";
+        let malformed = parse_response(
+            format!("{{\"api_key\":\"{secret}\"").as_bytes(),
+            QUIZ_FAILURES,
+        )
+        .err()
+        .expect("malformed JSON should fail safely");
+        let empty: OpenAiResponse = serde_json::from_value(json!({
+            "status": "completed",
+            "output": [{
+                "content": [
+                    { "type": "output_text", "text": "   " },
+                    { "type": "unknown", "text": secret }
+                ]
+            }]
+        }))
+        .unwrap();
+
+        assert_eq!(malformed, QUIZ_FAILURES.generation);
+        assert!(!malformed.contains(secret));
+        assert_eq!(
+            extract_generated_text(empty, QUIZ_FAILURES).unwrap_err(),
+            QUIZ_FAILURES.empty
+        );
+    }
+
+    #[test]
     fn completed_response_returns_structured_output_text() {
-        let response: OpenAiResponse = serde_json::from_value(json!({
+        let body = json!({
             "status": "completed",
             "output": [
                 { "type": "web_search_call", "status": "completed" },
@@ -370,8 +404,10 @@ mod tests {
                     }]
                 }
             ]
-        }))
-        .expect("Responses API envelope should deserialize");
+        })
+        .to_string();
+        let response = parse_response(body.as_bytes(), QUIZ_FAILURES)
+            .expect("Responses API envelope should deserialize");
 
         assert_eq!(
             extract_generated_text(response, QUIZ_FAILURES)
