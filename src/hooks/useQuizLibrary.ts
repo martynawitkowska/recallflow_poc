@@ -8,6 +8,11 @@ import {
   type LibraryQuiz,
 } from "../lib/quizLibrary";
 import type { QuizFile } from "../lib/quizSchema";
+import {
+  validateOptionalLectureTitle,
+  validateOptionalVideoUrl,
+} from "../lib/quizGeneration";
+import { validateQuiz } from "../lib/validateQuiz";
 import type { ValidatedQuizFile } from "./useQuizFileImport";
 
 export type QuizLibraryState =
@@ -114,6 +119,51 @@ export function useQuizLibrary() {
     [state],
   );
 
+  const updateMetadata = useCallback(
+    async (quizId: string, title: string, videoUrl: string) => {
+      if (state.status !== "success") {
+        throw new Error("The local quiz library is not available. Try again.");
+      }
+      const savedQuiz = state.quizzes.find((quiz) => quiz.id === quizId);
+      if (!savedQuiz) {
+        throw new Error("This quiz is no longer in the local library.");
+      }
+      const normalizedTitle = title.trim();
+      if (!normalizedTitle) {
+        throw new Error("Enter a quiz title.");
+      }
+      const titleError = validateOptionalLectureTitle(normalizedTitle);
+      if (titleError) throw new Error(titleError);
+      const videoUrlError = validateOptionalVideoUrl(videoUrl);
+      if (videoUrlError) throw new Error(videoUrlError);
+
+      const validation = validateQuiz({
+        ...savedQuiz.quiz,
+        title: normalizedTitle,
+        videoUrl: videoUrl.trim() || undefined,
+      });
+      if (!validation.valid) throw new Error(validation.message);
+      const json = JSON.stringify(validation.quiz);
+      const updatedQuiz = {
+        ...savedQuiz,
+        size: new TextEncoder().encode(json).length,
+        quiz: validation.quiz,
+      };
+      await saveImportedQuiz(updatedQuiz);
+      setState((current) =>
+        current.status === "success"
+          ? {
+              status: "success",
+              quizzes: current.quizzes.map((quiz) =>
+                quiz.id === quizId ? updatedQuiz : quiz,
+              ),
+            }
+          : current,
+      );
+    },
+    [state],
+  );
+
   const removeQuiz = useCallback(async (quizId: string) => {
     ++requestId.current;
     await deleteImportedQuiz(quizId);
@@ -137,6 +187,7 @@ export function useQuizLibrary() {
     addQuiz,
     addGeneratedQuiz,
     saveMnemonic,
+    updateMetadata,
     removeQuiz,
     clearQuizzes,
     retry: loadQuizzes,

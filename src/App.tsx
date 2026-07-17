@@ -213,6 +213,7 @@ export default function App() {
               onRetry={library.retry}
               onRetryStatistics={attempts.retry}
               onStartQuiz={startQuiz}
+              onUpdateMetadata={library.updateMetadata}
               state={library.state}
             />
             <div className="desktop-status">
