@@ -19,9 +19,9 @@ same as encryption: someone who can read the operating-system account's
 RecallFlow application files can read these preferences and the SQLite
 database.
 
-## API-key lifecycle
+## API-key lifecycle in the generation UI
 
-API keys are request-only in the current implementation:
+The current generation forms use request-only API keys:
 
 1. The user enters a key into a password input.
 2. React holds the value in memory and passes it through Tauri IPC as part of a
@@ -37,10 +37,28 @@ User-facing provider errors use bounded messages and do not include raw
 provider response bodies. A process debugger or another program with access
 to RecallFlow's memory could still observe a key while a request is active.
 
-Persistent API-key storage is intentionally outside the current behavior.
-REFL-63 owns session-only Rust secret state, REFL-64 owns Stronghold
-persistence, and REFL-65 through REFL-67 own restoration, recovery, and
+## Rust session secret state
+
+The backend provides one in-memory key slot for OpenAI, Gemini, and Claude.
+This managed state is created when the desktop application starts and is
+dropped when it exits. It never reads from or writes to local storage, SQLite,
+or Stronghold.
+
+Tauri commands can save, inspect, and remove each provider's session key. Save
+rejects keys shorter than 20 characters or containing whitespace. Status
+returns only whether a key is configured and a masked four-character suffix;
+the full key is never returned to the WebView. Removing one provider's key
+does not affect the others.
+
+The current generation forms still submit request-only keys directly. Wiring
+saved provider keys into the UI and generation path belongs to related work.
+Stronghold persistence is intentionally outside REFL-63; REFL-64 owns that
+behavior, and REFL-65 through REFL-67 own restoration, recovery, and
 redaction hardening.
+
+Session-only does not mean inaccessible: a process debugger or another
+program with access to RecallFlow's memory could observe a key while the app
+is running.
 
 ## Network disclosure
 
@@ -73,5 +91,11 @@ Failure path:
 2. Restart RecallFlow and confirm the failed key was not restored.
 3. Inspect the two local-storage preference records and SQLite schema and
    confirm neither contains an API-key field.
+
+Automated Rust coverage:
+
+- `cargo test --manifest-path src-tauri/Cargo.toml state::tests` verifies empty
+  startup state, provider isolation, masked status, targeted removal, and
+  invalid key/provider rejection.
 
 Run `npm run check` for the complete frontend and Rust validation workflow.
