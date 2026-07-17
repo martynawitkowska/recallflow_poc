@@ -1,0 +1,61 @@
+{
+  "license": "CC0-1.0 synthetic fixtures created for RecallFlow",
+  "fixtures": [
+    {
+      "id": "definitions-mechanisms-comparisons",
+      "covers": ["direct_definition", "multi_sentence_mechanism", "explicit_comparison"],
+      "transcript": "ATP is a molecule that transfers usable chemical energy within cells. During oxidative phosphorylation, electrons move through a membrane protein chain. That movement pumps protons, and the returning proton flow powers ATP synthase. Diffusion moves particles down a concentration gradient, whereas active transport uses energy to move them against a gradient.",
+      "expectedAcceptedConcepts": ["ATP transfers usable chemical energy", "proton flow powers ATP synthase", "diffusion and active transport differ in direction and energy use"],
+      "expectedRejectionCategories": []
+    },
+    {
+      "id": "qualifications-and-generalization",
+      "covers": ["qualified_claim", "general_principle_with_example", "example_without_principle", "evidence_not_entail_answer", "overgeneralization"],
+      "transcript": "In this six-week greenhouse study of young bean plants under low nitrogen, the treated group grew about ten percent taller on average. The observation does not establish the same effect in mature plants or field conditions. Enzymes generally lower activation energy; catalase breaking down hydrogen peroxide is one example. Yesterday one seedling leaned toward a window.",
+      "expectedAcceptedConcepts": ["the bean result is limited to the stated population, condition, and period", "enzymes lower activation energy"],
+      "expectedRejectionCategories": ["lost_qualification", "unsupported_answer", "overgeneralized", "anecdote_without_principle"]
+    },
+    {
+      "id": "lecture-events-and-context",
+      "covers": ["classroom_logistics", "jokes", "speaker_comments", "audience_question", "personal_anecdote", "slide_order", "earlier_reference", "unresolved_pronoun"],
+      "transcript": "[00:01:00] The quiz is due Friday. I always joke that mitochondria need tiny batteries. As discussed earlier, this proves it. On the next slide, Dr. Rivera says she once forgot her notes. A student asks whether the room will stay open after class. It becomes larger when this happens.",
+      "expectedAcceptedConcepts": [],
+      "expectedRejectionCategories": ["classroom_logistics", "joke", "speaker_comment", "audience_question", "personal_anecdote", "slide_reference", "lecture_order_reference", "unresolved_reference", "quality_empty"]
+    },
+    {
+      "id": "answer-ambiguity",
+      "covers": ["ambiguous_distractors"],
+      "transcript": "Both liquid water and water vapor contain H2O molecules. Ice also consists of H2O molecules arranged in a crystal lattice.",
+      "expectedAcceptedConcepts": ["ice has a crystal lattice"],
+      "expectedRejectionCategories": ["multiple_defensible_answers"]
+    },
+    {
+      "id": "duplicates-and-coverage",
+      "covers": ["adjacent_overlap_duplicate", "distant_semantic_duplicate", "distributed_topics"],
+      "transcript": "# Beginning: Photosynthesis stores light energy in chemical bonds.\n\nPhotosynthesis stores light energy in chemical bonds.\n\n# Middle: Plate boundaries can be divergent, convergent, or transform.\n\n# End: Chemical energy is stored from light during photosynthesis.",
+      "expectedAcceptedConcepts": ["photosynthesis stores light energy", "three plate-boundary categories"],
+      "expectedRejectionCategories": ["exact_duplicate", "semantic_duplicate"]
+    },
+    {
+      "id": "unicode-and-boundaries",
+      "covers": ["unicode", "timestamps", "crlf", "long_paragraph"],
+      "transcript": "[12:34]\r\nZażółć gęślą jaźń is a Polish pangram. 🧠 is an emoji represented safely in Unicode. 日本語 uses a non-Latin script. é can contain a combining mark. This paragraph intentionally continues with repeated neutral words to model a long boundary without changing the stated facts.",
+      "expectedAcceptedConcepts": ["the text contains multiple Unicode forms and scripts"],
+      "expectedRejectionCategories": []
+    },
+    {
+      "id": "operational-partial-failure",
+      "covers": ["partial_chunk_failure", "verifier_failure"],
+      "transcript": "# Region one: A polygon is a closed plane figure made from straight segments.\n\n# Region two: A provider failure is injected for this synthetic region.\n\n# Region three: A verifier failure is injected for this synthetic region.",
+      "expectedAcceptedConcepts": ["polygon definition from the successful region"],
+      "expectedRejectionCategories": ["chunk_operational_failure", "verification_operational_failure", "incomplete_coverage"]
+    },
+    {
+      "id": "no-durable-knowledge",
+      "covers": ["quality_empty"],
+      "transcript": "Welcome back. Please move your bags away from the aisle. That joke worked better yesterday. We will take a break soon.",
+      "expectedAcceptedConcepts": [],
+      "expectedRejectionCategories": ["classroom_logistics", "joke", "quality_empty"]
+    }
+  ]
+}

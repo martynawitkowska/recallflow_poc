@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod evaluation;
 mod evidence;
 mod orchestration;
 mod providers;

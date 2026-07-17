@@ -139,6 +139,10 @@ export default function QuizGenerator({
           Uses the OpenAI API key saved in Settings. Your source is sent to
           OpenAI only after you press Generate.
         </p>
+        <p className="field-hint">
+          RecallFlow may return fewer questions than requested when fewer
+          candidates pass grounding and quality checks.
+        </p>
 
         {!isOnline && (
           <p className="offline-hint" role="status">
