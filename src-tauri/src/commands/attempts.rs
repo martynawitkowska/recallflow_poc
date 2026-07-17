@@ -99,7 +99,8 @@ pub async fn save_quiz_attempt_to_pool(
         .iter()
         .map(|question| question.id.as_str())
         .collect();
-    if attempt.total as usize != quiz.questions.len() || !incorrect_ids.is_subset(&question_ids) {
+    // Repair attempts can cover a non-empty subset of the saved quiz.
+    if attempt.total as usize > quiz.questions.len() || !incorrect_ids.is_subset(&question_ids) {
         return Err(INVALID_ATTEMPT_ERROR.to_owned());
     }
 
