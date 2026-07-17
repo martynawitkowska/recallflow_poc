@@ -49,14 +49,20 @@ export default function QuizSummary({
           <dd>{result.score} / {result.total}</dd>
         </div>
         <div>
+          <dt>Needs review</dt>
+          <dd>{incorrectCount}</dd>
+        </div>
+        <div>
           <dt>Score</dt>
           <dd>{percentage}%</dd>
         </div>
       </dl>
       <p className="quiz-summary-message">
-        {incorrectCount === 0
-          ? "Perfect recall. Every answer was correct."
-          : `${incorrectCount} ${incorrectCount === 1 ? "answer needs" : "answers need"} another pass.`}
+        {result.total === 0
+          ? "No answer results were recorded for this session."
+          : incorrectCount === 0
+            ? "Perfect recall. Every answer was correct."
+            : `${incorrectCount} ${incorrectCount === 1 ? "answer needs" : "answers need"} another pass.`}
       </p>
 
       <div
