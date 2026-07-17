@@ -39,6 +39,7 @@ export default function QuizLibrary({
   const [managementFeedback, setManagementFeedback] =
     useState<ManagementFeedback | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const [confirmingQuizId, setConfirmingQuizId] = useState<string | null>(null);
   const [statisticsQuiz, setStatisticsQuiz] = useState<LibraryQuiz | null>(null);
 
@@ -59,12 +60,9 @@ export default function QuizLibrary({
     }
   };
 
-  const clearLibrary = async (quizCount: number) => {
-    if (!window.confirm(`Remove all ${quizCount} quizzes from your local library?`)) {
-      return;
-    }
-
+  const clearLibrary = async () => {
     setPendingAction("clear");
+    setConfirmingClear(false);
     setManagementFeedback(null);
     try {
       await onClearQuizzes();
@@ -147,15 +145,36 @@ export default function QuizLibrary({
           locally
         </p>
         <div className="library-heading-actions">
-          <button
-            className="danger-button"
-            disabled={pendingAction !== null}
-            onClick={() => void clearLibrary(quizzes.length)}
-            type="button"
-          >
-            <Icon name="trash" size={16} />
-            {pendingAction === "clear" ? "Clearing…" : "Clear library"}
-          </button>
+          {confirmingClear ? (
+            <>
+              <button
+                className="secondary-button"
+                disabled={pendingAction !== null}
+                onClick={() => setConfirmingClear(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="danger-button"
+                disabled={pendingAction !== null}
+                onClick={() => void clearLibrary()}
+                type="button"
+              >
+                Confirm clear
+              </button>
+            </>
+          ) : (
+            <button
+              className="danger-button"
+              disabled={pendingAction !== null}
+              onClick={() => setConfirmingClear(true)}
+              type="button"
+            >
+              <Icon name="trash" size={16} />
+              {pendingAction === "clear" ? "Clearing…" : "Clear library"}
+            </button>
+          )}
           <button className="primary-button" onClick={onAddQuiz} type="button">
             <Icon name="upload" size={16} />
             Add quiz
