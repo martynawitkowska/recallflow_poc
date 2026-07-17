@@ -8,6 +8,7 @@ const questions: QuizQuestion[] = [
     question: "Choose A.",
     answers: ["A", "B"],
     correctAnswers: ["A"],
+    explanation: "A is the requested answer.",
   },
   {
     id: "multiple",
@@ -37,6 +38,13 @@ if (result.score !== 2 || result.total !== 3) {
 
 if (result.details[2].correct || result.details[2].selectedAnswers.length !== 0) {
   throw new Error("Expected unanswered questions to remain incorrect and empty.");
+}
+
+if (
+  result.details[0].question !== "Choose A." ||
+  result.details[0].explanation !== "A is the requested answer."
+) {
+  throw new Error("Expected result details to preserve question context for review.");
 }
 
 selectedAnswers.push("C");
