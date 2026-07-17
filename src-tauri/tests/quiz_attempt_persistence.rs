@@ -3,10 +3,11 @@ use recallflow_lib::{
         attempts::{list_quiz_attempts_from_pool, save_quiz_attempt_to_pool},
         library::{delete_imported_quiz_from_pool, save_imported_quiz_to_pool},
     },
-    database::initialize_schema,
+    database::{connect, initialize_schema},
     models::{ImportedQuiz, QuestionType, QuizAttempt, QuizFile, QuizQuestion},
 };
 use sqlx::sqlite::SqlitePoolOptions;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn sample_quiz() -> ImportedQuiz {
     ImportedQuiz {
@@ -37,6 +38,50 @@ fn sample_quiz() -> ImportedQuiz {
             ],
         },
     }
+}
+
+#[test]
+fn attempts_survive_database_reopen() {
+    tauri::async_runtime::block_on(async {
+        let database_path = std::env::temp_dir().join(format!(
+            "recallflow-attempts-{}-{}.sqlite3",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system clock should follow the Unix epoch")
+                .as_nanos()
+        ));
+        let quiz = sample_quiz();
+        let attempt = QuizAttempt {
+            id: "attempt-durable".to_owned(),
+            quiz_id: quiz.id.clone(),
+            completed_at: "2026-07-17T11:00:00.000Z".to_owned(),
+            score: 1,
+            total: 2,
+            incorrect_question_ids: vec!["q2".to_owned()],
+        };
+
+        let pool = connect(&database_path)
+            .await
+            .expect("file database should open");
+        save_imported_quiz_to_pool(&pool, &quiz)
+            .await
+            .expect("quiz should save");
+        save_quiz_attempt_to_pool(&pool, &attempt)
+            .await
+            .expect("attempt should save");
+        pool.close().await;
+
+        let reopened = connect(&database_path)
+            .await
+            .expect("file database should reopen");
+        assert_eq!(
+            list_quiz_attempts_from_pool(&reopened).await.unwrap(),
+            vec![attempt]
+        );
+        reopened.close().await;
+        std::fs::remove_file(database_path).expect("temporary database should delete");
+    });
 }
 
 #[test]
