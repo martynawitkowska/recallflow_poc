@@ -58,3 +58,15 @@ pub(super) async fn verify_candidates(
         _ => Err("The selected quiz provider is not available yet.".to_owned()),
     }
 }
+
+pub(super) async fn find_duplicates(
+    provider: AiProvider,
+    model: Option<&str>,
+    api_key: &str,
+    prompt: &super::DuplicatePrompt,
+) -> Result<String, String> {
+    match provider {
+        AiProvider::Openai => openai::find_duplicates(api_key, model, prompt).await,
+        _ => Err("The selected quiz provider is not available yet.".to_owned()),
+    }
+}
