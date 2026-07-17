@@ -1,4 +1,4 @@
-import { answersMatch } from "./quizAnswers.ts";
+import { answersMatch, shuffleAnswers } from "./quizAnswers.ts";
 
 function expectMatch(
   selectedAnswers: string[],
@@ -16,3 +16,14 @@ expectMatch(["A"], ["A", "B"], false);
 expectMatch(["A", "C"], ["A", "B"], false);
 expectMatch(["A", "A"], ["A", "A"], false);
 expectMatch(["A", "B"], ["A", "A"], false);
+
+const answers = ["A", "B", "C"];
+const shuffled = shuffleAnswers(answers, () => 0);
+
+if (shuffled.join(",") !== "B,C,A") {
+  throw new Error("Answer shuffling returned an unexpected order.");
+}
+
+if (answers.join(",") !== "A,B,C") {
+  throw new Error("Answer shuffling mutated the source answers.");
+}

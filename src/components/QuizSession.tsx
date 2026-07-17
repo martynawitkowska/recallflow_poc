@@ -7,7 +7,7 @@ import {
   type MnemonicModel,
   type MnemonicProvider,
 } from "../lib/mnemonicProviders";
-import { answersMatch } from "../lib/quizAnswers";
+import { answersMatch, shuffleAnswers } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import {
   calculateQuizResult,
@@ -53,6 +53,9 @@ export default function QuizSession({
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
   const [checkedAnswers, setCheckedAnswers] = useState<QuizAnswerState>({});
+  const [answerOrders] = useState(() =>
+    file.quiz.questions.map((question) => shuffleAnswers(question.answers)),
+  );
   const [generatedMnemonics, setGeneratedMnemonics] = useState<
     Readonly<Record<string, string>>
   >({});
@@ -60,6 +63,7 @@ export default function QuizSession({
   const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
+  const displayedAnswers = answerOrders[currentIndex] ?? question.answers;
   const mnemonicProviderOption = getMnemonicProviderOption(mnemonicProvider);
   const generatedMnemonic =
     mnemonicGeneration.state.status === "success"
@@ -218,7 +222,7 @@ export default function QuizSession({
               ? "Choose every answer that applies"
               : "Choose one answer"}
           </legend>
-          {question.answers.map((answer) => {
+          {displayedAnswers.map((answer) => {
             const selected = selectedAnswers.includes(answer);
             const correct = question.correctAnswers.includes(answer);
             const state = answerChecked
