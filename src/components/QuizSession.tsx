@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
 import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import {
@@ -48,6 +49,8 @@ export default function QuizSession({
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
   const [checkedAnswers, setCheckedAnswers] = useState<QuizAnswerState>({});
+  const [mnemonicApiKey, setMnemonicApiKey] = useState("");
+  const mnemonicGeneration = useMnemonicGeneration();
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
   const isLastQuestion = currentIndex === totalQuestions - 1;
@@ -100,6 +103,19 @@ export default function QuizSession({
     }
   };
 
+  const generateMnemonic = async () => {
+    const generated = await mnemonicGeneration.generate({
+      question: question.question,
+      correctAnswers: question.correctAnswers,
+      explanation: question.explanation,
+      provider: "openai",
+      apiKey: mnemonicApiKey,
+    });
+    if (generated) {
+      setMnemonicApiKey("");
+    }
+  };
+
   const showNextQuestion = () => {
     if (!answerChecked || isLastQuestion) {
       return;
@@ -107,6 +123,8 @@ export default function QuizSession({
 
     setSelectedAnswers([]);
     setAnswerChecked(false);
+    setMnemonicApiKey("");
+    mnemonicGeneration.reset();
     setCurrentIndex((current) =>
       Math.min(current + 1, totalQuestions - 1),
     );
@@ -244,6 +262,64 @@ export default function QuizSession({
                     "No explanation was provided for this question."}
                 </p>
               </section>
+              {!isCorrect && (
+                <section
+                  className="mnemonic-generator"
+                  aria-labelledby="mnemonic-generator-title"
+                >
+                  <h3 id="mnemonic-generator-title">Need a memory hook?</h3>
+                  <p>
+                    Ask OpenAI for a short mnemonic tied to this question and
+                    its correct answer.
+                  </p>
+                  <label htmlFor="mnemonic-api-key">OpenAI API key</label>
+                  <div className="mnemonic-generator-controls">
+                    <input
+                      autoComplete="off"
+                      disabled={mnemonicGeneration.state.status === "loading"}
+                      id="mnemonic-api-key"
+                      onChange={(event) => setMnemonicApiKey(event.target.value)}
+                      placeholder="sk-…"
+                      spellCheck={false}
+                      type="password"
+                      value={mnemonicApiKey}
+                    />
+                    <button
+                      className="secondary-button"
+                      disabled={
+                        mnemonicGeneration.state.status === "loading" ||
+                        !mnemonicApiKey.trim()
+                      }
+                      onClick={() => void generateMnemonic()}
+                      type="button"
+                    >
+                      {mnemonicGeneration.state.status === "loading"
+                        ? "Generating…"
+                        : mnemonicGeneration.state.status === "success"
+                          ? "Regenerate"
+                          : "Create mnemonic"}
+                    </button>
+                  </div>
+                  <p className="field-hint">
+                    The question and answer are sent only after you press the
+                    button. The API key is not saved.
+                  </p>
+                  <div className="mnemonic-generation-status" aria-live="polite">
+                    {mnemonicGeneration.state.status === "loading" && (
+                      <p role="status">Creating a memory hook…</p>
+                    )}
+                    {mnemonicGeneration.state.status === "error" && (
+                      <p role="alert">{mnemonicGeneration.state.message}</p>
+                    )}
+                    {mnemonicGeneration.state.status === "success" && (
+                      <div>
+                        <strong>Mnemonic</strong>
+                        <p>{mnemonicGeneration.state.mnemonic}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
               <div className="quiz-question-navigation">
                 {isLastQuestion ? (
                   <button
