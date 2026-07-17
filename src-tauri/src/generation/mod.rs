@@ -1,4 +1,5 @@
 mod providers;
+mod segmentation;
 
 use crate::models::{
     AiProvider, GenerateMnemonicRequest, GenerateQuizRequest, QuestionType, QuizFile,
@@ -8,7 +9,7 @@ use std::collections::HashSet;
 
 const MIN_QUESTION_COUNT: i64 = 3;
 const MAX_QUESTION_COUNT: i64 = 25;
-const MAX_MATERIAL_CHARS: usize = 14_000;
+pub const MAX_MATERIAL_CHARS: usize = 500_000;
 const MAX_SOURCE_URL_CHARS: usize = 2_048;
 const INVALID_QUIZ_ERROR: &str =
     "The AI provider returned an invalid quiz. Try again with a clearer source.";
