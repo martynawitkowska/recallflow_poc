@@ -5,6 +5,7 @@ import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
 import QuizGenerator from "./components/QuizGenerator";
+import QuizHistory from "./components/QuizHistory";
 import QuizLibrary from "./components/QuizLibrary";
 import QuizSummary from "./components/QuizSummary";
 import QuizSession, {
@@ -18,6 +19,7 @@ import {
 } from "./hooks/useQuizFileImport";
 import { useQuizLibrary } from "./hooks/useQuizLibrary";
 import { useQuizAttemptSave } from "./hooks/useQuizAttemptSave";
+import { useQuizAttempts } from "./hooks/useQuizAttempts";
 import type { LibraryQuiz } from "./lib/quizLibrary";
 import type { QuizResult } from "./lib/quizResults";
 
@@ -43,6 +45,7 @@ export default function App() {
   const [readingFont, setReadingFont] = useState(loadReadingFont);
   const { state, retry } = useAppInfo();
   const attemptSave = useQuizAttemptSave();
+  const attempts = useQuizAttempts(activeView === "history");
   const library = useQuizLibrary();
   const navigate = useCallback((view: ViewKey) => {
     setFocusMode(false);
@@ -125,6 +128,16 @@ export default function App() {
             onReadingFontChange={setReadingFont}
             quiz={activeQuiz}
             readingFont={readingFont}
+          />
+        )}
+
+        {activeView === "history" && (
+          <QuizHistory
+            onRetry={attempts.retry}
+            quizzes={
+              library.state.status === "success" ? library.state.quizzes : []
+            }
+            state={attempts.state}
           />
         )}
 
