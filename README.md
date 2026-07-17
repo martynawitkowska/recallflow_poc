@@ -32,6 +32,11 @@ validation and domain-logic checks, Rust formatting check, `cargo check`, and
 the Rust test suite. Individual frontend checks are available as
 `npm run check:<area>` scripts in `package.json`.
 
+Rust tests use Cargo's built-in harness. Private implementation boundaries use
+colocated unit tests, while public serialization and cross-module behavior live
+in `src-tauri/tests/`. The suite uses deterministic local inputs and does not
+contact AI providers.
+
 ## Application preferences
 
 Open **Settings** to choose the application font and whether new quizzes start
