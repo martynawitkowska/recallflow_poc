@@ -170,7 +170,7 @@ pub(crate) async fn generate_candidates_for_chunks(
     .await
 }
 
-fn classify_provider_error(message: &str) -> CandidateCallError {
+pub(crate) fn classify_provider_error(message: &str) -> CandidateCallError {
     if message.contains("declined") {
         CandidateCallError::Refusal
     } else if [

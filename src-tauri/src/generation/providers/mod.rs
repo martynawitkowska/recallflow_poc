@@ -46,3 +46,15 @@ pub(super) async fn generate_candidates(
         _ => Err("The selected quiz provider is not available yet.".to_owned()),
     }
 }
+
+pub(super) async fn verify_candidates(
+    provider: AiProvider,
+    model: Option<&str>,
+    api_key: &str,
+    prompt: &super::VerificationPrompt,
+) -> Result<String, String> {
+    match provider {
+        AiProvider::Openai => openai::verify_candidates(api_key, model, prompt).await,
+        _ => Err("The selected quiz provider is not available yet.".to_owned()),
+    }
+}

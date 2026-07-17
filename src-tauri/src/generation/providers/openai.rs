@@ -346,6 +346,20 @@ pub(super) async fn generate_candidates(
     .await
 }
 
+pub(super) async fn verify_candidates(
+    api_key: &str,
+    model: Option<&str>,
+    prompt: &VerificationPrompt,
+) -> Result<String, String> {
+    let model = validate_model(model)?;
+    send(
+        api_key,
+        build_verification_payload(model, prompt),
+        QUIZ_FAILURES,
+    )
+    .await
+}
+
 pub(super) async fn generate_mnemonic(
     api_key: &str,
     model: Option<&str>,
