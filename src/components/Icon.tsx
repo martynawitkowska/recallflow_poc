@@ -4,7 +4,6 @@ export type IconName =
   | "book"
   | "check"
   | "key"
-  | "logo"
   | "trash"
   | "upload";
 
@@ -25,12 +24,6 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <circle cx="8.5" cy="15.5" r="4.5" />
       <path d="m12 12 8-8M16 8l2 2M14 10l2 2" />
-    </>
-  ),
-  logo: (
-    <>
-      <path d="M5 4h6v16H7a3 3 0 0 0-3 3V5a1 1 0 0 1 1-1Z" />
-      <path d="M19 4h-6v16h4a3 3 0 0 1 3 3V5a1 1 0 0 0-1-1Z" />
     </>
   ),
   trash: (
