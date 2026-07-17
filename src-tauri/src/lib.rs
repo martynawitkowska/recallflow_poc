@@ -24,6 +24,12 @@ pub fn run() {
                 .map_err(|_| std::io::Error::other("RecallFlow could not locate local storage."))?;
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|_| std::io::Error::other("RecallFlow could not create local storage."))?;
+            app.handle().plugin(
+                tauri_plugin_stronghold::Builder::with_argon2(
+                    &app_data_dir.join("stronghold-salt-v1.txt"),
+                )
+                .build(),
+            )?;
             let pool = tauri::async_runtime::block_on(database::connect(
                 &app_data_dir.join("recallflow.sqlite3"),
             ))
