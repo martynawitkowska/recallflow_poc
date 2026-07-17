@@ -95,6 +95,14 @@ impl SecretState {
             .set(provider, None)?;
         self.status(provider)
     }
+
+    pub fn clear(&self) -> Result<(), String> {
+        *self
+            .api_keys
+            .write()
+            .map_err(|_| SECRET_STATE_ERROR.to_owned())? = ApiKeys::default();
+        Ok(())
+    }
 }
 
 fn mask_api_key(api_key: &str) -> String {
@@ -184,5 +192,21 @@ mod tests {
             state.status(AiProvider::Unsupported).unwrap_err(),
             INVALID_PROVIDER_ERROR
         );
+    }
+
+    #[test]
+    fn clear_removes_every_provider_key() {
+        let state = SecretState::default();
+        for provider in [AiProvider::Openai, AiProvider::Gemini, AiProvider::Claude] {
+            state
+                .save(provider, "provider-session-key-1234".to_owned())
+                .unwrap();
+        }
+
+        state.clear().unwrap();
+
+        for provider in [AiProvider::Openai, AiProvider::Gemini, AiProvider::Claude] {
+            assert!(!state.status(provider).unwrap().configured);
+        }
     }
 }

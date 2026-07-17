@@ -1,8 +1,14 @@
 use crate::{
     models::{AiProvider, ApiKeyStatus},
     state::SecretState,
+    vault::{remove_file_if_exists, CURRENT_VAULT_FILE, LEGACY_VAULT_FILE},
 };
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
+
+const VAULT_RESET_ERROR: &str =
+    "RecallFlow could not reset the encrypted API key vault. Close other app windows and try again.";
+const LEGACY_CLEANUP_ERROR: &str =
+    "RecallFlow migrated the API key but could not remove the old vault. Restart the app and try again.";
 
 #[tauri::command]
 pub fn get_ai_api_key_status(
@@ -27,4 +33,25 @@ pub fn delete_ai_api_key(
     state: State<'_, SecretState>,
 ) -> Result<ApiKeyStatus, String> {
     state.remove(provider)
+}
+
+#[tauri::command]
+pub fn reset_api_key_vault(app: AppHandle, state: State<'_, SecretState>) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|_| VAULT_RESET_ERROR.to_owned())?;
+    remove_file_if_exists(&app_data_dir.join(CURRENT_VAULT_FILE))
+        .map_err(|_| VAULT_RESET_ERROR.to_owned())?;
+    state.clear()
+}
+
+#[tauri::command]
+pub fn remove_legacy_openai_vault(app: AppHandle) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|_| LEGACY_CLEANUP_ERROR.to_owned())?;
+    remove_file_if_exists(&app_data_dir.join(LEGACY_VAULT_FILE))
+        .map_err(|_| LEGACY_CLEANUP_ERROR.to_owned())
 }

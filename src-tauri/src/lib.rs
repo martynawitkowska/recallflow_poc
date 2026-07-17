@@ -3,6 +3,7 @@ pub mod database;
 pub mod generation;
 pub mod models;
 pub mod state;
+mod vault;
 
 use models::AppInfo;
 use state::{AppState, DatabaseState, SecretState};
@@ -24,12 +25,7 @@ pub fn run() {
                 .map_err(|_| std::io::Error::other("RecallFlow could not locate local storage."))?;
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|_| std::io::Error::other("RecallFlow could not create local storage."))?;
-            app.handle().plugin(
-                tauri_plugin_stronghold::Builder::with_argon2(
-                    &app_data_dir.join("stronghold-salt-v1.txt"),
-                )
-                .build(),
-            )?;
+            app.handle().plugin(vault::plugin(&app_data_dir))?;
             let pool = tauri::async_runtime::block_on(database::connect(
                 &app_data_dir.join("recallflow.sqlite3"),
             ))
@@ -53,6 +49,8 @@ pub fn run() {
             commands::library::clear_imported_quizzes,
             commands::secrets::delete_ai_api_key,
             commands::secrets::get_ai_api_key_status,
+            commands::secrets::remove_legacy_openai_vault,
+            commands::secrets::reset_api_key_vault,
             commands::secrets::save_ai_api_key,
         ])
         .run(tauri::generate_context!())
