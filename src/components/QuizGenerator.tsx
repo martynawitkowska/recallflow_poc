@@ -13,6 +13,7 @@ import {
 } from "../lib/quizGeneration";
 import { MAX_VIDEO_URL_CHARS, type QuizFile } from "../lib/quizSchema";
 import type { MnemonicModel } from "../lib/mnemonicProviders";
+import ExternalLink from "./ExternalLink";
 
 type QuizGeneratorProps = {
   isOnline: boolean;
@@ -251,13 +252,9 @@ export default function QuizGenerator({
               <p>{generation.state.quiz.description}</p>
             )}
             {generation.state.quiz.videoUrl && (
-              <a
-                href={generation.state.quiz.videoUrl}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
+              <ExternalLink href={generation.state.quiz.videoUrl}>
                 Link to lecture video
-              </a>
+              </ExternalLink>
             )}
             <ol className="generated-question-list">
               {generation.state.quiz.questions.map((question) => (

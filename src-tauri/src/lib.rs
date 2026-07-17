@@ -31,6 +31,7 @@ fn set_development_dock_icon() {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             #[cfg(all(target_os = "macos", debug_assertions))]
             set_development_dock_icon();
