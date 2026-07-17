@@ -34,7 +34,24 @@ function expectError(payload: unknown, text: string) {
 
 expectValid(validQuiz);
 expectValid(QUIZ_SCHEMA_EXAMPLE);
+const mnemonicQuiz = validateQuiz({
+  ...validQuiz,
+  questions: [{ ...validQuiz.questions[0], mnemonic: "  Cells make ATP.  " }],
+});
+if (
+  !mnemonicQuiz.valid ||
+  mnemonicQuiz.quiz.questions[0].mnemonic !== "Cells make ATP."
+) {
+  throw new Error("Expected saved mnemonics to be normalized and preserved.");
+}
 expectError({ ...validQuiz, title: "" }, "title");
+expectError(
+  {
+    ...validQuiz,
+    questions: [{ ...validQuiz.questions[0], mnemonic: 42 }],
+  },
+  "mnemonic must be a string",
+);
 expectError(
   { ...validQuiz, questions: [...validQuiz.questions, validQuiz.questions[0]] },
   "unique id",

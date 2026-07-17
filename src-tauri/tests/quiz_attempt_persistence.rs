@@ -26,6 +26,7 @@ fn sample_quiz() -> ImportedQuiz {
                     answers: vec!["True".to_owned(), "False".to_owned()],
                     correct_answers: vec!["True".to_owned()],
                     explanation: None,
+                    mnemonic: None,
                 },
                 QuizQuestion {
                     id: "q2".to_owned(),
@@ -34,6 +35,7 @@ fn sample_quiz() -> ImportedQuiz {
                     answers: vec!["Locally".to_owned(), "Remotely".to_owned()],
                     correct_answers: vec!["Locally".to_owned()],
                     explanation: None,
+                    mnemonic: None,
                 },
             ],
         },

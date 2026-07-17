@@ -105,6 +105,10 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
       return invalid(`${label} explanation must be a string when provided.`);
     }
 
+    if (value.mnemonic !== undefined && typeof value.mnemonic !== "string") {
+      return invalid(`${label} mnemonic must be a string when provided.`);
+    }
+
     questions.push({
       id,
       type: value.type as QuestionType,
@@ -114,6 +118,10 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
       explanation:
         typeof value.explanation === "string"
           ? value.explanation.trim() || undefined
+          : undefined,
+      mnemonic:
+        typeof value.mnemonic === "string"
+          ? value.mnemonic.trim() || undefined
           : undefined,
     });
   }

@@ -13,7 +13,8 @@ fn quiz_schema_round_trips_the_frontend_contract() {
                 "question": "Which organelle produces ATP?",
                 "answers": ["Mitochondrion", "Nucleus"],
                 "correctAnswers": ["Mitochondrion"],
-                "explanation": "Mitochondria generate most cellular ATP."
+                "explanation": "Mitochondria generate most cellular ATP.",
+                "mnemonic": "Mighty mitochondria make ATP."
             },
             {
                 "id": "cell-2",

@@ -24,6 +24,7 @@ fn sample_quiz(id: &str, title: &str, imported_at: &str) -> ImportedQuiz {
                 answers: vec!["True".to_owned(), "False".to_owned()],
                 correct_answers: vec!["True".to_owned()],
                 explanation: None,
+                mnemonic: Some("Local means it stays close.".to_owned()),
             }],
         },
     }
