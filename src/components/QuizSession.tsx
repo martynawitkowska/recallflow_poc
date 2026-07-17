@@ -45,6 +45,7 @@ export default function QuizSession({
 }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const questionRef = useRef<HTMLHeadingElement>(null);
+  const feedbackRef = useRef<HTMLParagraphElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
@@ -83,6 +84,12 @@ export default function QuizSession({
       questionRef.current?.focus();
     }
   }, [currentIndex]);
+
+  useEffect(() => {
+    if (answerChecked) {
+      feedbackRef.current?.focus();
+    }
+  }, [answerChecked]);
 
   const selectAnswer = (answer: string) => {
     if (answerChecked) {
@@ -258,7 +265,9 @@ export default function QuizSession({
             <>
               <p
                 className={`answer-feedback ${isCorrect ? "correct" : "incorrect"}`}
+                ref={feedbackRef}
                 role="status"
+                tabIndex={-1}
               >
                 <strong>{isCorrect ? "Correct." : "Not quite."}</strong>{" "}
                 {isCorrect
