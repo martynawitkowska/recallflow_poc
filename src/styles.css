@@ -107,6 +107,25 @@ summary:focus-visible,
   backdrop-filter: blur(18px);
 }
 
+.connectivity-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: min(64rem, calc(100% - 2rem));
+  margin: 1rem auto 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(253, 230, 138, 0.55);
+  border-radius: var(--radius-md);
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.1);
+  font-size: 0.82rem;
+}
+
+.connectivity-status span {
+  color: var(--color-text);
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -1359,6 +1378,13 @@ h1 {
   font-size: 0.72rem;
 }
 
+.offline-hint {
+  margin: 0.25rem 0 0;
+  color: #fde68a;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .character-count {
   justify-self: end;
 }
@@ -1576,6 +1602,11 @@ h1 {
   .app-navigation button {
     flex: 1 0 auto;
     justify-content: center;
+  }
+
+  .connectivity-status {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .quiz-preferences {

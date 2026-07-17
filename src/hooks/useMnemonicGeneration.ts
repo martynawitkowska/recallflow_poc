@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
 import {
   generateMnemonic,
   type GenerateMnemonicRequest,
@@ -10,11 +11,16 @@ export type MnemonicGenerationState =
   | { status: "success"; mnemonic: string }
   | { status: "error"; message: string };
 
-export function useMnemonicGeneration() {
+export function useMnemonicGeneration(isOnline: boolean) {
   const [state, setState] = useState<MnemonicGenerationState>({ status: "idle" });
   const requestId = useRef(0);
 
   const generate = useCallback(async (request: GenerateMnemonicRequest) => {
+    if (!isOnline) {
+      setState({ status: "error", message: OFFLINE_AI_MESSAGE });
+      return null;
+    }
+
     const currentRequest = ++requestId.current;
     setState({ status: "loading" });
 
@@ -37,7 +43,7 @@ export function useMnemonicGeneration() {
     }
 
     return null;
-  }, []);
+  }, [isOnline]);
 
   const reset = useCallback(() => {
     requestId.current += 1;

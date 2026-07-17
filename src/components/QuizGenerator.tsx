@@ -1,4 +1,5 @@
 import { useQuizGeneration } from "../hooks/useQuizGeneration";
+import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
 import {
   MAX_MATERIAL_CHARS,
   MAX_QUESTION_COUNT,
@@ -9,15 +10,23 @@ import {
 import type { QuizFile } from "../lib/quizSchema";
 
 type QuizGeneratorProps = {
+  isOnline: boolean;
   onSaveQuiz: (quiz: QuizFile) => Promise<void>;
 };
 
-export default function QuizGenerator({ onSaveQuiz }: QuizGeneratorProps) {
-  const generation = useQuizGeneration(onSaveQuiz);
+export default function QuizGenerator({
+  isOnline,
+  onSaveQuiz,
+}: QuizGeneratorProps) {
+  const generation = useQuizGeneration(onSaveQuiz, isOnline);
   const isLoading = generation.state.status === "loading";
 
   return (
-    <section className="quiz-generator" aria-labelledby="quiz-generator-title">
+    <section
+      aria-busy={isLoading}
+      aria-labelledby="quiz-generator-title"
+      className="quiz-generator"
+    >
       <header>
         <p className="eyebrow">AI quiz builder</p>
         <h2 id="quiz-generator-title">Generate from notes or a URL</h2>
@@ -142,7 +151,17 @@ export default function QuizGenerator({ onSaveQuiz }: QuizGeneratorProps) {
           is used for this request and is not saved.
         </p>
 
-        <button className="primary-button" disabled={isLoading} type="submit">
+        {!isOnline && (
+          <p className="offline-hint" role="status">
+            {OFFLINE_AI_MESSAGE}
+          </p>
+        )}
+
+        <button
+          className="primary-button"
+          disabled={isLoading || !isOnline}
+          type="submit"
+        >
           {isLoading ? "Generating…" : "Generate quiz"}
         </button>
       </form>
