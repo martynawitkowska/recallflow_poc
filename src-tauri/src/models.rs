@@ -79,6 +79,13 @@ pub enum AiProvider {
     Unsupported,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKeyStatus {
+    pub configured: bool,
+    pub masked_key: Option<String>,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateQuizRequest {
