@@ -13,8 +13,8 @@ export default function ConnectivityStatus({
     <aside className="connectivity-status" role="status">
       <strong>You're offline.</strong>
       <span>
-        Local quizzes and history still work. AI generation needs an internet
-        connection.
+        Local quizzes and statistics still work. AI generation needs an
+        internet connection.
       </span>
     </aside>
   );

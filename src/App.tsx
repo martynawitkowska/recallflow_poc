@@ -5,7 +5,6 @@ import ConnectivityStatus from "./components/ConnectivityStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
 import QuizGenerator from "./components/QuizGenerator";
-import QuizHistory from "./components/QuizHistory";
 import QuizLibrary from "./components/QuizLibrary";
 import QuizSummary from "./components/QuizSummary";
 import QuizSession from "./components/QuizSession";
@@ -98,9 +97,7 @@ export default function App() {
   const { state, retry } = useAppInfo();
   const isOnline = useOnlineStatus();
   const attemptSave = useQuizAttemptSave();
-  const attempts = useQuizAttempts(
-    activeView === "history" || activeView === "library",
-  );
+  const attempts = useQuizAttempts(activeView === "library");
   const library = useQuizLibrary();
   const navigate = useCallback((view: ViewKey) => {
     setFocusMode(false);
@@ -263,16 +260,6 @@ export default function App() {
             mnemonicModel={aiSelection.models[aiSelection.provider]}
             mnemonicProvider={aiSelection.provider}
             quiz={activeQuiz}
-          />
-        )}
-
-        {activeView === "history" && (
-          <QuizHistory
-            onRetry={attempts.retry}
-            quizzes={
-              library.state.status === "success" ? library.state.quizzes : []
-            }
-            state={attempts.state}
           />
         )}
 
