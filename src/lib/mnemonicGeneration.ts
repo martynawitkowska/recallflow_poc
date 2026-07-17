@@ -53,5 +53,6 @@ export function generateMnemonic(
     "generate_mnemonic",
     { request },
     "The selected AI provider could not generate a mnemonic. Check the API key and internet connection, then try again.",
+    true,
   );
 }

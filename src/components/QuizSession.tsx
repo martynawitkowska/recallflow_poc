@@ -71,9 +71,10 @@ export default function QuizSession({
   const generatedMnemonic =
     mnemonicGeneration.state.status === "success"
       ? mnemonicGeneration.state.mnemonic
-      : undefined;
+      : generatedMnemonics[question.id];
   const mnemonic = generatedMnemonic ?? question.mnemonic;
   const usingSavedMnemonic = Boolean(question.mnemonic && !generatedMnemonic);
+  const mnemonicApiKeyMissing = !mnemonicApiKey.trim();
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
   const result = calculateQuizResult(
@@ -129,7 +130,6 @@ export default function QuizSession({
   };
 
   const generateMnemonic = async () => {
-    mnemonicSave.reset();
     const generated = await mnemonicGeneration.generate({
       question: question.question,
       correctAnswers: question.correctAnswers,
@@ -139,6 +139,7 @@ export default function QuizSession({
       apiKey: mnemonicApiKey,
     });
     if (generated) {
+      mnemonicSave.reset();
       setGeneratedMnemonics((current) => ({
         ...current,
         [question.id]: generated,
@@ -160,11 +161,8 @@ export default function QuizSession({
   };
 
   const saveMnemonic = async () => {
-    if (mnemonicGeneration.state.status === "success") {
-      await mnemonicSave.save(
-        question.id,
-        mnemonicGeneration.state.mnemonic,
-      );
+    if (generatedMnemonic) {
+      await mnemonicSave.save(question.id, generatedMnemonic);
     }
   };
 
@@ -366,9 +364,11 @@ export default function QuizSession({
                         mnemonicGeneration.state.status === "loading" ||
                         mnemonicSave.state.status === "saving"
                       }
+                      aria-describedby="mnemonic-api-key-hint"
                       id="mnemonic-api-key"
                       onChange={(event) => setMnemonicApiKey(event.target.value)}
                       placeholder={mnemonicProviderOption.keyPlaceholder}
+                      required
                       spellCheck={false}
                       type="password"
                       value={mnemonicApiKey}
@@ -378,19 +378,23 @@ export default function QuizSession({
                       disabled={
                         mnemonicGeneration.state.status === "loading" ||
                         mnemonicSave.state.status === "saving" ||
-                        !mnemonicApiKey.trim()
+                        mnemonicApiKeyMissing
                       }
                       onClick={() => void generateMnemonic()}
                       type="button"
                     >
                       {mnemonicGeneration.state.status === "loading"
                         ? "Generating…"
-                        : mnemonic
+                        : mnemonicGeneration.state.status === "error"
+                          ? "Try again"
+                          : mnemonic
                           ? "Regenerate"
                           : "Create mnemonic"}
                     </button>
                   </div>
-                  <p className="field-hint">
+                  <p className="field-hint" id="mnemonic-api-key-hint">
+                    {mnemonicApiKeyMissing &&
+                      `An API key for ${mnemonicProviderOption.label} is required. `}
                     The question and answer are sent to {mnemonicProviderOption.label} only after you press the button. The API key is not saved.
                   </p>
                   <div className="mnemonic-generation-status" aria-live="polite">

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "check": "npm run build && npm run check:quiz-schema && npm run check:quiz-answers && npm run check:quiz-results && npm run check:quiz-performance && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run build && npm run check:ipc && npm run check:quiz-schema && npm run check:quiz-answers && npm run check:quiz-results && npm run check:quiz-performance && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check:ipc": "node --no-warnings --experimental-strip-types src/lib/ipc.check.ts",
     "check:quiz-answers": "node --no-warnings --experimental-strip-types src/lib/quizAnswers.check.ts",
     "check:quiz-performance": "node --no-warnings --experimental-strip-types src/lib/quizPerformance.check.ts",
     "check:quiz-results": "node --no-warnings --experimental-strip-types src/lib/quizResults.check.ts",
