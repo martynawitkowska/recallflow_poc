@@ -51,9 +51,10 @@ requesting a mnemonic and are not stored by the provider selection setting.
 RecallFlow keeps application preferences in the local app profile and study
 data in local SQLite. The current generation UI uses request-only API keys;
 the credential foundation also provides separate Rust session slots and
-encrypted Stronghold records for each provider. Provider keys are not saved to
-local storage or SQLite. See the [security model](docs/security-model.md) for
-the data-flow, automatic-unlock tradeoff, and review steps.
+encrypted Stronghold records for each provider, restoring valid saved records
+into session memory before the desktop UI starts. Provider keys are not saved
+to local storage or SQLite. See the [security model](docs/security-model.md)
+for the data-flow, automatic-unlock tradeoff, and review steps.
 
 ## Packaging
 

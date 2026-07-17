@@ -1,7 +1,7 @@
 # RecallFlow security model
 
 This document describes the current implementation. It does not describe
-planned Stronghold behavior as if it already exists.
+planned vault migration or recovery behavior as if it already exists.
 
 ## Data stored on the device
 
@@ -43,8 +43,9 @@ to RecallFlow's memory could still observe a key while a request is active.
 
 The backend provides one in-memory key slot for OpenAI, Gemini, and Claude.
 This managed state is created when the desktop application starts and is
-dropped when it exits. The state itself never reads from or writes to local
-storage, SQLite, or Stronghold.
+dropped when it exits. Before the UI mounts, valid saved Stronghold records are
+copied into their matching slots. The Rust state itself never reads from or
+writes to local storage, SQLite, or Stronghold.
 
 Tauri commands can save, inspect, and remove each provider's session key. Save
 rejects keys shorter than 20 characters or containing whitespace. Status
@@ -67,6 +68,14 @@ record name and explicitly saves the encrypted snapshot after inserting or
 removing a record. Successful saves also populate the matching Rust session
 slot; deletes remove both the encrypted record and session value.
 
+During desktop startup, RecallFlow opens the configured vault before mounting
+React. Each saved record is decoded, validated, and sent through the existing
+Rust session command. Providers are restored independently: a missing record
+is ignored, while an invalid record or provider-specific session failure is
+reported only by provider name and does not block the other providers. If the
+vault cannot open, RecallFlow keeps local study features available without
+restoring session credentials; it does not log or delete the vault.
+
 The vault uses a randomly generated 32-byte password stored in the WebView app
 profile so it can unlock without prompting on every launch. This keeps API
 keys out of plaintext local storage and SQLite, and protects the Stronghold
@@ -75,10 +84,9 @@ both the vault and the same app profile. An operating-system credential store
 or user-entered master password would provide a stronger boundary but is not
 part of the approved automatic-unlock design.
 
-REFL-65 owns loading encrypted records back into Rust session state during
-startup. REFL-66 owns missing-password, legacy-vault, and corrupted-vault
-recovery. Until those tasks are complete, the persistence APIs are available
-but the current generation UI remains request-only.
+REFL-66 owns missing-password, legacy-vault, and corrupted-vault recovery.
+Until that recovery flow and the key-management UI are complete, the current
+generation UI remains request-only.
 
 ## Network disclosure
 
@@ -121,7 +129,9 @@ Automated Rust coverage:
 Automated Stronghold contract coverage:
 
 - `npm run check:api-key-storage` verifies key normalization and that OpenAI,
-  Gemini, and Claude use distinct encrypted record names.
+  Gemini, and Claude use distinct encrypted record names. It also verifies
+  successful startup restoration, missing records, provider failure isolation,
+  and secret-free restoration reports.
 - `npm run build` verifies the Stronghold JavaScript and Tauri IPC contracts
   compile together.
 
