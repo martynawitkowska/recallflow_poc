@@ -41,6 +41,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>("library");
   const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [repairMode, setRepairMode] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [readingFont, setReadingFont] = useState(loadReadingFont);
   const { state, retry } = useAppInfo();
@@ -51,8 +52,26 @@ export default function App() {
     setFocusMode(false);
     setActiveQuiz(null);
     setQuizResult(null);
+    setRepairMode(false);
     setActiveView(view);
   }, []);
+
+  const startQuiz = (quiz: LibraryQuiz, questionIds: readonly string[] = []) => {
+    const questions = questionIds.length
+      ? quiz.quiz.questions.filter((question) =>
+          questionIds.includes(question.id),
+        )
+      : quiz.quiz.questions;
+
+    if (questions.length === 0) {
+      return;
+    }
+
+    setRepairMode(questionIds.length > 0);
+    setActiveQuiz({ ...quiz, quiz: { ...quiz.quiz, questions } });
+    setQuizResult(null);
+    setActiveView("quiz");
+  };
 
   useEffect(() => {
     try {
@@ -102,10 +121,7 @@ export default function App() {
               onClearQuizzes={library.clearQuizzes}
               onRemoveQuiz={library.removeQuiz}
               onRetry={library.retry}
-              onStartQuiz={(quiz) => {
-                setActiveQuiz(quiz);
-                setActiveView("quiz");
-              }}
+              onStartQuiz={startQuiz}
               state={library.state}
             />
             <div className="desktop-status">
@@ -117,6 +133,7 @@ export default function App() {
         {activeView === "quiz" && activeQuiz && (
           <QuizSession
             focusMode={focusMode}
+            isRepair={repairMode}
             onExit={() => navigate("library")}
             onFinish={(result) => {
               setFocusMode(false);
@@ -143,7 +160,16 @@ export default function App() {
 
         {activeView === "summary" && activeQuiz && quizResult && (
           <QuizSummary
+            isRepair={repairMode}
             onBackToLibrary={() => navigate("library")}
+            onRepair={() =>
+              startQuiz(
+                activeQuiz,
+                quizResult.details
+                  .filter((detail) => !detail.correct)
+                  .map((detail) => detail.questionId),
+              )
+            }
             onRestart={() => {
               setQuizResult(null);
               setActiveView("quiz");

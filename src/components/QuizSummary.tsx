@@ -3,7 +3,9 @@ import type { QuizAttemptSaveState } from "../hooks/useQuizAttemptSave";
 import type { QuizResult } from "../lib/quizResults";
 
 type QuizSummaryProps = {
+  isRepair: boolean;
   onBackToLibrary: () => void;
+  onRepair: () => void;
   onRestart: () => void;
   onRetrySave: () => Promise<void>;
   quizTitle: string;
@@ -16,7 +18,9 @@ function formatAnswers(answers: readonly string[]) {
 }
 
 export default function QuizSummary({
+  isRepair,
   onBackToLibrary,
+  onRepair,
   onRestart,
   onRetrySave,
   quizTitle,
@@ -35,7 +39,9 @@ export default function QuizSummary({
 
   return (
     <section className="quiz-summary" aria-labelledby="quiz-summary-title">
-      <p className="eyebrow">Session complete</p>
+      <p className="eyebrow">
+        {isRepair ? "Repair session complete" : "Session complete"}
+      </p>
       <h1 id="quiz-summary-title" ref={titleRef} tabIndex={-1}>
         {quizTitle}
       </h1>
@@ -128,6 +134,11 @@ export default function QuizSummary({
         <button className="primary-button" onClick={onRestart} type="button">
           Study again
         </button>
+        {incorrectCount > 0 && (
+          <button className="primary-button" onClick={onRepair} type="button">
+            Repair missed answers
+          </button>
+        )}
       </div>
     </section>
   );
