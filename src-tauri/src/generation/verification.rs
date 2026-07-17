@@ -326,6 +326,12 @@ mod tests {
         assert!(prompt.input.contains("Mitochondria produce ATP"));
         assert!(prompt.input.len() < 12_000);
         assert!(prompt.instructions.contains("reject rather than repair"));
+        assert!(prompt.instructions.contains("choices embed explanations"));
+        assert!(prompt.instructions.contains("repeat the questioned term"));
+        assert!(prompt
+            .instructions
+            .contains("duplicate each other's meaning"));
+        assert!(prompt.instructions.contains("omit a requested case"));
         assert!(!prompt.instructions.contains("confidence score"));
     }
 }
