@@ -10,12 +10,11 @@ fn valid_request() -> GenerateMnemonicRequest {
         explanation: Some("Retrieval strengthens memory pathways.".to_owned()),
         provider: AiProvider::Openai,
         model: None,
-        api_key: "request-only-key".to_owned(),
     }
 }
 
 #[test]
-fn mnemonic_request_requires_question_answer_and_key() {
+fn mnemonic_request_requires_question_and_answer() {
     for provider in [AiProvider::Openai, AiProvider::Gemini, AiProvider::Claude] {
         assert!(validate_mnemonic_request(&GenerateMnemonicRequest {
             provider,
@@ -32,16 +31,8 @@ fn mnemonic_request_requires_question_answer_and_key() {
         correct_answers: vec![],
         ..valid_request()
     };
-    let missing_key = GenerateMnemonicRequest {
-        api_key: "  ".to_owned(),
-        ..valid_request()
-    };
-
     assert!(validate_mnemonic_request(&missing_question).is_err());
     assert!(validate_mnemonic_request(&missing_answer).is_err());
-    assert!(validate_mnemonic_request(&missing_key)
-        .expect_err("missing key should fail")
-        .contains("API key"));
 }
 
 #[test]
@@ -49,8 +40,7 @@ fn mnemonic_request_rejects_unsupported_or_oversized_context() {
     let unsupported: GenerateMnemonicRequest = serde_json::from_value(serde_json::json!({
         "question": "Question?",
         "correctAnswers": ["Answer"],
-        "provider": "unsupported",
-        "apiKey": "request-only-key"
+        "provider": "unsupported"
     }))
     .expect("unknown providers should reach command validation");
     let oversized = GenerateMnemonicRequest {

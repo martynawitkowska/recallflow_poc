@@ -6,6 +6,8 @@ const SECRET_STATE_ERROR: &str =
     "RecallFlow could not access API keys for this session. Restart the app and try again.";
 const INVALID_PROVIDER_ERROR: &str = "Choose a supported AI provider.";
 const INVALID_API_KEY_ERROR: &str = "Enter a valid API key without spaces.";
+const MISSING_API_KEY_ERROR: &str =
+    "Save an API key for this provider in Settings before generating.";
 
 #[derive(Debug)]
 pub struct AppState {
@@ -58,6 +60,15 @@ impl Default for SecretState {
 }
 
 impl SecretState {
+    pub fn api_key(&self, provider: AiProvider) -> Result<String, String> {
+        self.api_keys
+            .read()
+            .map_err(|_| SECRET_STATE_ERROR.to_owned())?
+            .get(provider)?
+            .map(str::to_owned)
+            .ok_or_else(|| MISSING_API_KEY_ERROR.to_owned())
+    }
+
     pub fn status(&self, provider: AiProvider) -> Result<ApiKeyStatus, String> {
         let api_keys = self
             .api_keys
@@ -154,6 +165,10 @@ mod tests {
                 masked_key: Some("••••••••1234".to_owned()),
             }
         );
+        assert_eq!(
+            state.api_key(AiProvider::Openai).unwrap(),
+            "openai-session-key-1234"
+        );
         state
             .save(AiProvider::Gemini, "gemini-session-key-5678".to_owned())
             .unwrap();
@@ -180,6 +195,7 @@ mod tests {
                     masked_key: None,
                 }
             );
+            assert_eq!(state.api_key(provider).unwrap_err(), MISSING_API_KEY_ERROR);
         }
 
         assert_eq!(

@@ -135,20 +135,9 @@ export default function QuizGenerator({
           integrations are enabled.
         </p>
 
-        <label htmlFor="openai-api-key">OpenAI API key</label>
-        <input
-          autoComplete="off"
-          disabled={isLoading}
-          id="openai-api-key"
-          onChange={(event) => generation.setApiKey(event.target.value)}
-          placeholder="sk-…"
-          spellCheck={false}
-          type="password"
-          value={generation.apiKey}
-        />
         <p className="field-hint">
-          Your source is sent to OpenAI only after you press Generate. The key
-          is used for this request and is not saved.
+          Uses the OpenAI API key saved in Settings. Your source is sent to
+          OpenAI only after you press Generate.
         </p>
 
         {!isOnline && (

@@ -9,13 +9,11 @@ const validMaterialRequest: GenerateQuizRequest = {
   material: "Cellular respiration produces ATP.",
   provider: "openai",
   questionCount: 8,
-  apiKey: "sk-test-only",
 };
 const validUrlRequest: GenerateQuizRequest = {
   sourceUrl: "https://example.com/lecture",
   provider: "openai",
   questionCount: 3,
-  apiKey: "sk-test-only",
 };
 
 for (const request of [validMaterialRequest, validUrlRequest]) {
@@ -38,7 +36,6 @@ const invalidRequests: Array<[GenerateQuizRequest, string]> = [
     { ...validUrlRequest, sourceUrl: `https://example.com/${"x".repeat(MAX_SOURCE_URL_CHARS)}` },
     "http:// or https://",
   ],
-  [{ ...validMaterialRequest, apiKey: "  " }, "OpenAI API key"],
   [{ ...validMaterialRequest, questionCount: 2 }, "between 3 and 25"],
   [{ ...validMaterialRequest, questionCount: 3.5 }, "between 3 and 25"],
   [{ ...validMaterialRequest, questionCount: 26 }, "between 3 and 25"],
@@ -49,7 +46,8 @@ for (const [request, expectedMessage] of invalidRequests) {
   if (!error?.includes(expectedMessage)) {
     throw new Error(`Expected validation error containing "${expectedMessage}".`);
   }
-  if (error.includes(request.apiKey)) {
-    throw new Error("Quiz-generation validation exposed an API key.");
-  }
+}
+
+if ("apiKey" in validMaterialRequest) {
+  throw new Error("Quiz-generation requests must not carry saved API keys.");
 }

@@ -56,7 +56,6 @@ export default function QuizSession({
   const [generatedMnemonics, setGeneratedMnemonics] = useState<
     Readonly<Record<string, string>>
   >({});
-  const [mnemonicApiKey, setMnemonicApiKey] = useState("");
   const mnemonicGeneration = useMnemonicGeneration(isOnline);
   const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
@@ -68,7 +67,6 @@ export default function QuizSession({
       : generatedMnemonics[question.id];
   const mnemonic = generatedMnemonic ?? question.mnemonic;
   const usingSavedMnemonic = Boolean(question.mnemonic && !generatedMnemonic);
-  const mnemonicApiKeyMissing = !mnemonicApiKey.trim();
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
   const result = calculateQuizResult(
@@ -136,7 +134,6 @@ export default function QuizSession({
       explanation: question.explanation,
       provider: mnemonicProvider,
       model: mnemonicModel,
-      apiKey: mnemonicApiKey,
     });
     if (generated) {
       mnemonicSave.reset();
@@ -144,7 +141,6 @@ export default function QuizSession({
         ...current,
         [question.id]: generated,
       }));
-      setMnemonicApiKey("");
     }
   };
 
@@ -161,7 +157,6 @@ export default function QuizSession({
 
     setSelectedAnswers([]);
     setAnswerChecked(false);
-    setMnemonicApiKey("");
     mnemonicGeneration.reset();
     mnemonicSave.reset();
     setCurrentIndex((current) =>
@@ -298,36 +293,16 @@ export default function QuizSession({
                   <h3 id="mnemonic-generator-title">Need a memory hook?</h3>
                   <p>
                     {usingSavedMnemonic
-                      ? "This quiz already has a saved mnemonic. Enter an API key only if you want a replacement."
+                      ? "This quiz already has a saved mnemonic. Generate again if you want a replacement."
                       : `Ask ${mnemonicProviderOption.label} for a short mnemonic tied to this question and its correct answer.`}
                   </p>
-                  <label htmlFor="mnemonic-api-key">
-                    {mnemonicProviderOption.keyLabel}
-                  </label>
                   <div className="mnemonic-generator-controls">
-                    <input
-                      autoComplete="off"
-                      disabled={
-                        !isOnline ||
-                        mnemonicGeneration.state.status === "loading" ||
-                        mnemonicSave.state.status === "saving"
-                      }
-                      aria-describedby="mnemonic-api-key-hint"
-                      id="mnemonic-api-key"
-                      onChange={(event) => setMnemonicApiKey(event.target.value)}
-                      placeholder={mnemonicProviderOption.keyPlaceholder}
-                      required
-                      spellCheck={false}
-                      type="password"
-                      value={mnemonicApiKey}
-                    />
                     <button
                       className="secondary-button"
                       disabled={
                         !isOnline ||
                         mnemonicGeneration.state.status === "loading" ||
-                        mnemonicSave.state.status === "saving" ||
-                        mnemonicApiKeyMissing
+                        mnemonicSave.state.status === "saving"
                       }
                       onClick={() => void generateMnemonic()}
                       type="button"
@@ -341,13 +316,11 @@ export default function QuizSession({
                           : "Create mnemonic"}
                     </button>
                   </div>
-                  <p className="field-hint" id="mnemonic-api-key-hint">
-                    {!isOnline
-                      ? `${OFFLINE_AI_MESSAGE} `
-                      : mnemonicApiKeyMissing
-                        ? `An API key for ${mnemonicProviderOption.label} is required. `
-                        : ""}
-                    The question and answer are sent to {mnemonicProviderOption.label} only after you press the button. The API key is not saved.
+                  <p className="field-hint">
+                    {!isOnline ? `${OFFLINE_AI_MESSAGE} ` : ""}
+                    Uses the {mnemonicProviderOption.label} API key saved in
+                    Settings. The question and answer are sent only after you
+                    press the button.
                   </p>
                   <div className="mnemonic-generation-status">
                     {mnemonicGeneration.state.status === "loading" && (

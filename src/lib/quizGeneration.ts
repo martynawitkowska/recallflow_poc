@@ -16,7 +16,6 @@ export type GenerateQuizRequest = {
   provider: AiProvider;
   model?: string;
   questionCount: number;
-  apiKey: string;
 };
 
 export function validateQuizGenerationRequest(
@@ -52,9 +51,6 @@ export function validateQuizGenerationRequest(
     } catch {
       return "Enter a complete public http:// or https:// URL.";
     }
-  }
-  if (!request.apiKey.trim()) {
-    return "Enter an OpenAI API key before generating a quiz.";
   }
   if (
     !Number.isInteger(request.questionCount) ||

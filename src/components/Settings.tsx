@@ -12,6 +12,7 @@ import {
   readingFontOptions,
   type ReadingFont,
 } from "../lib/appPreferences";
+import { useApiKeySettings } from "../hooks/useApiKeySettings";
 
 type SettingsProps = {
   model: MnemonicModel;
@@ -36,6 +37,14 @@ export default function Settings({
 }: SettingsProps) {
   const providerOption = getMnemonicProviderOption(provider);
   const modelOption = getMnemonicModelOption(provider, model);
+  const apiKeySettings = useApiKeySettings(provider);
+  const keyStatus =
+    apiKeySettings.state.status === "ready" ||
+    apiKeySettings.state.status === "saving"
+      ? apiKeySettings.state.key
+      : null;
+  const canManageKey = apiKeySettings.state.status === "ready";
+  const isSavingKey = apiKeySettings.state.status === "saving";
 
   return (
     <section className="narrow-page" aria-labelledby="settings-title">
@@ -130,6 +139,78 @@ export default function Settings({
           {modelOption.description}
         </p>
 
+        <label htmlFor="ai-api-key">
+          {keyStatus?.configured
+            ? `Replace ${providerOption.label} API key`
+            : providerOption.keyLabel}
+        </label>
+        <input
+          autoComplete="off"
+          disabled={!canManageKey || isSavingKey}
+          id="ai-api-key"
+          onChange={(event) => apiKeySettings.setApiKey(event.target.value)}
+          placeholder={providerOption.keyPlaceholder}
+          spellCheck={false}
+          type="password"
+          value={apiKeySettings.apiKey}
+        />
+        <div className="settings-key-actions">
+          {keyStatus?.configured && (
+            <button
+              className="danger-button"
+              disabled={isSavingKey}
+              onClick={() => void apiKeySettings.remove()}
+              type="button"
+            >
+              Remove saved key
+            </button>
+          )}
+          <button
+            className="primary-button"
+            disabled={
+              !canManageKey || !apiKeySettings.apiKey.trim() || isSavingKey
+            }
+            onClick={() => void apiKeySettings.save()}
+            type="button"
+          >
+            {isSavingKey
+              ? "Saving…"
+              : keyStatus?.configured
+                ? "Replace key"
+                : "Save API key"}
+          </button>
+        </div>
+        {apiKeySettings.state.status === "loading" && (
+          <p role="status">Checking for a saved key…</p>
+        )}
+        {keyStatus?.configured && (
+          <p className="settings-privacy" role="status">
+            Saved as {keyStatus.maskedKey}. RecallFlow will reuse it automatically.
+          </p>
+        )}
+        {keyStatus?.needsMigration && !keyStatus.configured && (
+          <p className="settings-privacy">
+            An older OpenAI key was found. Paste it again to move it into the current vault.
+          </p>
+        )}
+        {apiKeySettings.state.status === "ready" &&
+          apiKeySettings.state.message && (
+            <p className="management-status" role="status">
+              {apiKeySettings.state.message}
+            </p>
+          )}
+        {apiKeySettings.state.status === "ready" &&
+          apiKeySettings.state.error && (
+            <p className="management-status management-status-error" role="alert">
+              {apiKeySettings.state.error}
+            </p>
+          )}
+        {apiKeySettings.state.status === "error" && (
+          <p className="management-status management-status-error" role="alert">
+            {apiKeySettings.state.message}
+          </p>
+        )}
+
         <div className="settings-selection" role="status">
           <strong>
             {providerOption.label} · {modelOption.label}
@@ -153,8 +234,8 @@ export default function Settings({
             local SQLite library.
           </li>
           <li>
-            <strong>API keys</strong> are held temporarily for a generation
-            request and are not saved to local storage or SQLite.
+            <strong>API keys</strong> are encrypted in the local Stronghold
+            vault and are not saved to local storage or SQLite.
           </li>
         </ul>
         <p className="settings-privacy">

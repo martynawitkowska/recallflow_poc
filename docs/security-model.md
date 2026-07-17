@@ -22,18 +22,17 @@ SQLite database and obtain the automatic Stronghold unlock material.
 
 ## API-key lifecycle in the generation UI
 
-The current generation forms use request-only API keys:
+The Settings screen manages one saved API key per provider:
 
-1. The user enters a key into a password input.
-2. React holds the value in memory and passes it through Tauri IPC as part of a
-   generation request.
-3. Rust validates the request and sends the key over HTTPS to the selected AI
-   provider.
-4. RecallFlow clears the input after successful generation. After a failed
-   request, the input remains available for retry and is discarded when the
-   view is closed or the application exits.
+1. The user pastes a provider key once in **Settings**.
+2. React passes it to the credential command, which validates it, encrypts it
+   in Stronghold, and populates the matching Rust session slot.
+3. Quiz and mnemonic requests contain only content, provider, model, and other
+   generation options. The Rust command looks up the key from session state.
+4. Replacing or removing a key updates both Stronghold and session state.
 
-The key is not written to WebView local storage, SQLite, or application logs.
+The full key is never returned to React after saving and is not written to
+WebView local storage, SQLite, or application logs.
 Provider adapters discard raw HTTP bodies and library error details. Rust
 command and WebView IPC boundaries also reject any error containing a submitted
 credential and show a fixed safe fallback instead. A process debugger or
@@ -54,8 +53,8 @@ returns only whether a key is configured and a masked four-character suffix;
 the full key is never returned to the WebView. Removing one provider's key
 does not affect the others.
 
-The current generation forms still submit request-only keys directly. Wiring
-saved provider keys into the UI and generation path belongs to related work.
+Generation fails with an actionable Settings message when the chosen provider
+does not have a session key.
 
 Session-only does not mean inaccessible: a process debugger or another
 program with access to RecallFlow's memory could observe a key while the app
@@ -103,9 +102,9 @@ after the Rust reset succeeds. Missing vault files are treated as already
 reset. RecallFlow never resets an unreadable vault automatically during
 startup.
 
-The key-management UI is separate related work, so the current generation UI
-remains request-only. These migration and reset operations are available
-through the desktop credential API for that UI to orchestrate.
+The Settings UI supports saving, replacing, and removing current provider keys.
+Legacy migration and destructive vault reset remain available through the
+desktop credential API.
 
 ## Network disclosure
 
@@ -128,12 +127,13 @@ Happy path:
 
 1. Change typography, focus mode, provider, and model in **Settings**.
 2. Restart RecallFlow and confirm those non-secret preferences are restored.
-3. Generate a quiz or mnemonic and confirm the key field clears after success.
+3. Save a provider key once, then generate a quiz and mnemonic without another
+   key prompt.
 4. Restart offline and confirm saved quizzes and attempts remain available.
 
 Failure path:
 
-1. Submit an invalid key and confirm the error is actionable but does not echo
+1. Save an invalid key and confirm the error is actionable but does not echo
    the key or a raw provider response.
 2. Restart RecallFlow and confirm the failed key was not restored.
 3. Inspect the two local-storage preference records and SQLite schema and

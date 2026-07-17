@@ -94,7 +94,6 @@ pub struct GenerateQuizRequest {
     pub provider: AiProvider,
     pub model: Option<String>,
     pub question_count: i64,
-    pub api_key: String,
 }
 
 #[derive(Deserialize)]
@@ -105,7 +104,6 @@ pub struct GenerateMnemonicRequest {
     pub explanation: Option<String>,
     pub provider: AiProvider,
     pub model: Option<String>,
-    pub api_key: String,
 }
 
 #[derive(Deserialize)]

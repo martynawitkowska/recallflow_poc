@@ -1099,14 +1099,29 @@ h1 {
   font-weight: 750;
 }
 
-.settings-card select {
+.settings-card select,
+.settings-card input[type="password"] {
   width: 100%;
-  padding: 0.75rem 2rem 0.75rem 0.85rem;
   border: 1px solid var(--color-control-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
   background: var(--color-bg);
   font: inherit;
+}
+
+.settings-card select {
+  padding: 0.75rem 2rem 0.75rem 0.85rem;
+}
+
+.settings-card input[type="password"] {
+  padding: 0.75rem 0.85rem;
+}
+
+.settings-key-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 .settings-toggle {

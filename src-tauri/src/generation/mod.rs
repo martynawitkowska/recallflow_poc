@@ -92,9 +92,6 @@ pub fn validate_mnemonic_request(request: &GenerateMnemonicRequest) -> Result<()
     if request.provider == AiProvider::Unsupported {
         return Err("The selected mnemonic provider is not available yet.".to_owned());
     }
-    if request.api_key.trim().is_empty() {
-        return Err("Enter an API key before generating a mnemonic.".to_owned());
-    }
     if request.question.trim().is_empty()
         || request.correct_answers.is_empty()
         || request
@@ -151,12 +148,6 @@ pub fn validate_generation_request(
             "Choose between {MIN_QUESTION_COUNT} and {MAX_QUESTION_COUNT} questions."
         ));
     }
-    if request.api_key.trim().is_empty() {
-        return Err(
-            "Enter an API key for the selected provider before generating a quiz.".to_owned(),
-        );
-    }
-
     let material = request
         .material
         .as_deref()
@@ -300,31 +291,28 @@ fn normalize_quiz(mut quiz: QuizFile) -> QuizFile {
     quiz
 }
 
-pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, String> {
+pub async fn generate_quiz(
+    request: GenerateQuizRequest,
+    api_key: &str,
+) -> Result<QuizFile, String> {
     let source = validate_generation_request(&request)?;
     let question_count = request.question_count as usize;
     let prompt = GenerationPrompt::new(source, question_count);
-    let generated_json = providers::generate(
-        request.provider,
-        request.model.as_deref(),
-        request.api_key.trim(),
-        &prompt,
-    )
-    .await?;
+    let generated_json =
+        providers::generate(request.provider, request.model.as_deref(), api_key, &prompt).await?;
 
     parse_generated_quiz_json(&generated_json, question_count)
 }
 
-pub async fn generate_mnemonic(request: GenerateMnemonicRequest) -> Result<String, String> {
+pub async fn generate_mnemonic(
+    request: GenerateMnemonicRequest,
+    api_key: &str,
+) -> Result<String, String> {
     validate_mnemonic_request(&request)?;
     let prompt = MnemonicPrompt::new(&request);
-    let generated = providers::generate_mnemonic(
-        request.provider,
-        request.model.as_deref(),
-        request.api_key.trim(),
-        &prompt,
-    )
-    .await?;
+    let generated =
+        providers::generate_mnemonic(request.provider, request.model.as_deref(), api_key, &prompt)
+            .await?;
 
     parse_generated_mnemonic(&generated)
 }
