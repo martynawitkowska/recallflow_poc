@@ -15,6 +15,13 @@ export default function QuizHistory({
   state,
 }: QuizHistoryProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const attempts = state.status === "success" ? state.attempts : [];
+  const answered = attempts.reduce((total, attempt) => total + attempt.total, 0);
+  const correct = attempts.reduce((total, attempt) => total + attempt.score, 0);
+  const retention = answered ? Math.round((correct / answered) * 100) : 0;
+  const quizzesPracticed = new Set(
+    attempts.map((attempt) => attempt.quizId),
+  ).size;
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -67,6 +74,32 @@ export default function QuizHistory({
 
       {state.status === "success" && state.attempts.length > 0 && (
         <section aria-label="Saved quiz attempts">
+          <div
+            className="quiz-summary-score"
+            aria-label="Performance statistics"
+            role="group"
+          >
+            <p>
+              <span>Study sessions</span>
+              <strong>{attempts.length}</strong>
+            </p>
+            <p>
+              <span>Quizzes practiced</span>
+              <strong>{quizzesPracticed}</strong>
+            </p>
+            <p>
+              <span>Correct answers</span>
+              <strong>{correct} / {answered}</strong>
+            </p>
+            <p>
+              <span>Overall retention</span>
+              <strong>{retention}%</strong>
+            </p>
+          </div>
+          <p className="quiz-summary-message">
+            Overall retention is the percentage of correct answers across all
+            saved sessions.
+          </p>
           <p className="quiz-history-count">
             {state.attempts.length} saved{" "}
             {state.attempts.length === 1 ? "session" : "sessions"}
