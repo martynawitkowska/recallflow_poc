@@ -46,6 +46,14 @@ Anthropic Claude, then uses the active pair for new mnemonic requests.
 This preference contains no credentials. API keys are still entered only when
 requesting a mnemonic and are not stored by the provider selection setting.
 
+## Security model
+
+RecallFlow keeps application preferences in the local app profile and study
+data in local SQLite. API keys are request-only in the current implementation:
+they pass through Tauri to the selected provider and are not saved to local
+storage or SQLite. See the [security model](docs/security-model.md) for the
+data-flow, threat boundary, and review steps.
+
 ## Packaging
 
 Create the native installer or application bundle for the current operating

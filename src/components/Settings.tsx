@@ -135,8 +135,29 @@ export default function Settings({
           <p>This selection will be used for new mnemonic requests.</p>
         </div>
         <p className="settings-privacy">
-          RecallFlow saves only this preference. API keys are entered for each
-          request and are never saved by this setting.
+          This provider and model selection contains no credentials.
+        </p>
+      </section>
+
+      <section className="settings-card" aria-labelledby="security-title">
+        <h2 id="security-title">Privacy and security</h2>
+        <p>RecallFlow is local-first, but AI generation uses the network.</p>
+        <ul className="settings-security-list">
+          <li>
+            <strong>Preferences</strong> stay in the local app profile.
+          </li>
+          <li>
+            <strong>Quizzes, results, and saved mnemonics</strong> stay in the
+            local SQLite library.
+          </li>
+          <li>
+            <strong>API keys</strong> are held temporarily for a generation
+            request and are not saved to local storage or SQLite.
+          </li>
+        </ul>
+        <p className="settings-privacy">
+          When you choose Generate, the relevant study content and API key are
+          sent to the selected provider. Nothing is uploaded automatically.
         </p>
       </section>
     </section>
