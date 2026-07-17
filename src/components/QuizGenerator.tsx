@@ -10,7 +10,7 @@ import {
   MIN_QUESTION_COUNT,
   type AiProvider,
 } from "../lib/quizGeneration";
-import type { QuizFile } from "../lib/quizSchema";
+import { MAX_VIDEO_URL_CHARS, type QuizFile } from "../lib/quizSchema";
 import type { MnemonicModel } from "../lib/mnemonicProviders";
 
 type QuizGeneratorProps = {
@@ -80,6 +80,22 @@ export default function QuizGenerator({
             <p className="field-hint character-count">
               {materialCharacters.toLocaleString()} /{" "}
               {MAX_MATERIAL_CHARS.toLocaleString()} characters
+            </p>
+            <label htmlFor="video-url">Original video URL (optional)</label>
+            <input
+              disabled={isLoading}
+              id="video-url"
+              inputMode="url"
+              maxLength={MAX_VIDEO_URL_CHARS + 1}
+              onChange={(event) => generation.setVideoUrl(event.target.value)}
+              placeholder="https://www.youtube.com/watch?v=…"
+              spellCheck={false}
+              type="url"
+              value={generation.videoUrl}
+            />
+            <p className="field-hint">
+              Saved with the quiz as its source. RecallFlow analyzes the pasted
+              material, not the video itself.
             </p>
           </>
         ) : (
@@ -219,6 +235,15 @@ export default function QuizGenerator({
             </div>
             {generation.state.quiz.description && (
               <p>{generation.state.quiz.description}</p>
+            )}
+            {generation.state.quiz.videoUrl && (
+              <a
+                href={generation.state.quiz.videoUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Open source video
+              </a>
             )}
             <ol className="generated-question-list">
               {generation.state.quiz.questions.map((question) => (

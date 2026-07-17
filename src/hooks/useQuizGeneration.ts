@@ -9,6 +9,7 @@ import {
   type GenerationProgress,
   type GenerationQuality,
   type GenerationResult,
+  validateOptionalVideoUrl,
 } from "../lib/quizGeneration";
 import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
 import type { QuizFile } from "../lib/quizSchema";
@@ -51,6 +52,7 @@ export function useQuizGeneration(
   const [sourceMode, setSourceMode] = useState<QuizSourceMode>("material");
   const [material, setMaterial] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [provider, setProvider] = useState<AiProvider>("openai");
   const [questionCount, setQuestionCount] = useState(DEFAULT_QUESTION_COUNT);
   const [state, setState] = useState<QuizGenerationState>({ status: "idle" });
@@ -64,6 +66,14 @@ export function useQuizGeneration(
   const submit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+
+      const videoUrlError = sourceMode === "material"
+        ? validateOptionalVideoUrl(videoUrl)
+        : null;
+      if (videoUrlError) {
+        setState({ status: "error", message: videoUrlError });
+        return;
+      }
 
       if (!isOnline) {
         setState({ status: "error", message: OFFLINE_AI_MESSAGE });
@@ -87,7 +97,7 @@ export function useQuizGeneration(
         },
       });
       try {
-        const result = await generateQuiz(
+        const generated = await generateQuiz(
           sourceMode === "material"
             ? { material, provider, model, questionCount }
             : { sourceUrl, provider, model, questionCount },
@@ -106,6 +116,10 @@ export function useQuizGeneration(
             }),
           controller.signal,
         );
+        const normalizedVideoUrl = sourceMode === "material" ? videoUrl.trim() : "";
+        const result = generated.quiz && normalizedVideoUrl
+          ? { ...generated, quiz: { ...generated.quiz, videoUrl: normalizedVideoUrl } }
+          : generated;
         if (result.completion === "cancelled") {
           setState(previous ?? { status: "cancelled", message: generationOutcomeMessage(result)! });
         } else if (result.completion === "quality_empty" || !result.quiz) {
@@ -136,7 +150,7 @@ export function useQuizGeneration(
         }
       }
     },
-    [isOnline, material, model, provider, questionCount, sourceMode, sourceUrl, state],
+    [isOnline, material, model, provider, questionCount, sourceMode, sourceUrl, state, videoUrl],
   );
 
   const cancel = useCallback(async () => {
@@ -194,11 +208,13 @@ export function useQuizGeneration(
     questionCount,
     sourceMode,
     sourceUrl,
+    videoUrl,
     setMaterial,
     setProvider,
     setQuestionCount,
     setSourceMode,
     setSourceUrl,
+    setVideoUrl,
     save,
     cancel,
     state,

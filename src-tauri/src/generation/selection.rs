@@ -123,6 +123,7 @@ pub(crate) fn finalize_quiz(candidates: Vec<ValidatedCandidate>) -> QuizFile {
         description: Some(
             "Questions grounded in and verified against your study material.".to_owned(),
         ),
+        video_url: None,
         questions: candidates
             .into_iter()
             .enumerate()

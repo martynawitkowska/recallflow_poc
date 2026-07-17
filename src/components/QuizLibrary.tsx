@@ -191,6 +191,15 @@ export default function QuizLibrary({
                 <p className="library-description">
                   {file.quiz.description || "No quiz description provided."}
                 </p>
+                {file.quiz.videoUrl && (
+                  <a
+                    href={file.quiz.videoUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Open source video
+                  </a>
+                )}
               </div>
               <span className="question-count">
                 {file.quiz.questions.length} question

@@ -17,6 +17,7 @@ fn sample_quiz(id: &str, title: &str, imported_at: &str) -> ImportedQuiz {
         quiz: QuizFile {
             title: title.to_owned(),
             description: Some("A persisted quiz".to_owned()),
+            video_url: Some("https://www.youtube.com/watch?v=source".to_owned()),
             questions: vec![QuizQuestion {
                 id: "q1".to_owned(),
                 question_type: QuestionType::TrueFalse,

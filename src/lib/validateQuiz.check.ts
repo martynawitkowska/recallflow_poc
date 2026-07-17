@@ -34,6 +34,12 @@ function expectError(payload: unknown, text: string) {
 
 expectValid(validQuiz);
 expectValid(QUIZ_SCHEMA_EXAMPLE);
+const linkedQuiz = validateQuiz({ ...validQuiz, videoUrl: " https://youtu.be/source " });
+if (!linkedQuiz.valid || linkedQuiz.quiz.videoUrl !== "https://youtu.be/source") {
+  throw new Error("Expected video source links to be normalized and preserved.");
+}
+expectError({ ...validQuiz, videoUrl: "javascript:alert(1)" }, "http:// or https://");
+expectError({ ...validQuiz, videoUrl: 42 }, "videoUrl must be a string");
 const mnemonicQuiz = validateQuiz({
   ...validQuiz,
   questions: [{ ...validQuiz.questions[0], mnemonic: "  Cells make ATP.  " }],

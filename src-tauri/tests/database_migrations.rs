@@ -17,6 +17,7 @@ fn legacy_quiz() -> ImportedQuiz {
         quiz: QuizFile {
             title: "Legacy library quiz".to_owned(),
             description: None,
+            video_url: None,
             questions: vec![QuizQuestion {
                 id: "q1".to_owned(),
                 question_type: QuestionType::TrueFalse,
