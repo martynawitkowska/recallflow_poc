@@ -256,7 +256,7 @@ export default function QuizGenerator({
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                Open source video
+                Link to lecture video
               </a>
             )}
             <ol className="generated-question-list">

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import type { QuizAttemptsState } from "../hooks/useQuizAttempts";
 import type { QuizLibraryState } from "../hooks/useQuizLibrary";
 import type { LibraryQuiz } from "../lib/quizLibrary";
+import { MAX_LECTURE_TITLE_CHARS } from "../lib/quizGeneration";
+import { MAX_VIDEO_URL_CHARS } from "../lib/quizSchema";
 import Icon from "./Icon";
 import QuizStatisticsModal from "./QuizStatisticsModal";
 
@@ -13,6 +15,7 @@ type QuizLibraryProps = {
   onRetry: () => Promise<void>;
   onRetryStatistics: () => Promise<void>;
   onStartQuiz: (quiz: LibraryQuiz) => void;
+  onUpdateMetadata: (quizId: string, title: string, videoUrl: string) => Promise<void>;
   state: QuizLibraryState;
 };
 
@@ -35,6 +38,7 @@ export default function QuizLibrary({
   onRetry,
   onRetryStatistics,
   onStartQuiz,
+  onUpdateMetadata,
 }: QuizLibraryProps) {
   const [managementFeedback, setManagementFeedback] =
     useState<ManagementFeedback | null>(null);
@@ -42,6 +46,11 @@ export default function QuizLibrary({
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [confirmingQuizId, setConfirmingQuizId] = useState<string | null>(null);
   const [statisticsQuiz, setStatisticsQuiz] = useState<LibraryQuiz | null>(null);
+  const [editingMetadata, setEditingMetadata] = useState<{
+    quizId: string;
+    title: string;
+    videoUrl: string;
+  } | null>(null);
 
   const removeQuiz = async (file: LibraryQuiz) => {
     setPendingAction(file.id);
@@ -70,6 +79,26 @@ export default function QuizLibrary({
         kind: "success",
         message: "The local library was cleared.",
       });
+    } catch (error) {
+      setManagementFeedback({ kind: "error", message: actionErrorMessage(error) });
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const saveMetadata = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingMetadata) return;
+    setPendingAction(`metadata:${editingMetadata.quizId}`);
+    setManagementFeedback(null);
+    try {
+      await onUpdateMetadata(
+        editingMetadata.quizId,
+        editingMetadata.title,
+        editingMetadata.videoUrl,
+      );
+      setManagementFeedback({ kind: "success", message: "Quiz metadata was updated." });
+      setEditingMetadata(null);
     } catch (error) {
       setManagementFeedback({ kind: "error", message: actionErrorMessage(error) });
     } finally {
@@ -197,7 +226,7 @@ export default function QuizLibrary({
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    Open source video
+                    Link to lecture video
                   </a>
                 )}
               </div>
@@ -206,6 +235,51 @@ export default function QuizLibrary({
                 {file.quiz.questions.length === 1 ? "" : "s"}
               </span>
             </div>
+            {editingMetadata?.quizId === file.id && (
+              <form className="library-metadata-form" onSubmit={(event) => void saveMetadata(event)}>
+                <label htmlFor={`metadata-title-${file.id}`}>Quiz title</label>
+                <input
+                  disabled={pendingAction !== null}
+                  id={`metadata-title-${file.id}`}
+                  maxLength={MAX_LECTURE_TITLE_CHARS + 1}
+                  onChange={(event) =>
+                    setEditingMetadata({ ...editingMetadata, title: event.target.value })
+                  }
+                  required
+                  type="text"
+                  value={editingMetadata.title}
+                />
+                <label htmlFor={`metadata-video-${file.id}`}>
+                  Lecture video URL (optional)
+                </label>
+                <input
+                  disabled={pendingAction !== null}
+                  id={`metadata-video-${file.id}`}
+                  inputMode="url"
+                  maxLength={MAX_VIDEO_URL_CHARS + 1}
+                  onChange={(event) =>
+                    setEditingMetadata({ ...editingMetadata, videoUrl: event.target.value })
+                  }
+                  placeholder="https://www.youtube.com/watch?v=…"
+                  spellCheck={false}
+                  type="url"
+                  value={editingMetadata.videoUrl}
+                />
+                <div className="library-metadata-form-actions">
+                  <button
+                    className="secondary-button"
+                    disabled={pendingAction !== null}
+                    onClick={() => setEditingMetadata(null)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button className="primary-button" disabled={pendingAction !== null} type="submit">
+                    {pendingAction === `metadata:${file.id}` ? "Saving…" : "Save metadata"}
+                  </button>
+                </div>
+              </form>
+            )}
             <dl className="library-metadata">
               <div>
                 <dt>Source</dt>
@@ -250,6 +324,22 @@ export default function QuizLibrary({
                   type="button"
                 >
                   Statistics
+                </button>
+                <button
+                  aria-label={`Edit metadata for ${file.quiz.title}`}
+                  className="secondary-button"
+                  disabled={pendingAction !== null}
+                  onClick={() => {
+                    setConfirmingQuizId(null);
+                    setEditingMetadata({
+                      quizId: file.id,
+                      title: file.quiz.title,
+                      videoUrl: file.quiz.videoUrl ?? "",
+                    });
+                  }}
+                  type="button"
+                >
+                  Edit metadata
                 </button>
                 {confirmingQuizId === file.id ? (
                   <>
