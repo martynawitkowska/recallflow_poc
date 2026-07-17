@@ -866,6 +866,15 @@ h2[tabindex="-1"]:focus {
   background: var(--color-surface);
 }
 
+.quiz-answer-option input[type="radio"] {
+  border-radius: 50%;
+}
+
+.quiz-answer-option input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .quiz-answer-option input:checked {
   border-color: var(--color-accent);
   background: var(--color-accent);
