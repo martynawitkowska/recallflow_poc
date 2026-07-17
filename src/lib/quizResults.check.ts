@@ -27,10 +27,17 @@ const questions: QuizQuestion[] = [
 ];
 
 const selectedAnswers = ["B", "A"];
-const result = calculateQuizResult(questions, {
-  single: ["A"],
-  multiple: selectedAnswers,
-});
+const mnemonics = {
+  multiple: "B and C belong together.",
+};
+const result = calculateQuizResult(
+  questions,
+  {
+    single: ["A"],
+    multiple: selectedAnswers,
+  },
+  mnemonics,
+);
 
 if (result.score !== 2 || result.total !== 3) {
   throw new Error("Expected results to score every quiz question consistently.");
@@ -47,7 +54,20 @@ if (
   throw new Error("Expected result details to preserve question context for review.");
 }
 
+if (result.details[0].mnemonic !== undefined) {
+  throw new Error("Expected questions without generated mnemonics to stay empty.");
+}
+
+if (result.details[1].mnemonic !== "B and C belong together.") {
+  throw new Error("Expected generated mnemonic in the result detail.");
+}
+
 selectedAnswers.push("C");
+mnemonics.multiple = "Changed";
 if (result.details[1].selectedAnswers.length !== 2) {
   throw new Error("Expected result details to preserve an answer snapshot.");
+}
+
+if (result.details[1].mnemonic !== "B and C belong together.") {
+  throw new Error("Expected result details to preserve a mnemonic snapshot.");
 }

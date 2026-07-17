@@ -117,6 +117,11 @@ export default function QuizSummary({
                     <strong>Explanation:</strong> {detail.explanation}
                   </p>
                 )}
+                {detail.mnemonic && (
+                  <p className="quiz-answer-review-mnemonic">
+                    <strong>Mnemonic:</strong> {detail.mnemonic}
+                  </p>
+                )}
               </li>
             ))}
           </ol>
