@@ -20,10 +20,19 @@ pub(crate) const MAX_CONCURRENT_REQUESTS: usize = 4;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum CandidateCallError {
-    Transient,
-    Permanent,
+    Transient(String),
+    Permanent(String),
     InvalidResponse,
-    Refusal,
+    Refusal(String),
+}
+
+impl CandidateCallError {
+    fn message(&self) -> &str {
+        match self {
+            Self::Transient(message) | Self::Permanent(message) | Self::Refusal(message) => message,
+            Self::InvalidResponse => "OpenAI returned an invalid transcript analysis. Try again.",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,7 +55,13 @@ pub(crate) struct CandidateGenerationOutcome {
 impl CandidateGenerationOutcome {
     pub(crate) fn ensure_usable(&self) -> Result<(), String> {
         if self.total_chunks > 0 && self.successful_chunks == 0 && self.failed_chunks > 0 {
-            Err("OpenAI could not analyze any transcript section. Check your connection and try again.".to_owned())
+            let message = self.chunks.iter().find_map(|status| match status {
+                ChunkGenerationStatus::Failed(error) => Some(error.message()),
+                _ => None,
+            });
+            Err(message
+                .unwrap_or("OpenAI could not analyze the transcript. Try again.")
+                .to_owned())
         } else {
             Ok(())
         }
@@ -132,7 +147,7 @@ where
                             }
                         }
                     }
-                    Err(CandidateCallError::Transient) if attempt == 0 => {
+                    Err(CandidateCallError::Transient(_)) if attempt == 0 => {
                         attempt += 1;
                         tokio::time::sleep(Duration::from_millis(50)).await;
                         if cancellation.is_cancelled() {
@@ -222,7 +237,7 @@ pub(crate) async fn generate_candidates_for_chunks(
 
 pub(crate) fn classify_provider_error(message: &str) -> CandidateCallError {
     if message.contains("declined") {
-        CandidateCallError::Refusal
+        CandidateCallError::Refusal(message.to_owned())
     } else if [
         "rate limiting",
         "temporarily unavailable",
@@ -232,9 +247,9 @@ pub(crate) fn classify_provider_error(message: &str) -> CandidateCallError {
     .iter()
     .any(|needle| message.contains(needle))
     {
-        CandidateCallError::Transient
+        CandidateCallError::Transient(message.to_owned())
     } else {
-        CandidateCallError::Permanent
+        CandidateCallError::Permanent(message.to_owned())
     }
 }
 
@@ -305,7 +320,9 @@ mod tests {
                 let calls = calls.clone();
                 async move {
                     if calls.fetch_add(1, Ordering::SeqCst) == 0 {
-                        Err(CandidateCallError::Transient)
+                        Err(CandidateCallError::Transient(
+                            "temporary failure".to_owned(),
+                        ))
                     } else {
                         Ok(response(prompt.chunk_id(), "candidate-1"))
                     }
@@ -316,7 +333,10 @@ mod tests {
         assert_eq!(calls.load(Ordering::SeqCst), 2);
         assert_eq!(outcome.successful_chunks, 1);
 
-        for error in [CandidateCallError::Permanent, CandidateCallError::Refusal] {
+        for error in [
+            CandidateCallError::Permanent("permanent failure".to_owned()),
+            CandidateCallError::Refusal("provider refusal".to_owned()),
+        ] {
             let (_, chunks) = segment_transcript("durable knowledge").unwrap();
             let calls = Arc::new(AtomicUsize::new(0));
             let outcome = orchestrate_candidate_generation(chunks, CancellationFlag::default(), {
@@ -346,7 +366,9 @@ mod tests {
                 if prompt.chunk_id() == "chunk-0001" {
                     Ok(r#"{"candidates":[]}"#.to_owned())
                 } else {
-                    Err(CandidateCallError::Permanent)
+                    Err(CandidateCallError::Permanent(
+                        "permanent failure".to_owned(),
+                    ))
                 }
             },
         )
@@ -406,7 +428,11 @@ mod tests {
     #[test]
     fn total_provider_failure_is_actionable_and_content_free() {
         let outcome = CandidateGenerationOutcome {
-            chunks: vec![ChunkGenerationStatus::Failed(CandidateCallError::Permanent)],
+            chunks: vec![ChunkGenerationStatus::Failed(
+                CandidateCallError::Permanent(
+                    "OpenAI rejected the API key. Check it and try again.".to_owned(),
+                ),
+            )],
             total_chunks: 1,
             completed_chunks: 1,
             successful_chunks: 0,
@@ -414,7 +440,10 @@ mod tests {
             candidate_count: 0,
         };
         let error = outcome.ensure_usable().unwrap_err();
-        assert!(error.contains("could not analyze any transcript section"));
+        assert_eq!(
+            error,
+            "OpenAI rejected the API key. Check it and try again."
+        );
         assert!(!error.contains("private transcript"));
     }
 }

@@ -103,7 +103,7 @@ where
                                 });
                             break (index, BatchResult::Verified(accepted, rejected.len()));
                         }
-                        Err(CandidateCallError::Transient) if attempt == 0 => {
+                        Err(CandidateCallError::Transient(_)) if attempt == 0 => {
                             attempt += 1;
                             tokio::time::sleep(Duration::from_millis(50)).await;
                             if cancellation.is_cancelled() {
@@ -278,8 +278,10 @@ mod tests {
         for response in [
             Ok(r#"{"decisions":[]}"#.to_owned()),
             Ok(decision(json!({ "candidate_id": "unknown" }))),
-            Err(CandidateCallError::Refusal),
-            Err(CandidateCallError::Permanent),
+            Err(CandidateCallError::Refusal("provider refusal".to_owned())),
+            Err(CandidateCallError::Permanent(
+                "permanent failure".to_owned(),
+            )),
         ] {
             let (items, chunks) = candidates();
             let outcome =
@@ -303,7 +305,9 @@ mod tests {
                 let calls = calls.clone();
                 async move {
                     if calls.fetch_add(1, Ordering::SeqCst) == 0 {
-                        Err(CandidateCallError::Transient)
+                        Err(CandidateCallError::Transient(
+                            "temporary failure".to_owned(),
+                        ))
                     } else {
                         Ok(decision(json!({})))
                     }
