@@ -4,7 +4,6 @@ import AppStatus from "./components/AppStatus";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
-import Icon from "./components/Icon";
 import QuizGenerator from "./components/QuizGenerator";
 import QuizHistory from "./components/QuizHistory";
 import QuizLibrary from "./components/QuizLibrary";
@@ -33,6 +32,7 @@ import {
   type MnemonicProvider,
 } from "./lib/mnemonicProviders";
 import type { QuizResult } from "./lib/quizResults";
+import appLogo from "../src-tauri/icons/icon.png";
 
 type ActiveView = ViewKey | "quiz" | "summary";
 const APP_PREFERENCES_STORAGE_KEY = "recallflow-app-preferences";
@@ -182,7 +182,9 @@ export default function App() {
             onClick={() => navigate("library")}
             type="button"
           >
-            <span className="brand-mark"><Icon name="logo" size={26} /></span>
+            <span className="brand-mark">
+              <img alt="" height={28} src={appLogo} width={28} />
+            </span>
             <span>
               <strong>RecallFlow</strong>
               <small>Local-first learning</small>
