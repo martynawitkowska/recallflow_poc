@@ -64,6 +64,88 @@ expectError(
   "match values from answers",
 );
 
+const invalidQuestions: Array<[unknown, string]> = [
+  [null, "JSON object"],
+  [{ ...validQuiz, description: 42 }, "description must be a string"],
+  [{ ...validQuiz, questions: [] }, "at least one question"],
+  [{ ...validQuiz, questions: [null] }, "must be a JSON object"],
+  [
+    { ...validQuiz, questions: [{ ...validQuiz.questions[0], id: " " }] },
+    "non-empty id",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [{ ...validQuiz.questions[0], type: "essay" }],
+    },
+    "type must be",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [{ ...validQuiz.questions[0], question: " " }],
+    },
+    "question string",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [{ ...validQuiz.questions[0], answers: ["A"] }],
+    },
+    "at least two",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [
+        { ...validQuiz.questions[0], answers: ["A", " A "] },
+      ],
+    },
+    "duplicate answers",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [{
+        ...validQuiz.questions[0],
+        correctAnswers: ["Mitochondrion", "Mitochondrion"],
+      }],
+    },
+    "duplicate correct answers",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [{
+        ...validQuiz.questions[0],
+        answers: ["True", "False"],
+        correctAnswers: ["True", "False"],
+      }],
+    },
+    "exactly one correct answer",
+  ],
+  [
+    {
+      ...validQuiz,
+      questions: [{
+        ...validQuiz.questions[0],
+        type: "true_false",
+        answers: ["False", "True"],
+        correctAnswers: ["True"],
+      }],
+    },
+    'exactly "True" and "False"',
+  ],
+  [
+    { ...validQuiz, questions: [{ ...validQuiz.questions[0], explanation: 42 }] },
+    "explanation must be a string",
+  ],
+];
+
+for (const [payload, expectedMessage] of invalidQuestions) {
+  expectError(payload, expectedMessage);
+}
+
 if (!EXTERNAL_QUIZ_PROMPT.includes(QUIZ_SCHEMA_REFERENCE)) {
   throw new Error("Expected the external generation prompt to include the schema example.");
 }

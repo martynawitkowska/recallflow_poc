@@ -86,6 +86,9 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
     }
 
     const correctAnswers = value.correctAnswers.map((answer) => answer.trim());
+    if (new Set(correctAnswers).size !== correctAnswers.length) {
+      return invalid(`${label} contains duplicate correct answers.`);
+    }
     if (correctAnswers.some((answer) => !answers.includes(answer))) {
       return invalid(`${label} correctAnswers must exactly match values from answers.`);
     }
@@ -96,7 +99,7 @@ export function validateQuiz(payload: unknown): QuizValidationResult {
 
     if (
       value.type === "true_false" &&
-      (answers.length !== 2 || !answers.includes("True") || !answers.includes("False"))
+      (answers.length !== 2 || answers[0] !== "True" || answers[1] !== "False")
     ) {
       return invalid(`${label} true_false answers must be exactly "True" and "False".`);
     }
