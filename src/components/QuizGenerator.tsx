@@ -110,8 +110,6 @@ export default function QuizGenerator({
               value={generation.provider}
             >
               <option value="openai">OpenAI</option>
-              <option disabled value="gemini">Google Gemini — coming soon</option>
-              <option disabled value="anthropic">Anthropic — coming soon</option>
             </select>
           </div>
           <div>

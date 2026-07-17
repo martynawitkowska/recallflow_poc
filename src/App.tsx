@@ -74,11 +74,9 @@ const loadAiSelection = (): AiSelection => {
       ? savedProvider
       : defaults.provider;
     const models = { ...defaults.models };
-    for (const candidate of ["openai", "gemini", "claude"] as const) {
-      const model = saved.models?.[candidate] ?? "";
-      if (isMnemonicModelForProvider(candidate, model)) {
-        models[candidate] = model;
-      }
+    const model = saved.models?.openai ?? "";
+    if (isMnemonicModelForProvider("openai", model)) {
+      models.openai = model;
     }
 
     return { models, provider };
