@@ -1,5 +1,6 @@
 import {
   apiKeyRecordNames,
+  migrateStoredOpenAiApiKey,
   normalizeApiKey,
   restoreStoredApiKeys,
 } from "./apiKeyStorage.ts";
@@ -51,4 +52,51 @@ if (
 
 if (JSON.stringify(restoreReport).includes("secret")) {
   throw new Error("Startup restoration exposed a credential or internal failure.");
+}
+
+const migrationSteps: string[] = [];
+const migrationStatus = await migrateStoredOpenAiApiKey(
+  async () => {
+    migrationSteps.push("read");
+    return encoder.encode("legacy-openai-api-key-1234");
+  },
+  async () => {
+    migrationSteps.push("save");
+    return {
+      configured: true,
+      maskedKey: "••••••••1234",
+      needsMigration: false,
+      persisted: true,
+    };
+  },
+  async () => {
+    migrationSteps.push("remove");
+  },
+);
+
+if (
+  migrationSteps.join() !== "read,save,remove" ||
+  !migrationStatus.persisted ||
+  migrationStatus.needsMigration
+) {
+  throw new Error("Legacy migration did not preserve the safe operation order.");
+}
+
+let removedInvalidLegacyVault = false;
+try {
+  await migrateStoredOpenAiApiKey(
+    async () => encoder.encode("invalid key with spaces"),
+    async () => migrationStatus,
+    async () => {
+      removedInvalidLegacyVault = true;
+    },
+  );
+  throw new Error("Legacy migration accepted an invalid API key.");
+} catch (error) {
+  if (!(error instanceof Error) || !error.message.includes("valid API key")) {
+    throw error;
+  }
+}
+if (removedInvalidLegacyVault) {
+  throw new Error("Legacy migration removed a vault before preserving its key.");
 }
