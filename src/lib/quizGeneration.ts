@@ -6,6 +6,7 @@ import { validateQuiz } from "./validateQuiz.ts";
 
 export const MAX_MATERIAL_CHARS = 500_000;
 export const MAX_SOURCE_URL_CHARS = 2_048;
+export const MAX_LECTURE_TITLE_CHARS = 200;
 export const MIN_QUESTION_COUNT = 3;
 export const MAX_QUESTION_COUNT = 25;
 export const DEFAULT_QUESTION_COUNT = 8;
@@ -101,6 +102,12 @@ export function validateOptionalVideoUrl(value: string): string | null {
     return "Enter a complete http:// or https:// video URL.";
   }
   return null;
+}
+
+export function validateOptionalLectureTitle(value: string): string | null {
+  return countCharacters(value.trim()) > MAX_LECTURE_TITLE_CHARS
+    ? `Lecture title must be ${MAX_LECTURE_TITLE_CHARS} characters or fewer.`
+    : null;
 }
 
 export function generationProgressLabel(progress: GenerationProgress): string {

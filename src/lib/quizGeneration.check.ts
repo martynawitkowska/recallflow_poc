@@ -6,6 +6,7 @@ import {
   MAX_SOURCE_URL_CHARS,
   mergeGenerationProgress,
   type GenerateQuizRequest,
+  validateOptionalLectureTitle,
   validateOptionalVideoUrl,
   validateQuizGenerationRequest,
 } from "./quizGeneration.ts";
@@ -19,6 +20,12 @@ if (validateOptionalVideoUrl("") !== null || validateOptionalVideoUrl(" https://
 }
 if (!validateOptionalVideoUrl("javascript:alert(1)")) {
   throw new Error("Expected unsafe video URL schemes to be rejected.");
+}
+if (validateOptionalLectureTitle(" Cell biology ") !== null) {
+  throw new Error("Expected a normal lecture title to be valid.");
+}
+if (!validateOptionalLectureTitle("x".repeat(201))) {
+  throw new Error("Expected oversized lecture titles to be rejected.");
 }
 
 const validMaterialRequest: GenerateQuizRequest = {

@@ -4,6 +4,7 @@ import {
   countCharacters,
   generationOutcomeMessage,
   generationProgressLabel,
+  MAX_LECTURE_TITLE_CHARS,
   MAX_MATERIAL_CHARS,
   MAX_QUESTION_COUNT,
   MAX_SOURCE_URL_CHARS,
@@ -80,6 +81,19 @@ export default function QuizGenerator({
             <p className="field-hint character-count">
               {materialCharacters.toLocaleString()} /{" "}
               {MAX_MATERIAL_CHARS.toLocaleString()} characters
+            </p>
+            <label htmlFor="lecture-title">Lecture title (optional)</label>
+            <input
+              disabled={isLoading}
+              id="lecture-title"
+              maxLength={MAX_LECTURE_TITLE_CHARS + 1}
+              onChange={(event) => generation.setLectureTitle(event.target.value)}
+              placeholder="Introduction to cellular respiration"
+              type="text"
+              value={generation.lectureTitle}
+            />
+            <p className="field-hint">
+              Saved as the quiz title. If empty, RecallFlow uses “Generated quiz.”
             </p>
             <label htmlFor="video-url">Original video URL (optional)</label>
             <input
