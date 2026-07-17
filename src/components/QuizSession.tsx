@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
+import {
+  calculateQuizResult,
+  type QuizAnswerState,
+  type QuizResult,
+} from "../lib/quizResults";
 
 type QuizSessionProps = {
   focusMode: boolean;
   quiz: LibraryQuiz;
   onExit: () => void;
+  onFinish: (result: QuizResult) => void;
   onFocusModeChange: (enabled: boolean) => void;
   onReadingFontChange: (font: ReadingFont) => void;
   readingFont: ReadingFont;
@@ -29,6 +35,7 @@ export default function QuizSession({
   focusMode,
   quiz: file,
   onExit,
+  onFinish,
   onFocusModeChange,
   onReadingFontChange,
   readingFont,
@@ -38,12 +45,13 @@ export default function QuizSession({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [checkedAnswers, setCheckedAnswers] = useState<QuizAnswerState>({});
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
-  const completedQuestions = currentIndex + (answerChecked ? 1 : 0);
+  const result = calculateQuizResult(file.quiz.questions, checkedAnswers);
+  const completedQuestions = Object.keys(checkedAnswers).length;
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -78,8 +86,15 @@ export default function QuizSession({
     }
 
     setAnswerChecked(true);
-    if (isCorrect) {
-      setCorrectCount((current) => current + 1);
+    setCheckedAnswers((current) => ({
+      ...current,
+      [question.id]: [...selectedAnswers],
+    }));
+  };
+
+  const finishQuiz = () => {
+    if (answerChecked && isLastQuestion) {
+      onFinish(result);
     }
   };
 
@@ -135,7 +150,7 @@ export default function QuizSession({
             Question {currentIndex + 1} of {totalQuestions}
           </p>
           <p>
-            Correct <strong>{correctCount}</strong> of {totalQuestions}
+            Correct <strong>{result.score}</strong> of {totalQuestions}
           </p>
         </div>
         <progress
@@ -228,7 +243,13 @@ export default function QuizSession({
               </section>
               <div className="quiz-question-navigation">
                 {isLastQuestion ? (
-                  <p>Final question complete.</p>
+                  <button
+                    className="primary-button"
+                    onClick={finishQuiz}
+                    type="button"
+                  >
+                    View results →
+                  </button>
                 ) : (
                   <button
                     className="primary-button"

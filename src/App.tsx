@@ -6,6 +6,7 @@ import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
 import QuizGenerator from "./components/QuizGenerator";
 import QuizLibrary from "./components/QuizLibrary";
+import QuizSummary from "./components/QuizSummary";
 import QuizSession, {
   readingFontOptions,
   type ReadingFont,
@@ -16,9 +17,11 @@ import {
   type ValidatedQuizFile,
 } from "./hooks/useQuizFileImport";
 import { useQuizLibrary } from "./hooks/useQuizLibrary";
+import { useQuizAttemptSave } from "./hooks/useQuizAttemptSave";
 import type { LibraryQuiz } from "./lib/quizLibrary";
+import type { QuizResult } from "./lib/quizResults";
 
-type ActiveView = ViewKey | "quiz";
+type ActiveView = ViewKey | "quiz" | "summary";
 const READING_FONT_STORAGE_KEY = "recallflow-reading-font";
 
 const loadReadingFont = (): ReadingFont => {
@@ -35,13 +38,16 @@ const loadReadingFont = (): ReadingFont => {
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>("library");
   const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [readingFont, setReadingFont] = useState(loadReadingFont);
   const { state, retry } = useAppInfo();
+  const attemptSave = useQuizAttemptSave();
   const library = useQuizLibrary();
   const navigate = useCallback((view: ViewKey) => {
     setFocusMode(false);
     setActiveQuiz(null);
+    setQuizResult(null);
     setActiveView(view);
   }, []);
 
@@ -109,10 +115,30 @@ export default function App() {
           <QuizSession
             focusMode={focusMode}
             onExit={() => navigate("library")}
+            onFinish={(result) => {
+              setFocusMode(false);
+              setQuizResult(result);
+              setActiveView("summary");
+              void attemptSave.save(activeQuiz.id, result);
+            }}
             onFocusModeChange={setFocusMode}
             onReadingFontChange={setReadingFont}
             quiz={activeQuiz}
             readingFont={readingFont}
+          />
+        )}
+
+        {activeView === "summary" && activeQuiz && quizResult && (
+          <QuizSummary
+            onBackToLibrary={() => navigate("library")}
+            onRestart={() => {
+              setQuizResult(null);
+              setActiveView("quiz");
+            }}
+            onRetrySave={attemptSave.retry}
+            quizTitle={activeQuiz.quiz.title}
+            result={quizResult}
+            saveState={attemptSave.state}
           />
         )}
 

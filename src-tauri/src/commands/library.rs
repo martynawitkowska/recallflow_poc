@@ -109,9 +109,19 @@ pub async fn delete_imported_quiz_from_pool(
         return Err(WRITE_ERROR.to_owned());
     }
 
+    let mut transaction = pool.begin().await.map_err(|_| WRITE_ERROR.to_owned())?;
+    sqlx::query("DELETE FROM quiz_attempts WHERE quiz_id = ?")
+        .bind(quiz_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| WRITE_ERROR.to_owned())?;
     sqlx::query("DELETE FROM imported_quizzes WHERE id = ?")
         .bind(quiz_id)
-        .execute(pool)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| WRITE_ERROR.to_owned())?;
+    transaction
+        .commit()
         .await
         .map_err(|_| WRITE_ERROR.to_owned())?;
 
@@ -119,8 +129,17 @@ pub async fn delete_imported_quiz_from_pool(
 }
 
 pub async fn clear_imported_quizzes_from_pool(pool: &SqlitePool) -> Result<(), String> {
+    let mut transaction = pool.begin().await.map_err(|_| WRITE_ERROR.to_owned())?;
+    sqlx::query("DELETE FROM quiz_attempts")
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| WRITE_ERROR.to_owned())?;
     sqlx::query("DELETE FROM imported_quizzes")
-        .execute(pool)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| WRITE_ERROR.to_owned())?;
+    transaction
+        .commit()
         .await
         .map_err(|_| WRITE_ERROR.to_owned())?;
 

@@ -32,5 +32,28 @@ pub async fn initialize_schema(pool: &SqlitePool) -> Result<(), String> {
     .await
     .map_err(|_| DATABASE_ERROR.to_owned())?;
 
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS quiz_attempts (
+            id TEXT PRIMARY KEY NOT NULL,
+            quiz_id TEXT NOT NULL,
+            completed_at TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            total INTEGER NOT NULL,
+            incorrect_question_ids_json TEXT NOT NULL,
+            FOREIGN KEY (quiz_id) REFERENCES imported_quizzes(id) ON DELETE CASCADE
+        )",
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| DATABASE_ERROR.to_owned())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_quiz_attempts_quiz_id
+         ON quiz_attempts(quiz_id)",
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| DATABASE_ERROR.to_owned())?;
+
     Ok(())
 }
