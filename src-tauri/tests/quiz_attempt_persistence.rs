@@ -1,7 +1,10 @@
 use recallflow_lib::{
     commands::{
         attempts::{list_quiz_attempts_from_pool, save_quiz_attempt_to_pool},
-        library::{delete_imported_quiz_from_pool, save_imported_quiz_to_pool},
+        library::{
+            delete_imported_quiz_from_pool, list_imported_quizzes_from_pool,
+            save_imported_quiz_to_pool,
+        },
     },
     database::{connect, initialize_schema},
     models::{ImportedQuiz, QuestionType, QuizAttempt, QuizFile, QuizQuestion},
@@ -77,6 +80,10 @@ fn attempts_survive_database_reopen() {
         let reopened = connect(&database_path)
             .await
             .expect("file database should reopen");
+        assert_eq!(
+            list_imported_quizzes_from_pool(&reopened).await.unwrap(),
+            vec![quiz]
+        );
         assert_eq!(
             list_quiz_attempts_from_pool(&reopened).await.unwrap(),
             vec![attempt]

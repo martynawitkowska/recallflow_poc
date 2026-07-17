@@ -37,6 +37,10 @@ colocated unit tests, while public serialization and cross-module behavior live
 in `src-tauri/tests/`. The suite uses deterministic local inputs and does not
 contact AI providers.
 
+SQLite integration coverage recreates the shipped library-only schema and
+verifies that initialization preserves its quizzes while adding attempt
+storage. Separate persistence checks close and reopen a file-backed database.
+
 ## Application preferences
 
 Open **Settings** to choose the application font and whether new quizzes start
