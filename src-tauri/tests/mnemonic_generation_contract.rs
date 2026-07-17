@@ -39,7 +39,9 @@ fn mnemonic_request_requires_question_answer_and_key() {
 
     assert!(validate_mnemonic_request(&missing_question).is_err());
     assert!(validate_mnemonic_request(&missing_answer).is_err());
-    assert!(validate_mnemonic_request(&missing_key).is_err());
+    assert!(validate_mnemonic_request(&missing_key)
+        .expect_err("missing key should fail")
+        .contains("API key"));
 }
 
 #[test]

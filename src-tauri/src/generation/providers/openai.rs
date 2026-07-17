@@ -7,18 +7,37 @@ const ALLOWED_MODELS: &[&str] = &[DEFAULT_MODEL];
 const RESPONSES_ENDPOINT: &str = "https://api.openai.com/v1/responses";
 const REQUEST_TIMEOUT_SECONDS: u64 = 120;
 const MAX_RESPONSE_BYTES: usize = 1_000_000;
-const GENERATION_ERROR: &str =
-    "OpenAI could not generate the quiz. Check your connection and try again.";
-const TIMEOUT_ERROR: &str =
-    "OpenAI took too long to generate the quiz. Try again with a shorter source.";
-const RESPONSE_TOO_LARGE_ERROR: &str =
-    "OpenAI returned too much data. Try again with fewer questions.";
-const INCOMPLETE_RESPONSE_ERROR: &str =
-    "OpenAI could not complete the quiz. Try again with a shorter or clearer source.";
-const REFUSAL_ERROR: &str =
-    "OpenAI declined to create a quiz from that source. Try different study material.";
-const EMPTY_RESPONSE_ERROR: &str =
-    "OpenAI did not return a quiz. Try again with a different source.";
+
+#[derive(Clone, Copy)]
+struct FailureMessages {
+    generation: &'static str,
+    timeout: &'static str,
+    response_too_large: &'static str,
+    incomplete: &'static str,
+    refusal: &'static str,
+    empty: &'static str,
+    bad_request: &'static str,
+}
+
+const QUIZ_FAILURES: FailureMessages = FailureMessages {
+    generation: "OpenAI could not generate the quiz. Check your connection and try again.",
+    timeout: "OpenAI took too long to generate the quiz. Try again with a shorter source.",
+    response_too_large: "OpenAI returned too much data. Try again with fewer questions.",
+    incomplete: "OpenAI could not complete the quiz. Try again with a shorter or clearer source.",
+    refusal: "OpenAI declined to create a quiz from that source. Try different study material.",
+    empty: "OpenAI did not return a quiz. Try again with a different source.",
+    bad_request: "OpenAI could not process this request. Check the source and try again.",
+};
+
+const MNEMONIC_FAILURES: FailureMessages = FailureMessages {
+    generation: "OpenAI could not generate a mnemonic. Check your connection and try again.",
+    timeout: "OpenAI took too long to generate a mnemonic. Try again.",
+    response_too_large: "OpenAI returned a mnemonic that was too large. Try again.",
+    incomplete: "OpenAI could not complete the mnemonic. Try again.",
+    refusal: "OpenAI declined to create a mnemonic for this question. Try again.",
+    empty: "OpenAI did not return a mnemonic. Try again.",
+    bad_request: "OpenAI could not process this mnemonic request. Try again.",
+};
 
 #[derive(Deserialize)]
 struct OpenAiResponse {
@@ -124,23 +143,26 @@ fn build_mnemonic_payload(model: &str, prompt: &MnemonicPrompt) -> serde_json::V
     })
 }
 
-fn extract_generated_json(response: OpenAiResponse) -> Result<String, String> {
+fn extract_generated_text(
+    response: OpenAiResponse,
+    failures: FailureMessages,
+) -> Result<String, String> {
     if response.status != "completed" {
-        return Err(INCOMPLETE_RESPONSE_ERROR.to_owned());
+        return Err(failures.incomplete.to_owned());
     }
 
     for content in response.output.into_iter().flat_map(|item| item.content) {
         match content {
             OpenAiContentItem::OutputText { text } if !text.trim().is_empty() => return Ok(text),
-            OpenAiContentItem::Refusal => return Err(REFUSAL_ERROR.to_owned()),
+            OpenAiContentItem::Refusal => return Err(failures.refusal.to_owned()),
             _ => {}
         }
     }
 
-    Err(EMPTY_RESPONSE_ERROR.to_owned())
+    Err(failures.empty.to_owned())
 }
 
-fn status_error(status: reqwest::StatusCode) -> String {
+fn status_error(status: reqwest::StatusCode, failures: FailureMessages) -> String {
     match status {
         reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
             "OpenAI rejected the API key. Check it and try again.".to_owned()
@@ -148,30 +170,32 @@ fn status_error(status: reqwest::StatusCode) -> String {
         reqwest::StatusCode::TOO_MANY_REQUESTS => {
             "OpenAI is rate limiting requests. Wait a moment and try again.".to_owned()
         }
-        reqwest::StatusCode::BAD_REQUEST => {
-            "OpenAI could not process this request. Check the source and try again.".to_owned()
-        }
+        reqwest::StatusCode::BAD_REQUEST => failures.bad_request.to_owned(),
         reqwest::StatusCode::NOT_FOUND => {
             "The selected OpenAI model is unavailable. Choose a supported model and try again."
                 .to_owned()
         }
-        reqwest::StatusCode::REQUEST_TIMEOUT => TIMEOUT_ERROR.to_owned(),
+        reqwest::StatusCode::REQUEST_TIMEOUT => failures.timeout.to_owned(),
         status if status.is_server_error() => {
             "OpenAI is temporarily unavailable. Wait a moment and try again.".to_owned()
         }
-        _ => GENERATION_ERROR.to_owned(),
+        _ => failures.generation.to_owned(),
     }
 }
 
-fn parse_response(body: &[u8]) -> Result<OpenAiResponse, String> {
+fn parse_response(body: &[u8], failures: FailureMessages) -> Result<OpenAiResponse, String> {
     if body.len() > MAX_RESPONSE_BYTES {
-        return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
+        return Err(failures.response_too_large.to_owned());
     }
 
-    serde_json::from_slice(body).map_err(|_| GENERATION_ERROR.to_owned())
+    serde_json::from_slice(body).map_err(|_| failures.generation.to_owned())
 }
 
-async fn send(api_key: &str, payload: serde_json::Value) -> Result<String, String> {
+async fn send(
+    api_key: &str,
+    payload: serde_json::Value,
+    failures: FailureMessages,
+) -> Result<String, String> {
     let mut response = reqwest::Client::new()
         .post(RESPONSES_ENDPOINT)
         .bearer_auth(api_key)
@@ -181,21 +205,21 @@ async fn send(api_key: &str, payload: serde_json::Value) -> Result<String, Strin
         .await
         .map_err(|error| {
             if error.is_timeout() {
-                TIMEOUT_ERROR.to_owned()
+                failures.timeout.to_owned()
             } else {
-                GENERATION_ERROR.to_owned()
+                failures.generation.to_owned()
             }
         })?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(status_error(status));
+        return Err(status_error(status, failures));
     }
     if response
         .content_length()
         .is_some_and(|length| length > MAX_RESPONSE_BYTES as u64)
     {
-        return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
+        return Err(failures.response_too_large.to_owned());
     }
 
     let mut body = Vec::with_capacity(
@@ -207,16 +231,16 @@ async fn send(api_key: &str, payload: serde_json::Value) -> Result<String, Strin
     while let Some(chunk) = response
         .chunk()
         .await
-        .map_err(|_| GENERATION_ERROR.to_owned())?
+        .map_err(|_| failures.generation.to_owned())?
     {
         if body.len() + chunk.len() > MAX_RESPONSE_BYTES {
-            return Err(RESPONSE_TOO_LARGE_ERROR.to_owned());
+            return Err(failures.response_too_large.to_owned());
         }
         body.extend_from_slice(&chunk);
     }
-    let response = parse_response(&body)?;
+    let response = parse_response(&body, failures)?;
 
-    extract_generated_json(response)
+    extract_generated_text(response, failures)
 }
 
 pub(super) async fn generate(
@@ -225,7 +249,7 @@ pub(super) async fn generate(
     prompt: &GenerationPrompt,
 ) -> Result<String, String> {
     let model = validate_model(model)?;
-    send(api_key, build_payload(model, prompt)).await
+    send(api_key, build_payload(model, prompt), QUIZ_FAILURES).await
 }
 
 pub(super) async fn generate_mnemonic(
@@ -234,15 +258,20 @@ pub(super) async fn generate_mnemonic(
     prompt: &MnemonicPrompt,
 ) -> Result<String, String> {
     let model = validate_model(model)?;
-    send(api_key, build_mnemonic_payload(model, prompt)).await
+    send(
+        api_key,
+        build_mnemonic_payload(model, prompt),
+        MNEMONIC_FAILURES,
+    )
+    .await
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        build_mnemonic_payload, build_payload, extract_generated_json, parse_response,
+        build_mnemonic_payload, build_payload, extract_generated_text, parse_response,
         status_error, validate_model, GenerationPrompt, MnemonicPrompt, OpenAiResponse,
-        MAX_RESPONSE_BYTES,
+        MAX_RESPONSE_BYTES, MNEMONIC_FAILURES, QUIZ_FAILURES,
     };
     use crate::generation::GenerationSource;
     use serde_json::json;
@@ -307,13 +336,15 @@ mod tests {
 
     #[test]
     fn provider_failures_are_actionable_and_response_size_is_limited() {
-        assert!(status_error(reqwest::StatusCode::UNAUTHORIZED).contains("API key"));
-        assert!(status_error(reqwest::StatusCode::NOT_FOUND).contains("model"));
-        assert!(status_error(reqwest::StatusCode::INTERNAL_SERVER_ERROR)
-            .contains("temporarily unavailable"));
+        assert!(status_error(reqwest::StatusCode::UNAUTHORIZED, QUIZ_FAILURES).contains("API key"));
+        assert!(status_error(reqwest::StatusCode::NOT_FOUND, QUIZ_FAILURES).contains("model"));
+        assert!(
+            status_error(reqwest::StatusCode::INTERNAL_SERVER_ERROR, QUIZ_FAILURES)
+                .contains("temporarily unavailable")
+        );
 
         let oversized_body = vec![b' '; MAX_RESPONSE_BYTES + 1];
-        assert!(parse_response(&oversized_body)
+        assert!(parse_response(&oversized_body, QUIZ_FAILURES)
             .err()
             .expect("oversized response should be rejected")
             .contains("too much data"));
@@ -337,7 +368,8 @@ mod tests {
         .expect("Responses API envelope should deserialize");
 
         assert_eq!(
-            extract_generated_json(response).expect("completed output should be returned"),
+            extract_generated_text(response, QUIZ_FAILURES)
+                .expect("completed output should be returned"),
             "{\"title\":\"Generated quiz\",\"questions\":[]}"
         );
     }
@@ -358,11 +390,40 @@ mod tests {
         }))
         .expect("incomplete response should deserialize");
 
-        assert!(extract_generated_json(refusal)
+        assert!(extract_generated_text(refusal, QUIZ_FAILURES)
             .expect_err("refusal should fail")
             .contains("declined"));
-        assert!(extract_generated_json(incomplete)
+        assert!(extract_generated_text(incomplete, QUIZ_FAILURES)
             .expect_err("incomplete response should fail")
             .contains("shorter or clearer source"));
+    }
+
+    #[test]
+    fn mnemonic_failures_use_mnemonic_specific_messages() {
+        let incomplete: OpenAiResponse = serde_json::from_value(json!({
+            "status": "incomplete",
+            "output": []
+        }))
+        .unwrap();
+        let refusal: OpenAiResponse = serde_json::from_value(json!({
+            "status": "completed",
+            "output": [{
+                "content": [{ "type": "refusal" }]
+            }]
+        }))
+        .unwrap();
+
+        for message in [
+            status_error(reqwest::StatusCode::BAD_REQUEST, MNEMONIC_FAILURES),
+            status_error(reqwest::StatusCode::REQUEST_TIMEOUT, MNEMONIC_FAILURES),
+            parse_response(&vec![b' '; MAX_RESPONSE_BYTES + 1], MNEMONIC_FAILURES)
+                .err()
+                .expect("oversized mnemonic response should fail"),
+            extract_generated_text(incomplete, MNEMONIC_FAILURES).unwrap_err(),
+            extract_generated_text(refusal, MNEMONIC_FAILURES).unwrap_err(),
+        ] {
+            assert!(message.contains("mnemonic"), "message={message:?}");
+            assert!(!message.contains("quiz"), "message={message:?}");
+        }
     }
 }
