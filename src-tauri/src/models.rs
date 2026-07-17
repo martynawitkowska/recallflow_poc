@@ -56,6 +56,17 @@ pub struct ImportedQuiz {
     pub quiz: QuizFile,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuizAttempt {
+    pub id: String,
+    pub quiz_id: String,
+    pub completed_at: String,
+    pub score: i64,
+    pub total: i64,
+    pub incorrect_question_ids: Vec<String>,
+}
+
 #[derive(Clone, Copy, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum AiProvider {
