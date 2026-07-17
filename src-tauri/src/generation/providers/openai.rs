@@ -1,4 +1,4 @@
-use super::super::{GenerationPrompt, MnemonicPrompt};
+use super::super::{CandidatePrompt, GenerationPrompt, MnemonicPrompt, VerificationPrompt};
 use serde::Deserialize;
 use std::time::Duration;
 
@@ -130,6 +130,86 @@ fn build_payload(model: &str, prompt: &GenerationPrompt) -> serde_json::Value {
     }
 
     payload
+}
+
+fn build_candidate_payload(model: &str, prompt: &CandidatePrompt) -> serde_json::Value {
+    serde_json::json!({
+        "model": model,
+        "store": false,
+        "reasoning": { "effort": "low" },
+        "instructions": prompt.instructions,
+        "input": prompt.input,
+        "max_output_tokens": 1_600,
+        "text": { "format": {
+            "type": "json_schema",
+            "name": "recallflow_candidate_batch",
+            "strict": true,
+            "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["candidates"],
+                "properties": { "candidates": {
+                    "type": "array",
+                    "maxItems": 2,
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["candidate_id", "chunk_id", "topic", "question_type", "question", "answers", "correct_answers", "explanation", "evidence_quote"],
+                        "properties": {
+                            "candidate_id": { "type": "string" },
+                            "chunk_id": { "type": "string" },
+                            "topic": { "type": "string" },
+                            "question_type": { "type": "string", "enum": ["single_choice", "multiple_choice", "true_false"] },
+                            "question": { "type": "string" },
+                            "answers": { "type": "array", "items": { "type": "string" } },
+                            "correct_answers": { "type": "array", "items": { "type": "string" } },
+                            "explanation": { "type": "string" },
+                            "evidence_quote": { "type": "string" }
+                        }
+                    }
+                }}
+            }
+        }}
+    })
+}
+
+fn build_verification_payload(model: &str, prompt: &VerificationPrompt) -> serde_json::Value {
+    serde_json::json!({
+        "model": model,
+        "store": false,
+        "reasoning": { "effort": "low" },
+        "instructions": prompt.instructions,
+        "input": prompt.input,
+        "max_output_tokens": 1_600,
+        "text": { "format": {
+            "type": "json_schema",
+            "name": "recallflow_verification_batch",
+            "strict": true,
+            "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["decisions"],
+                "properties": { "decisions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["candidate_id", "supported", "standalone", "portable", "qualifications_preserved", "not_overgeneralized", "choices_unambiguous", "reason"],
+                        "properties": {
+                            "candidate_id": { "type": "string" },
+                            "supported": { "type": "boolean" },
+                            "standalone": { "type": "boolean" },
+                            "portable": { "type": "boolean" },
+                            "qualifications_preserved": { "type": "boolean" },
+                            "not_overgeneralized": { "type": "boolean" },
+                            "choices_unambiguous": { "type": "boolean" },
+                            "reason": { "type": "string", "enum": ["accepted", "unsupported", "context_dependent", "lecture_bound", "qualification_lost", "overgeneralized", "ambiguous_choices"] }
+                        }
+                    }
+                }}
+            }
+        }}
+    })
 }
 
 fn build_mnemonic_payload(model: &str, prompt: &MnemonicPrompt) -> serde_json::Value {
@@ -269,11 +349,11 @@ pub(super) async fn generate_mnemonic(
 #[cfg(test)]
 mod tests {
     use super::{
-        build_mnemonic_payload, build_payload, extract_generated_text, parse_response,
-        status_error, validate_model, GenerationPrompt, MnemonicPrompt, OpenAiResponse,
-        MAX_RESPONSE_BYTES, MNEMONIC_FAILURES, QUIZ_FAILURES,
+        build_candidate_payload, build_mnemonic_payload, build_payload, build_verification_payload,
+        extract_generated_text, parse_response, status_error, validate_model, GenerationPrompt,
+        MnemonicPrompt, OpenAiResponse, MAX_RESPONSE_BYTES, MNEMONIC_FAILURES, QUIZ_FAILURES,
     };
-    use crate::generation::GenerationSource;
+    use crate::generation::{CandidatePrompt, GenerationSource, VerificationPrompt};
     use serde_json::json;
 
     #[test]
@@ -301,6 +381,43 @@ mod tests {
             .expect("prompt should be text")
             .contains("exactly 12"));
         assert!(material_payload.get("tools").is_none());
+    }
+
+    #[test]
+    fn grounded_contract_payloads_are_strict_and_not_stored() {
+        let candidate = build_candidate_payload(
+            "gpt-5.4-mini",
+            &CandidatePrompt {
+                instructions: "Extract.",
+                input: "chunk".to_owned(),
+            },
+        );
+        let verification = build_verification_payload(
+            "gpt-5.4-mini",
+            &VerificationPrompt {
+                instructions: "Verify.",
+                input: "candidate".to_owned(),
+            },
+        );
+
+        for payload in [&candidate, &verification] {
+            assert_eq!(payload["store"], false);
+            assert_eq!(payload["text"]["format"]["strict"], true);
+            assert_eq!(
+                payload["text"]["format"]["schema"]["additionalProperties"],
+                false
+            );
+        }
+        assert_eq!(
+            candidate["text"]["format"]["schema"]["properties"]["candidates"]["maxItems"],
+            2
+        );
+        assert!(
+            verification["text"]["format"]["schema"]["properties"]["decisions"]["items"]
+                ["properties"]
+                .get("confidence")
+                .is_none()
+        );
     }
 
     #[test]
