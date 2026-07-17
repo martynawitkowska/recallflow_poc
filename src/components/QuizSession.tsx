@@ -3,9 +3,21 @@ import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 
 type QuizSessionProps = {
+  focusMode: boolean;
   quiz: LibraryQuiz;
   onExit: () => void;
+  onFocusModeChange: (enabled: boolean) => void;
+  onReadingFontChange: (font: ReadingFont) => void;
+  readingFont: ReadingFont;
 };
+
+export const readingFontOptions = [
+  { value: "sans", label: "Sans" },
+  { value: "serif", label: "Serif" },
+  { value: "mono", label: "Monospace" },
+] as const;
+
+export type ReadingFont = (typeof readingFontOptions)[number]["value"];
 
 const questionTypeLabels = {
   single_choice: "Single choice",
@@ -13,7 +25,14 @@ const questionTypeLabels = {
   true_false: "True or false",
 } as const;
 
-export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
+export default function QuizSession({
+  focusMode,
+  quiz: file,
+  onExit,
+  onFocusModeChange,
+  onReadingFontChange,
+  readingFont,
+}: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const questionRef = useRef<HTMLHeadingElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -64,6 +83,35 @@ export default function QuizSession({ quiz: file, onExit }: QuizSessionProps) {
 
   return (
     <section className="quiz-session" aria-labelledby="quiz-session-title">
+      <div
+        aria-label="Reading preferences"
+        className="quiz-preferences"
+        role="group"
+      >
+        <label>
+          Reading font
+          <select
+            onChange={(event) =>
+              onReadingFontChange(event.target.value as ReadingFont)
+            }
+            value={readingFont}
+          >
+            {readingFontOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          aria-pressed={focusMode}
+          className="secondary-button"
+          onClick={() => onFocusModeChange(!focusMode)}
+          type="button"
+        >
+          {focusMode ? "Exit focus mode" : "Focus mode"}
+        </button>
+      </div>
       <header className="quiz-session-header">
         <button className="secondary-button" onClick={onExit} type="button">
           ← Back to library
