@@ -60,6 +60,12 @@ export default function QuizSession({
   const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
+  const generatedMnemonic =
+    mnemonicGeneration.state.status === "success"
+      ? mnemonicGeneration.state.mnemonic
+      : undefined;
+  const mnemonic = generatedMnemonic ?? question.mnemonic;
+  const usingSavedMnemonic = Boolean(question.mnemonic && !generatedMnemonic);
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
   const result = calculateQuizResult(
@@ -300,8 +306,9 @@ export default function QuizSession({
                 >
                   <h3 id="mnemonic-generator-title">Need a memory hook?</h3>
                   <p>
-                    Ask OpenAI for a short mnemonic tied to this question and
-                    its correct answer.
+                    {usingSavedMnemonic
+                      ? "This quiz already has a saved mnemonic. Enter an API key only if you want a replacement."
+                      : "Ask OpenAI for a short mnemonic tied to this question and its correct answer."}
                   </p>
                   <label htmlFor="mnemonic-api-key">OpenAI API key</label>
                   <div className="mnemonic-generator-controls">
@@ -330,7 +337,7 @@ export default function QuizSession({
                     >
                       {mnemonicGeneration.state.status === "loading"
                         ? "Generating…"
-                        : mnemonicGeneration.state.status === "success"
+                        : mnemonic
                           ? "Regenerate"
                           : "Create mnemonic"}
                     </button>
@@ -346,31 +353,43 @@ export default function QuizSession({
                     {mnemonicGeneration.state.status === "error" && (
                       <p role="alert">{mnemonicGeneration.state.message}</p>
                     )}
-                    {mnemonicGeneration.state.status === "success" && (
+                    {mnemonic && (
                       <div>
-                        <strong>Mnemonic</strong>
-                        <p>{mnemonicGeneration.state.mnemonic}</p>
+                        <strong>
+                          {usingSavedMnemonic ? "Saved mnemonic" : "Mnemonic"}
+                        </strong>
+                        <p>{mnemonic}</p>
                         <div className="mnemonic-save-status">
-                          {(mnemonicSave.state.status === "idle" ||
-                            mnemonicSave.state.status === "error") && (
-                            <button
-                              className="secondary-button"
-                              onClick={() => void saveMnemonic()}
-                              type="button"
-                            >
-                              {mnemonicSave.state.status === "error"
-                                ? "Retry save"
-                                : "Save to quiz"}
-                            </button>
-                          )}
-                          {mnemonicSave.state.status === "saving" && (
-                            <p role="status">Saving mnemonic locally…</p>
-                          )}
-                          {mnemonicSave.state.status === "saved" && (
-                            <p role="status">Saved in quiz JSON.</p>
-                          )}
-                          {mnemonicSave.state.status === "error" && (
-                            <p role="alert">{mnemonicSave.state.message}</p>
+                          {usingSavedMnemonic ? (
+                            <p role="status">
+                              Loaded from this quiz. No API request was made.
+                            </p>
+                          ) : (
+                            <>
+                              {(mnemonicSave.state.status === "idle" ||
+                                mnemonicSave.state.status === "error") && (
+                                <button
+                                  className="secondary-button"
+                                  onClick={() => void saveMnemonic()}
+                                  type="button"
+                                >
+                                  {mnemonicSave.state.status === "error"
+                                    ? "Retry save"
+                                    : "Save to quiz"}
+                                </button>
+                              )}
+                              {mnemonicSave.state.status === "saving" && (
+                                <p role="status">Saving mnemonic locally…</p>
+                              )}
+                              {mnemonicSave.state.status === "saved" && (
+                                <p role="status">Saved in quiz JSON.</p>
+                              )}
+                              {mnemonicSave.state.status === "error" && (
+                                <p role="alert">
+                                  {mnemonicSave.state.message}
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>

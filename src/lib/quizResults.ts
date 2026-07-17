@@ -37,7 +37,7 @@ export function calculateQuizResult(
       correctAnswers,
       correct: answersMatch(selectedAnswers, correctAnswers),
       explanation: question.explanation,
-      mnemonic: mnemonics[question.id],
+      mnemonic: mnemonics[question.id] ?? question.mnemonic,
     };
   });
 
