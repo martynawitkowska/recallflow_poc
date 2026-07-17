@@ -3,6 +3,7 @@ import { isPagesPreview } from "./runtime";
 import type { QuizFile } from "./quizSchema";
 import { validateQuiz } from "./validateQuiz";
 import {
+  checkWebPreviewStorage,
   deleteWebPreviewQuiz,
   listWebPreviewQuizzes,
   resetWebPreviewData,
@@ -62,7 +63,10 @@ function parseLibraryQuiz(value: unknown): LibraryQuiz {
 }
 
 export async function listImportedQuizzes(): Promise<LibraryQuiz[]> {
-  if (isPagesPreview) return listWebPreviewQuizzes();
+  if (isPagesPreview) {
+    checkWebPreviewStorage();
+    return listWebPreviewQuizzes();
+  }
   const payload = await invokeIpc<unknown>("list_imported_quizzes");
   if (!Array.isArray(payload)) {
     throw new Error(CORRUPT_LIBRARY_MESSAGE);

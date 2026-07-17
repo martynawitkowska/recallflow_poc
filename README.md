@@ -2,6 +2,35 @@
 
 RecallFlow is a local-first desktop application built with React 19, TypeScript, Vite, Tauri 2, and Rust.
 
+## Jury preview
+
+Open the [RecallFlow GitHub Pages jury preview](https://martynawitkowska.github.io/recallflow_poc/)
+to try the browser-safe learning journey. It includes a seeded quiz and supports
+JSON import, quiz sessions, answer feedback, summaries, repair sessions,
+statistics, metadata editing, deletion, and non-secret preferences.
+
+Preview quizzes, completed attempts, and preferences are stored in local
+browser storage for this site only. They survive refreshes in the same browser
+profile but are not synced, backed up, or shared with the desktop app. Removing
+site data or using a different browser/profile starts a separate library. Use
+**Reset preview** in the library and confirm the prompt to discard preview data
+and restore the seeded quiz.
+
+The static preview does not use Tauri IPC, SQLite, operating-system credential
+storage, or direct AI generation. It never asks for a provider API key and does
+not send study material to an AI provider. Quiz and mnemonic generation remain
+desktop capabilities; the preview explains those boundaries in place. For a
+browser-only alternative, copy the external-generation prompt, create a quiz
+JSON file in an AI service you choose, and import that file into the preview.
+
+Build the same static artifact locally with:
+
+```sh
+npm ci
+npm run build:pages
+npm run preview:pages
+```
+
 ## Development
 
 Install the JavaScript and Rust dependencies, then start the desktop app with
