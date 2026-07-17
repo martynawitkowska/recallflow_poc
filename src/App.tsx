@@ -143,9 +143,28 @@ export default function App() {
             }}
             onFocusModeChange={setFocusMode}
             onReadingFontChange={setReadingFont}
-            onSaveMnemonic={(questionId, mnemonic) =>
-              library.saveMnemonic(activeQuiz.id, questionId, mnemonic)
-            }
+            onSaveMnemonic={async (questionId, mnemonic) => {
+              const savedMnemonic = await library.saveMnemonic(
+                activeQuiz.id,
+                questionId,
+                mnemonic,
+              );
+              setActiveQuiz((current) =>
+                current?.id === activeQuiz.id
+                  ? {
+                      ...current,
+                      quiz: {
+                        ...current.quiz,
+                        questions: current.quiz.questions.map((question) =>
+                          question.id === questionId
+                            ? { ...question, mnemonic: savedMnemonic }
+                            : question,
+                        ),
+                      },
+                    }
+                  : current,
+              );
+            }}
             quiz={activeQuiz}
             readingFont={readingFont}
           />

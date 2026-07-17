@@ -10,6 +10,12 @@ export type LibraryQuiz = {
   quiz: QuizFile;
 };
 
+export type SaveMnemonicRequest = {
+  quizId: string;
+  questionId: string;
+  mnemonic: string;
+};
+
 const CORRUPT_LIBRARY_MESSAGE =
   "RecallFlow could not read the local quiz library. Restart the app and try again.";
 
@@ -62,6 +68,17 @@ export function saveImportedQuiz(quiz: LibraryQuiz): Promise<void> {
     { quiz },
     "RecallFlow could not save the quiz locally. Restart the desktop app and try again.",
   );
+}
+
+export async function saveQuizMnemonic(
+  request: SaveMnemonicRequest,
+): Promise<LibraryQuiz> {
+  const payload = await invokeIpc<unknown>(
+    "save_quiz_mnemonic",
+    { request },
+    "RecallFlow could not save this mnemonic locally. Try again.",
+  );
+  return parseLibraryQuiz(payload);
 }
 
 export function deleteImportedQuiz(quizId: string): Promise<void> {

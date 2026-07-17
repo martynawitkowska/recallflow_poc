@@ -4,6 +4,7 @@ import {
   deleteImportedQuiz,
   listImportedQuizzes,
   saveImportedQuiz,
+  saveQuizMnemonic,
   type LibraryQuiz,
 } from "../lib/quizLibrary";
 import type { QuizFile } from "../lib/quizSchema";
@@ -84,24 +85,20 @@ export function useQuizLibrary() {
         throw new Error("This question is no longer in the local quiz.");
       }
       if (savedQuestion.mnemonic === normalizedMnemonic) {
-        return;
+        return normalizedMnemonic;
       }
 
-      const updatedQuizFile: QuizFile = {
-        ...savedQuiz.quiz,
-        questions: savedQuiz.quiz.questions.map((question) =>
-          question.id === questionId
-            ? { ...question, mnemonic: normalizedMnemonic }
-            : question,
-        ),
-      };
-      const updatedQuiz: LibraryQuiz = {
-        ...savedQuiz,
-        size: new TextEncoder().encode(JSON.stringify(updatedQuizFile)).length,
-        quiz: updatedQuizFile,
-      };
-
-      await saveImportedQuiz(updatedQuiz);
+      const updatedQuiz = await saveQuizMnemonic({
+        quizId,
+        questionId,
+        mnemonic: normalizedMnemonic,
+      });
+      const persistedMnemonic = updatedQuiz.quiz.questions.find(
+        (question) => question.id === questionId,
+      )?.mnemonic;
+      if (!persistedMnemonic) {
+        throw new Error("RecallFlow could not confirm the saved mnemonic.");
+      }
       setState((current) =>
         current.status === "success"
           ? {
@@ -112,6 +109,7 @@ export function useQuizLibrary() {
             }
           : current,
       );
+      return persistedMnemonic;
     },
     [state],
   );
