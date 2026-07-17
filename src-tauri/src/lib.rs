@@ -41,6 +41,7 @@ pub fn run() {
             commands::generation::generate_quiz,
             commands::library::list_imported_quizzes,
             commands::library::save_imported_quiz,
+            commands::library::save_quiz_mnemonic,
             commands::library::delete_imported_quiz,
             commands::library::clear_imported_quizzes,
         ])

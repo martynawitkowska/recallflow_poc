@@ -1,10 +1,10 @@
 use recallflow_lib::{
     commands::library::{
         clear_imported_quizzes_from_pool, delete_imported_quiz_from_pool,
-        list_imported_quizzes_from_pool, save_imported_quiz_to_pool,
+        list_imported_quizzes_from_pool, save_imported_quiz_to_pool, save_quiz_mnemonic_to_pool,
     },
     database::initialize_schema,
-    models::{ImportedQuiz, QuestionType, QuizFile, QuizQuestion},
+    models::{ImportedQuiz, QuestionType, QuizFile, QuizQuestion, SaveMnemonicRequest},
 };
 use sqlx::sqlite::SqlitePoolOptions;
 
@@ -28,6 +28,92 @@ fn sample_quiz(id: &str, title: &str, imported_at: &str) -> ImportedQuiz {
             }],
         },
     }
+}
+
+#[test]
+fn mnemonic_is_sanitized_persisted_and_idempotent() {
+    tauri::async_runtime::block_on(async {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("in-memory database should open");
+        initialize_schema(&pool)
+            .await
+            .expect("quiz schema should initialize");
+        let quiz = sample_quiz("quiz", "Quiz", "2026-07-17T10:00:00.000Z");
+        save_imported_quiz_to_pool(&pool, &quiz).await.unwrap();
+
+        let saved = save_quiz_mnemonic_to_pool(
+            &pool,
+            SaveMnemonicRequest {
+                quiz_id: " quiz ".to_owned(),
+                question_id: " q1 ".to_owned(),
+                mnemonic: "  Bright\n images\tbring recall.  ".to_owned(),
+            },
+        )
+        .await
+        .expect("valid mnemonic should save");
+        let repeated = save_quiz_mnemonic_to_pool(
+            &pool,
+            SaveMnemonicRequest {
+                quiz_id: "quiz".to_owned(),
+                question_id: "q1".to_owned(),
+                mnemonic: "Bright images bring recall.".to_owned(),
+            },
+        )
+        .await
+        .expect("repeated save should be idempotent");
+        let reloaded = list_imported_quizzes_from_pool(&pool).await.unwrap();
+
+        assert_eq!(
+            saved.quiz.questions[0].mnemonic.as_deref(),
+            Some("Bright images bring recall.")
+        );
+        assert_eq!(repeated, saved);
+        assert_eq!(reloaded, vec![saved]);
+    });
+}
+
+#[test]
+fn mnemonic_save_rejects_invalid_or_missing_targets_without_changes() {
+    tauri::async_runtime::block_on(async {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("in-memory database should open");
+        initialize_schema(&pool)
+            .await
+            .expect("quiz schema should initialize");
+        let quiz = sample_quiz("quiz", "Quiz", "2026-07-17T10:00:00.000Z");
+        save_imported_quiz_to_pool(&pool, &quiz).await.unwrap();
+
+        for request in [
+            SaveMnemonicRequest {
+                quiz_id: "quiz".to_owned(),
+                question_id: "q1".to_owned(),
+                mnemonic: " \0 ".to_owned(),
+            },
+            SaveMnemonicRequest {
+                quiz_id: "quiz".to_owned(),
+                question_id: "missing".to_owned(),
+                mnemonic: "Valid mnemonic".to_owned(),
+            },
+            SaveMnemonicRequest {
+                quiz_id: "missing".to_owned(),
+                question_id: "q1".to_owned(),
+                mnemonic: "Valid mnemonic".to_owned(),
+            },
+        ] {
+            assert!(save_quiz_mnemonic_to_pool(&pool, request).await.is_err());
+        }
+
+        assert_eq!(
+            list_imported_quizzes_from_pool(&pool).await.unwrap(),
+            vec![quiz]
+        );
+    });
 }
 
 #[test]
