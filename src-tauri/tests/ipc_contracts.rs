@@ -32,8 +32,7 @@ fn generation_requests_deserialize_the_frontend_contract() {
         "sourceUrl": "https://example.com/lecture",
         "provider": "openai",
         "model": "gpt-5.4-mini",
-        "questionCount": 8,
-        "apiKey": "request-only-openai-key"
+        "questionCount": 8
     }))
     .expect("quiz request should deserialize");
     let mnemonic: GenerateMnemonicRequest = serde_json::from_value(json!({
@@ -41,8 +40,7 @@ fn generation_requests_deserialize_the_frontend_contract() {
         "correctAnswers": ["Through active recall"],
         "explanation": "Retrieval strengthens memory.",
         "provider": "gemini",
-        "model": "gemini-3.5-flash",
-        "apiKey": "request-only-gemini-key"
+        "model": "gemini-3.5-flash"
     }))
     .expect("mnemonic request should deserialize");
 
@@ -56,6 +54,24 @@ fn generation_requests_deserialize_the_frontend_contract() {
     assert_eq!(mnemonic.correct_answers, ["Through active recall"]);
     assert!(matches!(mnemonic.provider, AiProvider::Gemini));
     assert_eq!(mnemonic.model.as_deref(), Some("gemini-3.5-flash"));
+}
+
+#[test]
+fn generation_requests_reject_frontend_api_keys() {
+    assert!(serde_json::from_value::<GenerateQuizRequest>(json!({
+        "material": "Study notes",
+        "provider": "openai",
+        "questionCount": 8,
+        "apiKey": "must-not-cross-ipc"
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<GenerateMnemonicRequest>(json!({
+        "question": "Question?",
+        "correctAnswers": ["Answer"],
+        "provider": "openai",
+        "apiKey": "must-not-cross-ipc"
+    }))
+    .is_err());
 }
 
 #[test]

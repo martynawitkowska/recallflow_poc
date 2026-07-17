@@ -56,22 +56,17 @@ exited during a quiz.
 
 Open **Settings** to choose the provider and mnemonic model. RecallFlow
 remembers the selected model separately for OpenAI, Google Gemini, and
-Anthropic Claude, then uses the active pair for new mnemonic requests.
-
-This preference contains no credentials. API keys are still entered only when
-requesting a mnemonic and are not stored by the provider selection setting.
+Anthropic Claude, then uses the active pair for new mnemonic requests. Save
+each provider API key there once; RecallFlow reuses it for quiz and mnemonic
+generation until you replace or remove it.
 
 ## Security model
 
 RecallFlow keeps application preferences in the local app profile and study
-data in local SQLite. The current generation UI uses request-only API keys;
-the credential foundation also provides separate Rust session slots and
-encrypted Stronghold records for each provider, restoring valid saved records
-into session memory before the desktop UI starts. Provider keys are not saved
-to local storage or SQLite. The credential API can also migrate the former
-password-protected OpenAI vault or explicitly reset an unreadable current
-vault. See the [security model](docs/security-model.md) for the data-flow,
-automatic-unlock tradeoff, and review steps.
+data in local SQLite. Provider API keys are stored by Rust in macOS Keychain,
+Windows Credential Manager, or Linux Secret Service. Full keys are never
+returned to React or saved to WebView local storage or SQLite. See the
+[security model](docs/security-model.md) for the data flow.
 
 ## Packaging
 

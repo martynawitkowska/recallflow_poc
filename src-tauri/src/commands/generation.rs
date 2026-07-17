@@ -1,6 +1,6 @@
 use crate::{
     commands::redact_secret_error,
-    generation,
+    credentials, generation,
     models::{GenerateMnemonicRequest, GenerateQuizRequest, QuizFile},
 };
 
@@ -10,16 +10,16 @@ const MNEMONIC_GENERATION_ERROR: &str = "The selected AI provider could not gene
 
 #[tauri::command]
 pub async fn generate_quiz(request: GenerateQuizRequest) -> Result<QuizFile, String> {
-    let api_key = request.api_key.clone();
-    generation::generate_quiz(request)
+    let api_key = credentials::get_api_key(request.provider).await?;
+    generation::generate_quiz(request, &api_key)
         .await
         .map_err(|error| redact_secret_error(error, &api_key, QUIZ_GENERATION_ERROR))
 }
 
 #[tauri::command]
 pub async fn generate_mnemonic(request: GenerateMnemonicRequest) -> Result<String, String> {
-    let api_key = request.api_key.clone();
-    generation::generate_mnemonic(request)
+    let api_key = credentials::get_api_key(request.provider).await?;
+    generation::generate_mnemonic(request, &api_key)
         .await
         .map_err(|error| redact_secret_error(error, &api_key, MNEMONIC_GENERATION_ERROR))
 }

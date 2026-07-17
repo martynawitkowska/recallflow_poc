@@ -26,32 +26,18 @@ fn valid_generated_quiz() -> serde_json::Value {
 }
 
 #[test]
-fn generation_request_requires_material_and_api_key() {
+fn generation_request_requires_material() {
     let missing_material = GenerateQuizRequest {
         material: Some("  ".to_owned()),
         source_url: None,
         provider: AiProvider::Openai,
         model: None,
         question_count: 8,
-        api_key: "request-only-key".to_owned(),
-    };
-    let missing_key = GenerateQuizRequest {
-        material: Some("Useful study notes".to_owned()),
-        source_url: None,
-        provider: AiProvider::Openai,
-        model: None,
-        question_count: 8,
-        api_key: "  ".to_owned(),
     };
 
     assert!(validate_generation_request(&missing_material)
-        .err()
-        .expect("empty material should fail")
+        .expect_err("empty material should fail")
         .contains("Paste study material"));
-    assert!(validate_generation_request(&missing_key)
-        .err()
-        .expect("empty API key should fail")
-        .contains("API key for the selected provider"));
 }
 
 #[test]
@@ -62,7 +48,6 @@ fn generation_request_accepts_one_readable_url_source() {
         provider: AiProvider::Openai,
         model: None,
         question_count: 8,
-        api_key: "request-only-key".to_owned(),
     };
     let invalid_url = GenerateQuizRequest {
         material: None,
@@ -70,7 +55,6 @@ fn generation_request_accepts_one_readable_url_source() {
         provider: AiProvider::Openai,
         model: None,
         question_count: 8,
-        api_key: "request-only-key".to_owned(),
     };
     let conflicting_sources = GenerateQuizRequest {
         material: Some("Useful study notes".to_owned()),
@@ -78,7 +62,6 @@ fn generation_request_accepts_one_readable_url_source() {
         provider: AiProvider::Openai,
         model: None,
         question_count: 8,
-        api_key: "request-only-key".to_owned(),
     };
 
     assert!(matches!(
@@ -86,12 +69,10 @@ fn generation_request_accepts_one_readable_url_source() {
         Ok(GenerationSource::Url("https://example.com/lecture"))
     ));
     assert!(validate_generation_request(&invalid_url)
-        .err()
-        .expect("non-web URL should fail")
+        .expect_err("non-web URL should fail")
         .contains("http:// or https://"));
     assert!(validate_generation_request(&conflicting_sources)
-        .err()
-        .expect("multiple sources should fail")
+        .expect_err("multiple sources should fail")
         .contains("either pasted study material or a URL"));
 }
 
@@ -100,8 +81,7 @@ fn generation_request_validates_provider_and_question_count() {
     let unsupported_provider: GenerateQuizRequest = serde_json::from_value(json!({
         "material": "Useful study notes",
         "provider": "gemini",
-        "questionCount": 8,
-        "apiKey": "request-only-key"
+        "questionCount": 8
     }))
     .expect("known providers should reach command validation");
     let invalid_count = GenerateQuizRequest {
@@ -110,17 +90,14 @@ fn generation_request_validates_provider_and_question_count() {
         provider: AiProvider::Openai,
         model: None,
         question_count: 26,
-        api_key: "request-only-key".to_owned(),
     };
 
     assert!(validate_generation_request(&unsupported_provider)
-        .err()
-        .expect("unsupported provider should fail")
+        .expect_err("unsupported provider should fail")
         .contains("selected quiz provider is not available"));
     assert!(matches!(unsupported_provider.provider, AiProvider::Gemini));
     assert!(validate_generation_request(&invalid_count)
-        .err()
-        .expect("out-of-range count should fail")
+        .expect_err("out-of-range count should fail")
         .contains("between 3 and 25"));
 }
 
@@ -132,7 +109,6 @@ fn generation_request_rejects_oversized_sources() {
         provider: AiProvider::Openai,
         model: None,
         question_count: 8,
-        api_key: "request-only-key".to_owned(),
     };
     let oversized_url = GenerateQuizRequest {
         material: None,
@@ -140,16 +116,13 @@ fn generation_request_rejects_oversized_sources() {
         provider: AiProvider::Openai,
         model: None,
         question_count: 8,
-        api_key: "request-only-key".to_owned(),
     };
 
     assert!(validate_generation_request(&oversized_material)
-        .err()
-        .expect("oversized material should fail")
+        .expect_err("oversized material should fail")
         .contains("14000 characters or fewer"));
     assert!(validate_generation_request(&oversized_url)
-        .err()
-        .expect("oversized URL should fail")
+        .expect_err("oversized URL should fail")
         .contains("source URL is too long"));
 }
 

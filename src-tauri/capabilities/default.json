@@ -3,9 +3,5 @@
   "identifier": "main-capability",
   "description": "Permissions for the RecallFlow main window",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "stronghold:default",
-    "stronghold:allow-remove-store-record"
-  ]
+  "permissions": ["core:default"]
 }

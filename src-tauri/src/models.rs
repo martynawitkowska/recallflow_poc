@@ -87,25 +87,23 @@ pub struct ApiKeyStatus {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GenerateQuizRequest {
     pub material: Option<String>,
     pub source_url: Option<String>,
     pub provider: AiProvider,
     pub model: Option<String>,
     pub question_count: i64,
-    pub api_key: String,
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GenerateMnemonicRequest {
     pub question: String,
     pub correct_answers: Vec<String>,
     pub explanation: Option<String>,
     pub provider: AiProvider,
     pub model: Option<String>,
-    pub api_key: String,
 }
 
 #[derive(Deserialize)]

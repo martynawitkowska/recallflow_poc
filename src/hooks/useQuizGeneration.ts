@@ -32,7 +32,6 @@ export function useQuizGeneration(
   const [sourceUrl, setSourceUrl] = useState("");
   const [provider, setProvider] = useState<AiProvider>("openai");
   const [questionCount, setQuestionCount] = useState(DEFAULT_QUESTION_COUNT);
-  const [apiKey, setApiKey] = useState("");
   const [state, setState] = useState<QuizGenerationState>({ status: "idle" });
 
   const submit = useCallback(
@@ -48,10 +47,9 @@ export function useQuizGeneration(
       try {
         const quiz = await generateQuiz(
           sourceMode === "material"
-            ? { material, apiKey, provider, questionCount }
-            : { sourceUrl, apiKey, provider, questionCount },
+            ? { material, provider, questionCount }
+            : { sourceUrl, provider, questionCount },
         );
-        setApiKey("");
         setState({ status: "success", quiz, saveState: { status: "idle" } });
       } catch (error) {
         setState({
@@ -63,7 +61,7 @@ export function useQuizGeneration(
         });
       }
     },
-    [apiKey, isOnline, material, provider, questionCount, sourceMode, sourceUrl],
+    [isOnline, material, provider, questionCount, sourceMode, sourceUrl],
   );
 
   const save = useCallback(async () => {
@@ -96,13 +94,11 @@ export function useQuizGeneration(
   }, [onSaveQuiz, state]);
 
   return {
-    apiKey,
     material,
     provider,
     questionCount,
     sourceMode,
     sourceUrl,
-    setApiKey,
     setMaterial,
     setProvider,
     setQuestionCount,

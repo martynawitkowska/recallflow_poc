@@ -7,7 +7,6 @@ export type GenerateMnemonicRequest = {
   explanation?: string;
   provider: MnemonicProvider;
   model?: MnemonicModel;
-  apiKey: string;
 };
 
 export function generateMnemonic(
