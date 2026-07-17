@@ -2,6 +2,7 @@ mod evidence;
 mod orchestration;
 mod providers;
 mod segmentation;
+mod selection;
 mod verification;
 
 use crate::models::{
@@ -117,6 +118,29 @@ pub(crate) struct VerificationPrompt {
     input: String,
 }
 
+pub(crate) struct DuplicatePrompt {
+    instructions: &'static str,
+    input: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum GenerationCompletion {
+    Full,
+    QualityLimited,
+    IncompleteCoverage,
+    QualityEmpty,
+    Cancelled,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct GroundedGenerationResult {
+    pub quiz: Option<QuizFile>,
+    pub completion: GenerationCompletion,
+    pub quality: selection::QualityMetadata,
+}
+
 impl GenerationPrompt {
     fn new(source: GenerationSource<'_>, question_count: usize) -> Self {
         let (input, uses_web_search) = match source {
@@ -178,6 +202,21 @@ impl VerificationPrompt {
         Self {
             instructions: INSTRUCTIONS,
             input,
+        }
+    }
+}
+
+impl DuplicatePrompt {
+    fn new(candidates: &[evidence::ValidatedCandidate]) -> Self {
+        Self {
+            instructions: "Group only materially equivalent questions that test the same knowledge and have equivalent correct answers. Return groups of supplied candidate IDs. Do not invent IDs. Do not judge grounding and do not rewrite questions. Omit non-duplicates.",
+            input: serde_json::json!({
+                "candidates": candidates.iter().map(|item| serde_json::json!({
+                    "candidate_id": item.candidate.candidate_id,
+                    "question": item.candidate.question,
+                    "correct_answers": item.candidate.correct_answers,
+                })).collect::<Vec<_>>()
+            }).to_string(),
         }
     }
 }
@@ -510,13 +549,159 @@ pub async fn generate_quiz(
     request: GenerateQuizRequest,
     api_key: &str,
 ) -> Result<QuizFile, String> {
+    let result = generate_quiz_with_cancellation(
+        request,
+        api_key,
+        orchestration::CancellationFlag::default(),
+    )
+    .await?;
+    result.quiz.ok_or_else(|| {
+        "RecallFlow could not find enough grounded, standalone knowledge for a quiz. Try clearer study material."
+            .to_owned()
+    })
+}
+
+pub(crate) async fn generate_quiz_with_cancellation(
+    request: GenerateQuizRequest,
+    api_key: &str,
+    cancellation: orchestration::CancellationFlag,
+) -> Result<GroundedGenerationResult, String> {
     let source = validate_generation_request(&request)?;
     let question_count = request.question_count as usize;
-    let prompt = GenerationPrompt::new(source, question_count);
-    let generated_json =
-        providers::generate(request.provider, request.model.as_deref(), api_key, &prompt).await?;
+    let GenerationSource::Material(material) = source else {
+        let prompt = GenerationPrompt::new(source, question_count);
+        let generated_json =
+            providers::generate(request.provider, request.model.as_deref(), api_key, &prompt)
+                .await?;
+        let quiz = parse_generated_quiz_json(&generated_json, question_count)?;
+        let selected_count = quiz.questions.len();
+        return Ok(GroundedGenerationResult {
+            quiz: Some(quiz),
+            completion: if selected_count == question_count {
+                GenerationCompletion::Full
+            } else {
+                GenerationCompletion::QualityLimited
+            },
+            quality: selection::QualityMetadata {
+                requested_count: question_count,
+                generated_candidate_count: selected_count,
+                selected_count,
+                ..Default::default()
+            },
+        });
+    };
 
-    parse_generated_quiz_json(&generated_json, question_count)
+    let (_, chunks) = segmentation::segment_transcript(material)?;
+    let generated = orchestration::generate_candidates_for_chunks(
+        chunks.clone(),
+        request.provider,
+        request.model.clone(),
+        api_key.to_owned(),
+        cancellation.clone(),
+    )
+    .await;
+    if cancellation.is_cancelled() {
+        return Ok(cancelled_result(question_count));
+    }
+    generated.ensure_usable()?;
+    let generated_candidate_count = generated.candidate_count;
+    let incomplete_generation = generated.failed_chunks > 0;
+    let candidates = generated
+        .chunks
+        .into_iter()
+        .flat_map(|status| match status {
+            orchestration::ChunkGenerationStatus::Success(candidates) => candidates,
+            _ => Vec::new(),
+        })
+        .collect::<Vec<_>>();
+    let (validated, deterministic_rejections) =
+        evidence::validate_candidate_set(candidates, &chunks);
+    let validated_count = validated.len();
+    let verified = verification::verify_with_provider(
+        validated,
+        &chunks,
+        request.provider,
+        request.model.clone(),
+        api_key.to_owned(),
+        cancellation.clone(),
+    )
+    .await;
+    if cancellation.is_cancelled() || verified.cancelled {
+        return Ok(cancelled_result(question_count));
+    }
+    let semantic_rejection_count = validated_count - verified.accepted.len();
+    let incomplete_verification = verified.failed_batches > 0;
+    let (exact, exact_duplicate_count) = selection::exact_deduplicate(verified.accepted);
+
+    let known_ids = exact
+        .iter()
+        .map(|item| item.candidate.candidate_id.clone())
+        .collect::<HashSet<_>>();
+    let (deduplicated, semantic_duplicate_count, duplicate_analysis_incomplete) = if exact.len() > 1
+    {
+        let prompt = DuplicatePrompt::new(&exact);
+        match providers::find_duplicates(
+            request.provider,
+            request.model.as_deref(),
+            api_key,
+            &prompt,
+        )
+        .await
+        .and_then(|response| selection::parse_duplicate_groups(&response, &known_ids))
+        {
+            Ok(groups) => {
+                let (deduplicated, removed) = selection::apply_semantic_groups(exact, &groups);
+                (deduplicated, removed, false)
+            }
+            Err(_) => (exact, 0, true),
+        }
+    } else {
+        (exact, 0, false)
+    };
+    let selected = selection::select_balanced(deduplicated, question_count);
+    let selected_count = selected.len();
+    let incomplete_coverage =
+        incomplete_generation || incomplete_verification || duplicate_analysis_incomplete;
+    let quality = selection::QualityMetadata {
+        requested_count: question_count,
+        generated_candidate_count,
+        deterministic_rejection_count: deterministic_rejections.len(),
+        semantic_rejection_count,
+        duplicate_count: exact_duplicate_count + semantic_duplicate_count,
+        selected_count,
+        incomplete_coverage,
+        duplicate_analysis_incomplete,
+    };
+    if selected.is_empty() {
+        return Ok(GroundedGenerationResult {
+            quiz: None,
+            completion: GenerationCompletion::QualityEmpty,
+            quality,
+        });
+    }
+    let completion = if incomplete_coverage {
+        GenerationCompletion::IncompleteCoverage
+    } else if selected_count < question_count {
+        GenerationCompletion::QualityLimited
+    } else {
+        GenerationCompletion::Full
+    };
+    Ok(GroundedGenerationResult {
+        quiz: Some(selection::finalize_quiz(selected)),
+        completion,
+        quality,
+    })
+}
+
+fn cancelled_result(requested_count: usize) -> GroundedGenerationResult {
+    GroundedGenerationResult {
+        quiz: None,
+        completion: GenerationCompletion::Cancelled,
+        quality: selection::QualityMetadata {
+            requested_count,
+            ..Default::default()
+        },
+    }
 }
 
 pub async fn generate_mnemonic(

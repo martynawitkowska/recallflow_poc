@@ -1,4 +1,6 @@
-use super::super::{CandidatePrompt, GenerationPrompt, MnemonicPrompt, VerificationPrompt};
+use super::super::{
+    CandidatePrompt, DuplicatePrompt, GenerationPrompt, MnemonicPrompt, VerificationPrompt,
+};
 use serde::Deserialize;
 use std::time::Duration;
 
@@ -212,6 +214,18 @@ fn build_verification_payload(model: &str, prompt: &VerificationPrompt) -> serde
     })
 }
 
+fn build_duplicate_payload(model: &str, prompt: &DuplicatePrompt) -> serde_json::Value {
+    serde_json::json!({
+        "model": model, "store": false, "reasoning": { "effort": "low" },
+        "instructions": prompt.instructions, "input": prompt.input, "max_output_tokens": 1_600,
+        "text": { "format": { "type": "json_schema", "name": "recallflow_duplicate_groups", "strict": true,
+            "schema": { "type": "object", "additionalProperties": false, "required": ["groups"],
+                "properties": { "groups": { "type": "array", "items": { "type": "array", "minItems": 2, "items": { "type": "string" } } } }
+            }
+        }}
+    })
+}
+
 fn build_mnemonic_payload(model: &str, prompt: &MnemonicPrompt) -> serde_json::Value {
     serde_json::json!({
         "model": model,
@@ -360,6 +374,20 @@ pub(super) async fn verify_candidates(
     .await
 }
 
+pub(super) async fn find_duplicates(
+    api_key: &str,
+    model: Option<&str>,
+    prompt: &DuplicatePrompt,
+) -> Result<String, String> {
+    let model = validate_model(model)?;
+    send(
+        api_key,
+        build_duplicate_payload(model, prompt),
+        QUIZ_FAILURES,
+    )
+    .await
+}
+
 pub(super) async fn generate_mnemonic(
     api_key: &str,
     model: Option<&str>,
@@ -377,11 +405,14 @@ pub(super) async fn generate_mnemonic(
 #[cfg(test)]
 mod tests {
     use super::{
-        build_candidate_payload, build_mnemonic_payload, build_payload, build_verification_payload,
-        extract_generated_text, parse_response, status_error, validate_model, GenerationPrompt,
-        MnemonicPrompt, OpenAiResponse, MAX_RESPONSE_BYTES, MNEMONIC_FAILURES, QUIZ_FAILURES,
+        build_candidate_payload, build_duplicate_payload, build_mnemonic_payload, build_payload,
+        build_verification_payload, extract_generated_text, parse_response, status_error,
+        validate_model, GenerationPrompt, MnemonicPrompt, OpenAiResponse, MAX_RESPONSE_BYTES,
+        MNEMONIC_FAILURES, QUIZ_FAILURES,
     };
-    use crate::generation::{CandidatePrompt, GenerationSource, VerificationPrompt};
+    use crate::generation::{
+        CandidatePrompt, DuplicatePrompt, GenerationSource, VerificationPrompt,
+    };
     use serde_json::json;
 
     #[test]
@@ -428,8 +459,15 @@ mod tests {
                 input: "candidate".to_owned(),
             },
         );
+        let duplicates = build_duplicate_payload(
+            "gpt-5.4-mini",
+            &DuplicatePrompt {
+                instructions: "Group duplicates.",
+                input: "questions".to_owned(),
+            },
+        );
 
-        for payload in [&candidate, &verification] {
+        for payload in [&candidate, &verification, &duplicates] {
             assert_eq!(payload["store"], false);
             assert_eq!(payload["text"]["format"]["strict"], true);
             assert_eq!(
@@ -446,6 +484,10 @@ mod tests {
                 ["properties"]
                 .get("confidence")
                 .is_none()
+        );
+        assert_eq!(
+            duplicates["text"]["format"]["schema"]["properties"]["groups"]["items"]["minItems"],
+            2
         );
     }
 
