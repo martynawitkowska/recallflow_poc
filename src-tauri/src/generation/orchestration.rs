@@ -1,6 +1,6 @@
 use super::{
     parse_candidate_batch_json, providers, segmentation::TranscriptChunk, CandidatePrompt,
-    QuestionCandidate,
+    QuestionCandidate, MAX_CANDIDATES_PER_CHUNK,
 };
 use crate::models::AiProvider;
 use std::{
@@ -17,6 +17,7 @@ use tokio::{
 };
 
 pub(crate) const MAX_CONCURRENT_REQUESTS: usize = 4;
+const MIN_CANDIDATES_PER_CHUNK: usize = 2;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum CandidateCallError {
@@ -104,11 +105,19 @@ where
     F: Fn(CandidatePrompt) -> Fut + Clone + Send + Sync + 'static,
     Fut: Future<Output = Result<String, CandidateCallError>> + Send + 'static,
 {
-    orchestrate_candidate_generation_with_progress(chunks, cancellation, generate, None).await
+    orchestrate_candidate_generation_with_progress(
+        chunks,
+        MIN_CANDIDATES_PER_CHUNK,
+        cancellation,
+        generate,
+        None,
+    )
+    .await
 }
 
 pub(crate) async fn orchestrate_candidate_generation_with_progress<F, Fut>(
     chunks: Vec<TranscriptChunk>,
+    max_candidates_per_chunk: usize,
     cancellation: CancellationFlag,
     generate: F,
     on_progress: Option<Arc<dyn Fn(usize, usize) + Send + Sync>>,
@@ -135,12 +144,16 @@ where
                 return (index, ChunkGenerationStatus::Cancelled);
             }
 
-            let prompt = CandidatePrompt::new(&chunk);
+            let prompt = CandidatePrompt::new(&chunk, max_candidates_per_chunk);
             let mut attempt = 0;
             let status = loop {
                 match generate(prompt.clone()).await {
                     Ok(response) => {
-                        break match parse_candidate_batch_json(&response, &chunk.id) {
+                        break match parse_candidate_batch_json(
+                            &response,
+                            &chunk.id,
+                            max_candidates_per_chunk,
+                        ) {
                             Ok(batch) => ChunkGenerationStatus::Success(batch.candidates),
                             Err(_) => {
                                 ChunkGenerationStatus::Failed(CandidateCallError::InvalidResponse)
@@ -212,14 +225,18 @@ where
 
 pub(crate) async fn generate_candidates_for_chunks(
     chunks: Vec<TranscriptChunk>,
+    requested_question_count: usize,
     provider: AiProvider,
     model: Option<String>,
     api_key: String,
     cancellation: CancellationFlag,
     on_progress: Option<Arc<dyn Fn(usize, usize) + Send + Sync>>,
 ) -> CandidateGenerationOutcome {
+    let max_candidates_per_chunk =
+        candidate_limit_per_chunk(requested_question_count, chunks.len());
     orchestrate_candidate_generation_with_progress(
         chunks,
+        max_candidates_per_chunk,
         cancellation,
         move |prompt| {
             let model = model.clone();
@@ -233,6 +250,14 @@ pub(crate) async fn generate_candidates_for_chunks(
         on_progress,
     )
     .await
+}
+
+fn candidate_limit_per_chunk(requested_question_count: usize, chunk_count: usize) -> usize {
+    requested_question_count
+        .saturating_mul(3)
+        .div_ceil(2)
+        .div_ceil(chunk_count.max(1))
+        .clamp(MIN_CANDIDATES_PER_CHUNK, MAX_CANDIDATES_PER_CHUNK)
 }
 
 pub(crate) fn classify_provider_error(message: &str) -> CandidateCallError {
@@ -271,6 +296,13 @@ mod tests {
             "evidence_quote": "durable knowledge"
         }] })
         .to_string()
+    }
+
+    #[test]
+    fn candidate_budget_oversamples_and_scales_with_chunk_count() {
+        assert_eq!(candidate_limit_per_chunk(20, 1), 30);
+        assert_eq!(candidate_limit_per_chunk(20, 2), 15);
+        assert_eq!(candidate_limit_per_chunk(20, 10), 3);
     }
 
     #[tokio::test]

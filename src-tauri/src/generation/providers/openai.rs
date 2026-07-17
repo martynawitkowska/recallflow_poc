@@ -141,7 +141,7 @@ fn build_candidate_payload(model: &str, prompt: &CandidatePrompt) -> serde_json:
         "reasoning": { "effort": "low" },
         "instructions": prompt.instructions,
         "input": prompt.input,
-        "max_output_tokens": 1_600,
+        "max_output_tokens": (prompt.max_candidates * 320).max(1_600),
         "text": { "format": {
             "type": "json_schema",
             "name": "recallflow_candidate_batch",
@@ -152,7 +152,7 @@ fn build_candidate_payload(model: &str, prompt: &CandidatePrompt) -> serde_json:
                 "required": ["candidates"],
                 "properties": { "candidates": {
                     "type": "array",
-                    "maxItems": 2,
+                    "maxItems": prompt.max_candidates,
                     "items": {
                         "type": "object",
                         "additionalProperties": false,
@@ -447,6 +447,7 @@ mod tests {
             &CandidatePrompt {
                 instructions: "Extract.",
                 input: "chunk".to_owned(),
+                max_candidates: 12,
                 chunk_id: "chunk-0001".to_owned(),
             },
         );
@@ -475,7 +476,7 @@ mod tests {
         }
         assert_eq!(
             candidate["text"]["format"]["schema"]["properties"]["candidates"]["maxItems"],
-            2
+            12
         );
         assert!(
             verification["text"]["format"]["schema"]["properties"]["decisions"]["items"]
@@ -493,7 +494,7 @@ mod tests {
     fn candidate_payload_uses_selected_model_and_one_bounded_chunk() {
         let source = format!("BEGIN {} END-OF-TRANSCRIPT", "ż".repeat(499_970));
         let (_, chunks) = crate::generation::segmentation::segment_transcript(&source).unwrap();
-        let prompt = CandidatePrompt::new(&chunks[0]);
+        let prompt = CandidatePrompt::new(&chunks[0], 30);
         let payload = build_candidate_payload("gpt-5.5", &prompt);
         let input = payload["input"].as_str().unwrap();
 
@@ -502,6 +503,12 @@ mod tests {
         assert!(input.chars().count() < 12_000);
         assert!(input.contains("PRIMARY:"));
         assert!(!input.contains("END-OF-TRANSCRIPT"));
+        assert!(input.contains("candidate_limit: 30"));
+        assert_eq!(
+            payload["text"]["format"]["schema"]["properties"]["candidates"]["maxItems"],
+            30
+        );
+        assert_eq!(payload["max_output_tokens"], 9_600);
         let candidate = &payload["text"]["format"]["schema"]["properties"]["candidates"]["items"];
         assert!(candidate["properties"].get("candidate_id").is_none());
         assert!(candidate["properties"].get("chunk_id").is_none());

@@ -24,7 +24,7 @@ const INVALID_QUIZ_ERROR: &str =
 const INVALID_MNEMONIC_ERROR: &str = "The AI provider did not return a usable mnemonic. Try again.";
 const MAX_MNEMONIC_CONTEXT_CHARS: usize = 8_000;
 const MAX_MNEMONIC_CHARS: usize = 1_000;
-const MAX_CANDIDATES_PER_CHUNK: usize = 2;
+pub(crate) const MAX_CANDIDATES_PER_CHUNK: usize = 32;
 const QUIZ_INSTRUCTIONS: &str = "Create a precise RecallFlow quiz from the provided source. Return only valid JSON matching the requested schema. Use unique question IDs, at least two unique non-empty answers per question, and copy every correctAnswers value exactly from answers. single_choice and true_false questions must have one correct answer. true_false answers must be ordered as True, then False. Use plausible distractors and do not add facts absent from the source.";
 const MNEMONIC_INSTRUCTIONS: &str = "Create one vivid mnemonic that helps the learner remember the correct answer. Use a rhyme, acronym, memorable image, or tiny story. Respond in the same language as the question, use no more than three short sentences, and return only the mnemonic.";
 
@@ -131,6 +131,7 @@ pub(crate) struct VerificationBatch {
 pub(crate) struct CandidatePrompt {
     instructions: &'static str,
     input: String,
+    max_candidates: usize,
     #[cfg(test)]
     chunk_id: String,
 }
@@ -212,17 +213,18 @@ impl GenerationPrompt {
 }
 
 impl CandidatePrompt {
-    fn new(chunk: &segmentation::TranscriptChunk) -> Self {
-        const INSTRUCTIONS: &str = "Extract zero, one, or two durable questions from the supplied transcript chunk. Use only the supplied source. Prefer definitions, principles, mechanisms, comparisons, procedures, and explicitly qualified causal relationships. Exclude classroom logistics, jokes, personal anecdotes, slide navigation, lecture-order questions, and unresolved references. Never say according to the lecture, notes, or speaker. Preserve populations, conditions, uncertainty, and other qualifications. Quote exact evidence from the PRIMARY region. Give every question at least two unique, non-empty answers, and copy each correct answer exactly from answers. A single_choice or true_false question has exactly one correct answer; true_false answers must be exactly [\"True\", \"False\"]. An empty candidates array is correct when the source has no independently testable knowledge.";
+    fn new(chunk: &segmentation::TranscriptChunk, max_candidates: usize) -> Self {
+        const INSTRUCTIONS: &str = "Extract as many distinct durable questions as the source supports, up to candidate_limit. Use only the supplied source. Prefer definitions, principles, mechanisms, comparisons, procedures, and explicitly qualified causal relationships. Exclude classroom logistics, jokes, personal anecdotes, slide navigation, lecture-order questions, and unresolved references. Never say according to the lecture, notes, or speaker. Preserve populations, conditions, uncertainty, and other qualifications. Quote exact evidence from the PRIMARY region. Give every question at least two unique, non-empty answers, and copy each correct answer exactly from answers. A single_choice or true_false question has exactly one correct answer; true_false answers must be exactly [\"True\", \"False\"]. An empty candidates array is correct when the source has no independently testable knowledge.";
         let primary = &chunk.context[chunk.primary_context_bytes.clone()];
         let before = &chunk.context[..chunk.primary_context_bytes.start];
         let after = &chunk.context[chunk.primary_context_bytes.end..];
         Self {
             instructions: INSTRUCTIONS,
             input: format!(
-                "chunk_id: {}\nCONTEXT BEFORE:\n{}\nPRIMARY:\n{}\nCONTEXT AFTER:\n{}",
+                "candidate_limit: {max_candidates}\nchunk_id: {}\nCONTEXT BEFORE:\n{}\nPRIMARY:\n{}\nCONTEXT AFTER:\n{}",
                 chunk.id, before, primary, after
             ),
+            max_candidates,
             #[cfg(test)]
             chunk_id: chunk.id.clone(),
         }
@@ -453,11 +455,12 @@ pub fn parse_generated_quiz_json(
 pub(crate) fn parse_candidate_batch_json(
     response: &str,
     expected_chunk_id: &str,
+    max_candidates: usize,
 ) -> Result<CandidateBatch, String> {
     let json = extract_json_object(response)?;
     let batch: ProviderCandidateBatch =
         serde_json::from_str(json).map_err(|_| INVALID_QUIZ_ERROR.to_owned())?;
-    if batch.candidates.len() > MAX_CANDIDATES_PER_CHUNK {
+    if batch.candidates.len() > max_candidates.min(MAX_CANDIDATES_PER_CHUNK) {
         return Err(INVALID_QUIZ_ERROR.to_owned());
     }
 
@@ -695,6 +698,7 @@ pub(crate) async fn generate_quiz_with_cancellation(
     });
     let generated = orchestration::generate_candidates_for_chunks(
         chunks.clone(),
+        question_count,
         request.provider,
         request.model.clone(),
         api_key.to_owned(),
@@ -903,7 +907,7 @@ mod grounded_contract_tests {
     #[test]
     fn candidate_batches_accept_empty_and_valid_results() {
         assert!(
-            parse_candidate_batch_json(r#"{"candidates":[]}"#, "chunk-0001")
+            parse_candidate_batch_json(r#"{"candidates":[]}"#, "chunk-0001", 2)
                 .unwrap()
                 .candidates
                 .is_empty()
@@ -911,10 +915,24 @@ mod grounded_contract_tests {
         let parsed = parse_candidate_batch_json(
             &json!({ "candidates": [candidate()] }).to_string(),
             "chunk-0001",
+            2,
         )
         .unwrap();
         assert_eq!(parsed.candidates[0].candidate_id, "chunk-0001-candidate-1");
         assert_eq!(parsed.candidates[0].chunk_id, "chunk-0001");
+
+        let many = vec![candidate(); 30];
+        assert_eq!(
+            parse_candidate_batch_json(
+                &json!({ "candidates": many }).to_string(),
+                "chunk-0001",
+                30,
+            )
+            .unwrap()
+            .candidates
+            .len(),
+            30
+        );
     }
 
     #[test]
@@ -922,6 +940,7 @@ mod grounded_contract_tests {
         assert!(parse_candidate_batch_json(
             &json!({ "candidates": [candidate(), candidate(), candidate()] }).to_string(),
             "chunk-0001",
+            2,
         )
         .is_err());
         let mut malformed = candidate();
@@ -929,6 +948,7 @@ mod grounded_contract_tests {
         assert!(parse_candidate_batch_json(
             &json!({ "candidates": [malformed] }).to_string(),
             "chunk-0001",
+            2,
         )
         .is_err());
     }
