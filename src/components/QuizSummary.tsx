@@ -11,6 +11,10 @@ type QuizSummaryProps = {
   saveState: QuizAttemptSaveState;
 };
 
+function formatAnswers(answers: readonly string[]) {
+  return answers.length > 0 ? answers.join(", ") : "No answer recorded";
+}
+
 export default function QuizSummary({
   onBackToLibrary,
   onRestart,
@@ -20,7 +24,9 @@ export default function QuizSummary({
   saveState,
 }: QuizSummaryProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const percentage = Math.round((result.score / result.total) * 100);
+  const percentage = result.total
+    ? Math.round((result.score / result.total) * 100)
+    : 0;
   const incorrectCount = result.total - result.score;
 
   useEffect(() => {
@@ -69,6 +75,51 @@ export default function QuizSummary({
           </div>
         )}
       </div>
+
+      <section
+        className="quiz-answer-review"
+        aria-labelledby="quiz-answer-review-title"
+      >
+        <h2 id="quiz-answer-review-title">Answer review</h2>
+        {result.details.length > 0 ? (
+          <ol className="quiz-answer-review-list" role="list">
+            {result.details.map((detail, index) => (
+              <li
+                className={`quiz-answer-review-item ${
+                  detail.correct ? "correct" : "incorrect"
+                }`}
+                key={detail.questionId}
+              >
+                <p className="quiz-answer-review-status">
+                  {detail.correct ? "Correct" : "Incorrect"}
+                </p>
+                <h3>
+                  {index + 1}. {detail.question}
+                </h3>
+                <dl className="quiz-answer-review-answers">
+                  <div>
+                    <dt>Your answer</dt>
+                    <dd>{formatAnswers(detail.selectedAnswers)}</dd>
+                  </div>
+                  <div>
+                    <dt>Correct answer</dt>
+                    <dd>{formatAnswers(detail.correctAnswers)}</dd>
+                  </div>
+                </dl>
+                {detail.explanation && (
+                  <p className="quiz-answer-review-explanation">
+                    <strong>Explanation:</strong> {detail.explanation}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="quiz-answer-review-empty">
+            No answers are available to review.
+          </p>
+        )}
+      </section>
 
       <div className="quiz-summary-actions">
         <button className="secondary-button" onClick={onBackToLibrary} type="button">

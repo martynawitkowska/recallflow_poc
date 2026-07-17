@@ -7,9 +7,11 @@ export type QuizAnswerState = Readonly<
 
 export type QuizResultDetail = {
   questionId: string;
+  question: string;
   selectedAnswers: string[];
   correctAnswers: string[];
   correct: boolean;
+  explanation?: string;
 };
 
 export type QuizResult = {
@@ -28,9 +30,11 @@ export function calculateQuizResult(
 
     return {
       questionId: question.id,
+      question: question.question,
       selectedAnswers,
       correctAnswers,
       correct: answersMatch(selectedAnswers, correctAnswers),
+      explanation: question.explanation,
     };
   });
 
