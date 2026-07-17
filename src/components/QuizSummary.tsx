@@ -39,12 +39,10 @@ export default function QuizSummary({
 
   return (
     <section className="quiz-summary" aria-labelledby="quiz-summary-title">
-      <p className="eyebrow">
-        {isRepair ? "Repair session complete" : "Session complete"}
-      </p>
       <h1 id="quiz-summary-title" ref={titleRef} tabIndex={-1}>
-        {quizTitle}
+        {isRepair ? "Repair complete" : "Session complete"}
       </h1>
+      <p className="quiz-summary-title">{quizTitle}</p>
       <dl className="quiz-summary-score">
         <div>
           <dt>Correct answers</dt>

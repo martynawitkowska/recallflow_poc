@@ -203,8 +203,7 @@ export default function App() {
       >
         {activeView === "library" && (
           <section>
-            <p className="eyebrow">Your study system</p>
-            <h1 tabIndex={-1}>Library</h1>
+            <h1 tabIndex={-1}>Your library</h1>
             <p className="lede">Browse the quizzes ready for active recall.</p>
             <QuizLibrary
               attemptsState={attempts.state}
@@ -289,7 +288,6 @@ export default function App() {
 
         {activeView === "import" && (
           <section className="narrow-page">
-            <p className="eyebrow">Add study material</p>
             <h1 tabIndex={-1}>Add a quiz</h1>
             <p className="lede">
               Import a local quiz, generate one from pasted material, or use an

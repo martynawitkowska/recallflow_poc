@@ -23,7 +23,6 @@ export default function ExternalQuizReference() {
   return (
     <section className="external-reference" aria-labelledby="external-reference-title">
       <header>
-        <p className="eyebrow">Using another AI chat</p>
         <h2 id="external-reference-title">Generate a compatible quiz anywhere</h2>
         <p>
           RecallFlow does not send your material anywhere from this screen. Copy

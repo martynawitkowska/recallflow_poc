@@ -43,8 +43,9 @@ export default function QuizStatisticsModal({
       <div className="quiz-statistics-content">
         <header className="quiz-statistics-header">
           <div>
-            <p className="eyebrow">Quiz statistics</p>
-            <h2 id="quiz-statistics-title">{quiz.quiz.title}</h2>
+            <h2 id="quiz-statistics-title">
+              {quiz.quiz.title} statistics
+            </h2>
           </div>
           <button
             className="secondary-button"

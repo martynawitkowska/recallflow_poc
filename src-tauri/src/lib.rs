@@ -9,10 +9,32 @@ use models::AppInfo;
 use state::{AppState, DatabaseState};
 use tauri::Manager;
 
+#[cfg(all(target_os = "macos", debug_assertions))]
+fn set_development_dock_icon() {
+    use objc2::{AnyThread, MainThreadMarker};
+    use objc2_app_kit::{NSApplication, NSImage};
+    use objc2_foundation::NSData;
+
+    let Some(main_thread) = MainThreadMarker::new() else {
+        return;
+    };
+    let data = NSData::with_bytes(include_bytes!("../icons/icon.png"));
+    let Some(icon) = NSImage::initWithData(NSImage::alloc(), &data) else {
+        return;
+    };
+
+    unsafe {
+        NSApplication::sharedApplication(main_thread).setApplicationIconImage(Some(&icon));
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            #[cfg(all(target_os = "macos", debug_assertions))]
+            set_development_dock_icon();
+
             let name = app
                 .config()
                 .product_name
