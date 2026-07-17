@@ -33,12 +33,19 @@ export type ApiKeyStatus = RustApiKeyStatus & {
   persisted: boolean;
 };
 
+export type ApiKeyRestoreReport = {
+  failedProviders: MnemonicProvider[];
+  restoredProviders: MnemonicProvider[];
+};
+
 type OpenVault = {
   stronghold: Stronghold;
   store: Store;
 };
 
 let activeVault: Promise<OpenVault> | null = null;
+
+const apiKeyProviders = Object.keys(apiKeyRecordNames) as MnemonicProvider[];
 
 function requireDesktop() {
   if (!isTauri()) {
@@ -99,6 +106,55 @@ async function openVault(create: boolean): Promise<OpenVault | null> {
     activeVault = null;
     throw new Error(VAULT_READ_ERROR);
   }
+}
+
+export async function restoreStoredApiKeys(
+  getStoredKey: (provider: MnemonicProvider) => Promise<Uint8Array | null>,
+  saveSessionKey: (
+    provider: MnemonicProvider,
+    apiKey: string,
+  ) => Promise<unknown>,
+): Promise<ApiKeyRestoreReport> {
+  const report: ApiKeyRestoreReport = {
+    failedProviders: [],
+    restoredProviders: [],
+  };
+
+  for (const provider of apiKeyProviders) {
+    try {
+      const storedKey = await getStoredKey(provider);
+      if (!storedKey) {
+        continue;
+      }
+      const apiKey = normalizeApiKey(
+        new TextDecoder("utf-8", { fatal: true }).decode(storedKey),
+      );
+      await saveSessionKey(provider, apiKey);
+      report.restoredProviders.push(provider);
+    } catch {
+      report.failedProviders.push(provider);
+    }
+  }
+
+  return report;
+}
+
+export async function restoreApiKeys(): Promise<ApiKeyRestoreReport> {
+  requireDesktop();
+  const vault = await openVault(false);
+  if (!vault) {
+    return { failedProviders: [], restoredProviders: [] };
+  }
+
+  return restoreStoredApiKeys(
+    (provider) => vault.store.get(apiKeyRecordNames[provider]),
+    (provider, apiKey) =>
+      invokeIpc<RustApiKeyStatus>(
+        "save_ai_api_key",
+        { provider, apiKey },
+        "RecallFlow could not restore a saved API key for this session. Restart the app and try again.",
+      ),
+  );
 }
 
 export async function getApiKeyStatus(

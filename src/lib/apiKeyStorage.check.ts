@@ -1,6 +1,7 @@
 import {
   apiKeyRecordNames,
   normalizeApiKey,
+  restoreStoredApiKeys,
 } from "./apiKeyStorage.ts";
 
 const recordNames = Object.values(apiKeyRecordNames);
@@ -21,4 +22,33 @@ for (const invalid of ["short", "provider api key with spaces"]) {
       throw error;
     }
   }
+}
+
+const encoder = new TextEncoder();
+const savedProviders: string[] = [];
+const restoreReport = await restoreStoredApiKeys(
+  async (provider) => {
+    if (provider === "claude") {
+      return null;
+    }
+    return encoder.encode(`${provider}-provider-api-key-1234`);
+  },
+  async (provider) => {
+    if (provider === "gemini") {
+      throw new Error("simulated session failure containing a secret");
+    }
+    savedProviders.push(provider);
+  },
+);
+
+if (
+  savedProviders.join() !== "openai" ||
+  restoreReport.restoredProviders.join() !== "openai" ||
+  restoreReport.failedProviders.join() !== "gemini"
+) {
+  throw new Error("Startup restoration did not isolate provider failures.");
+}
+
+if (JSON.stringify(restoreReport).includes("secret")) {
+  throw new Error("Startup restoration exposed a credential or internal failure.");
 }
