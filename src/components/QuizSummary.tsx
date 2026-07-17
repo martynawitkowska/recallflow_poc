@@ -45,16 +45,16 @@ export default function QuizSummary({
       <h1 id="quiz-summary-title" ref={titleRef} tabIndex={-1}>
         {quizTitle}
       </h1>
-      <div className="quiz-summary-score">
-        <p>
-          <span>Correct answers</span>
-          <strong>{result.score} / {result.total}</strong>
-        </p>
-        <p>
-          <span>Score</span>
-          <strong>{percentage}%</strong>
-        </p>
-      </div>
+      <dl className="quiz-summary-score">
+        <div>
+          <dt>Correct answers</dt>
+          <dd>{result.score} / {result.total}</dd>
+        </div>
+        <div>
+          <dt>Score</dt>
+          <dd>{percentage}%</dd>
+        </div>
+      </dl>
       <p className="quiz-summary-message">
         {incorrectCount === 0
           ? "Perfect recall. Every answer was correct."

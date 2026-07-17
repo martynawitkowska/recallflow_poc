@@ -62,11 +62,13 @@ export default function FileDropzone({ state, onFile }: FileDropzoneProps) {
         />
       </label>
 
-      <div className="import-status" aria-live="polite">
+      <div className="import-status">
         {state.status === "empty" && <p>No file selected.</p>}
-        {state.status === "loading" && <p>Reading {state.fileName}…</p>}
+        {state.status === "loading" && (
+          <p role="status">Reading {state.fileName}…</p>
+        )}
         {state.status === "success" && (
-          <p>
+          <p role="status">
             <strong>{state.data.quiz.title}</strong> is ready with{" "}
             {state.data.quiz.questions.length} question
             {state.data.quiz.questions.length === 1 ? "" : "s"} from {state.data.name}.

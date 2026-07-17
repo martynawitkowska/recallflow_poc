@@ -76,37 +76,38 @@ export default function QuizHistory({
 
       {state.status === "success" && state.attempts.length > 0 && (
         <section aria-label="Saved quiz attempts">
-          <div
+          <dl
             className="quiz-summary-score"
             aria-label="Performance statistics"
-            role="group"
           >
-            <p>
-              <span>Study sessions</span>
-              <strong>{performance.aggregate.sessions}</strong>
-            </p>
-            <p>
-              <span>Quizzes practiced</span>
-              <strong>{performance.quizzes.length}</strong>
-            </p>
-            <p>
-              <span>Correct answers</span>
-              <strong>
+            <div>
+              <dt>Study sessions</dt>
+              <dd>{performance.aggregate.sessions}</dd>
+            </div>
+            <div>
+              <dt>Quizzes practiced</dt>
+              <dd>{performance.quizzes.length}</dd>
+            </div>
+            <div>
+              <dt>Correct answers</dt>
+              <dd>
                 {performance.aggregate.correct} / {performance.aggregate.answered}
-              </strong>
-            </p>
-            <p>
-              <span>Overall retention</span>
-              <strong>{performance.aggregate.accuracy}%</strong>
-              <progress
-                aria-label="Overall retention progress"
-                className="retention-progress"
-                max="100"
-                value={performance.aggregate.accuracy}
-              />
-              <small>{overallRetentionLevel}</small>
-            </p>
-          </div>
+              </dd>
+            </div>
+            <div>
+              <dt>Overall retention</dt>
+              <dd>
+                <strong>{performance.aggregate.accuracy}%</strong>
+                <progress
+                  aria-label="Overall retention progress"
+                  className="retention-progress"
+                  max="100"
+                  value={performance.aggregate.accuracy}
+                />
+                <small>{overallRetentionLevel}</small>
+              </dd>
+            </div>
+          </dl>
           <p className="quiz-summary-message">
             Retention is weighted accuracy across saved answers. 80–100% is
             Strong, 60–79% is Developing, and below 60% Needs review.
