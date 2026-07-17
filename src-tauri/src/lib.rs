@@ -5,7 +5,7 @@ pub mod models;
 pub mod state;
 
 use models::AppInfo;
-use state::{AppState, DatabaseState};
+use state::{AppState, DatabaseState, SecretState};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -31,6 +31,7 @@ pub fn run() {
 
             app.manage(AppState::new(AppInfo::new(name, version)));
             app.manage(DatabaseState::new(pool));
+            app.manage(SecretState::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -44,6 +45,9 @@ pub fn run() {
             commands::library::save_quiz_mnemonic,
             commands::library::delete_imported_quiz,
             commands::library::clear_imported_quizzes,
+            commands::secrets::delete_ai_api_key,
+            commands::secrets::get_ai_api_key_status,
+            commands::secrets::save_ai_api_key,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run RecallFlow");
