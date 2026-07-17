@@ -1,4 +1,9 @@
 import { invokeIpc } from "./ipc";
+import { isPagesPreview } from "./runtime";
+import {
+  listWebPreviewAttempts,
+  saveWebPreviewAttempt,
+} from "./webPreviewStorage";
 
 export type QuizAttempt = {
   id: string;
@@ -10,6 +15,7 @@ export type QuizAttempt = {
 };
 
 export function listQuizAttempts(): Promise<QuizAttempt[]> {
+  if (isPagesPreview) return Promise.resolve(listWebPreviewAttempts());
   return invokeIpc(
     "list_quiz_attempts",
     undefined,
@@ -18,6 +24,10 @@ export function listQuizAttempts(): Promise<QuizAttempt[]> {
 }
 
 export function saveQuizAttempt(attempt: QuizAttempt): Promise<void> {
+  if (isPagesPreview) {
+    saveWebPreviewAttempt(attempt);
+    return Promise.resolve();
+  }
   return invokeIpc(
     "save_quiz_attempt",
     { attempt },

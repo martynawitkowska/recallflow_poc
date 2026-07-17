@@ -31,12 +31,17 @@ import {
   type MnemonicProvider,
 } from "./lib/mnemonicProviders";
 import type { QuizResult } from "./lib/quizResults";
+import { isPagesPreview } from "./lib/runtime";
 import appLogo from "../src-tauri/icons/icon.png";
 
 type ActiveView = ViewKey | "quiz" | "summary";
-const APP_PREFERENCES_STORAGE_KEY = "recallflow-app-preferences";
+const APP_PREFERENCES_STORAGE_KEY = isPagesPreview
+  ? "recallflow.pages.preferences.v1"
+  : "recallflow-app-preferences";
 const LEGACY_READING_FONT_STORAGE_KEY = "recallflow-reading-font";
-const AI_SELECTION_STORAGE_KEY = "recallflow-ai-selection";
+const AI_SELECTION_STORAGE_KEY = isPagesPreview
+  ? "recallflow.pages.ai-selection.v1"
+  : "recallflow-ai-selection";
 
 type AiSelection = {
   models: Record<MnemonicProvider, MnemonicModel>;
@@ -208,7 +213,10 @@ export default function App() {
             <QuizLibrary
               attemptsState={attempts.state}
               onAddQuiz={() => navigate("import")}
-              onClearQuizzes={library.clearQuizzes}
+              onClearQuizzes={async () => {
+                await library.clearQuizzes();
+                await attempts.retry();
+              }}
               onRemoveQuiz={library.removeQuiz}
               onRetry={library.retry}
               onRetryStatistics={attempts.retry}
