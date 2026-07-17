@@ -49,13 +49,20 @@ export default function QuizSession({
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [answerChecked, setAnswerChecked] = useState(false);
   const [checkedAnswers, setCheckedAnswers] = useState<QuizAnswerState>({});
+  const [generatedMnemonics, setGeneratedMnemonics] = useState<
+    Readonly<Record<string, string>>
+  >({});
   const [mnemonicApiKey, setMnemonicApiKey] = useState("");
   const mnemonicGeneration = useMnemonicGeneration();
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const isCorrect = answersMatch(selectedAnswers, question.correctAnswers);
-  const result = calculateQuizResult(file.quiz.questions, checkedAnswers);
+  const result = calculateQuizResult(
+    file.quiz.questions,
+    checkedAnswers,
+    generatedMnemonics,
+  );
   const completedQuestions = Object.keys(checkedAnswers).length;
 
   useEffect(() => {
@@ -112,6 +119,10 @@ export default function QuizSession({
       apiKey: mnemonicApiKey,
     });
     if (generated) {
+      setGeneratedMnemonics((current) => ({
+        ...current,
+        [question.id]: generated,
+      }));
       setMnemonicApiKey("");
     }
   };

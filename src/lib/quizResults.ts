@@ -12,6 +12,7 @@ export type QuizResultDetail = {
   correctAnswers: string[];
   correct: boolean;
   explanation?: string;
+  mnemonic?: string;
 };
 
 export type QuizResult = {
@@ -23,6 +24,7 @@ export type QuizResult = {
 export function calculateQuizResult(
   questions: readonly QuizQuestion[],
   answers: QuizAnswerState,
+  mnemonics: Readonly<Record<string, string>> = {},
 ): QuizResult {
   const details = questions.map((question) => {
     const selectedAnswers = [...(answers[question.id] ?? [])];
@@ -35,6 +37,7 @@ export function calculateQuizResult(
       correctAnswers,
       correct: answersMatch(selectedAnswers, correctAnswers),
       explanation: question.explanation,
+      mnemonic: mnemonics[question.id],
     };
   });
 

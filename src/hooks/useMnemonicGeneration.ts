@@ -22,7 +22,7 @@ export function useMnemonicGeneration() {
       const mnemonic = await generateMnemonic(request);
       if (currentRequest === requestId.current) {
         setState({ status: "success", mnemonic });
-        return true;
+        return mnemonic;
       }
     } catch (error) {
       if (currentRequest === requestId.current) {
@@ -36,7 +36,7 @@ export function useMnemonicGeneration() {
       }
     }
 
-    return false;
+    return null;
   }, []);
 
   const reset = useCallback(() => {
