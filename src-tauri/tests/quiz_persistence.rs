@@ -43,13 +43,17 @@ fn imported_quizzes_round_trip_in_newest_first_order() {
             .expect("quiz schema should initialize");
 
         let older = sample_quiz("older", "Older quiz", "2026-07-15T10:00:00.000Z");
-        let newer = sample_quiz("newer", "Newer quiz", "2026-07-16T10:00:00.000Z");
+        let mut newer = sample_quiz("newer", "Newer quiz", "2026-07-16T10:00:00.000Z");
         save_imported_quiz_to_pool(&pool, &older)
             .await
             .expect("older quiz should save");
         save_imported_quiz_to_pool(&pool, &newer)
             .await
             .expect("newer quiz should save");
+        newer.quiz.questions[0].mnemonic = Some("Updated local mnemonic.".to_owned());
+        save_imported_quiz_to_pool(&pool, &newer)
+            .await
+            .expect("saved mnemonic should update the quiz");
 
         let stored = list_imported_quizzes_from_pool(&pool)
             .await
