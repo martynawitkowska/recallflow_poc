@@ -28,7 +28,11 @@ export default function QuizGenerator({ onSaveQuiz }: QuizGeneratorProps) {
       </header>
 
       <form className="generation-form" noValidate onSubmit={generation.submit}>
-        <div className="source-options" aria-label="Quiz source">
+        <div
+          className="source-options"
+          aria-label="Quiz source"
+          role="group"
+        >
           <button
             aria-pressed={generation.sourceMode === "material"}
             disabled={isLoading}
@@ -143,7 +147,7 @@ export default function QuizGenerator({ onSaveQuiz }: QuizGeneratorProps) {
         </button>
       </form>
 
-      <div className="generation-status" aria-live="polite">
+      <div className="generation-status">
         {generation.state.status === "loading" && (
           <p role="status">
             {generation.sourceMode === "url"
@@ -189,7 +193,7 @@ export default function QuizGenerator({ onSaveQuiz }: QuizGeneratorProps) {
               ))}
             </ol>
             <div className="generated-quiz-actions">
-              <p className="draft-note">
+              <p className="draft-note" role="status">
                 {generation.state.saveState.status === "saved"
                   ? "Saved to your local library."
                   : "Review each question before saving this draft."}

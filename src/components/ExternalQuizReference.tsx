@@ -41,7 +41,7 @@ export default function ExternalQuizReference() {
       <article className="reference-card">
         <div className="reference-card-heading">
           <div>
-            <h3>External generation prompt</h3>
+            <h3 id="external-prompt-title">External generation prompt</h3>
             <p>Includes the exact format and validation rules RecallFlow expects.</p>
           </div>
           <button
@@ -53,10 +53,14 @@ export default function ExternalQuizReference() {
             {promptCopy.state.status === "loading" ? "Copying…" : "Copy prompt"}
           </button>
         </div>
-        <pre className="reference-preview" tabIndex={0}>
+        <pre
+          aria-labelledby="external-prompt-title"
+          className="reference-preview"
+          tabIndex={0}
+        >
           <code>{EXTERNAL_QUIZ_PROMPT}</code>
         </pre>
-        <div className="copy-feedback" aria-live="polite">
+        <div className="copy-feedback">
           <CopyStatus state={promptCopy.state} />
         </div>
       </article>
@@ -64,7 +68,7 @@ export default function ExternalQuizReference() {
       <article className="reference-card">
         <div className="reference-card-heading">
           <div>
-            <h3>Quiz JSON example</h3>
+            <h3 id="quiz-json-example-title">Quiz JSON example</h3>
             <p>A valid example covering every supported question type.</p>
           </div>
           <button
@@ -76,10 +80,14 @@ export default function ExternalQuizReference() {
             {schemaCopy.state.status === "loading" ? "Copying…" : "Copy example"}
           </button>
         </div>
-        <pre className="reference-preview" tabIndex={0}>
+        <pre
+          aria-labelledby="quiz-json-example-title"
+          className="reference-preview"
+          tabIndex={0}
+        >
           <code>{QUIZ_SCHEMA_REFERENCE}</code>
         </pre>
-        <div className="copy-feedback" aria-live="polite">
+        <div className="copy-feedback">
           <CopyStatus state={schemaCopy.state} />
         </div>
       </article>

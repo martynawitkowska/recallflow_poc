@@ -130,7 +130,7 @@ export default function Settings({
           {modelOption.description}
         </p>
 
-        <div className="settings-selection" aria-live="polite" role="status">
+        <div className="settings-selection" role="status">
           <strong>
             {providerOption.label} · {modelOption.label}
           </strong>

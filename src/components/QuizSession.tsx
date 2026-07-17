@@ -340,7 +340,7 @@ export default function QuizSession({
                       `An API key for ${mnemonicProviderOption.label} is required. `}
                     The question and answer are sent to {mnemonicProviderOption.label} only after you press the button. The API key is not saved.
                   </p>
-                  <div className="mnemonic-generation-status" aria-live="polite">
+                  <div className="mnemonic-generation-status">
                     {mnemonicGeneration.state.status === "loading" && (
                       <p role="status">Creating a memory hook…</p>
                     )}
@@ -352,7 +352,15 @@ export default function QuizSession({
                         <strong>
                           {usingSavedMnemonic ? "Saved mnemonic" : "Mnemonic"}
                         </strong>
-                        <p>{mnemonic}</p>
+                        <p
+                          role={
+                            mnemonicGeneration.state.status === "success"
+                              ? "status"
+                              : undefined
+                          }
+                        >
+                          {mnemonic}
+                        </p>
                         <div className="mnemonic-save-status">
                           {usingSavedMnemonic ? (
                             <p role="status">
