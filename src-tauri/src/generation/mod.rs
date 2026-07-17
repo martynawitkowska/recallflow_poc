@@ -67,6 +67,24 @@ pub(crate) struct QuestionCandidate {
     pub evidence_quote: String,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProviderCandidateBatch {
+    candidates: Vec<ProviderQuestionCandidate>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProviderQuestionCandidate {
+    topic: String,
+    question_type: QuestionType,
+    question: String,
+    answers: Vec<String>,
+    correct_answers: Vec<String>,
+    explanation: String,
+    evidence_quote: String,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum VerificationReason {
@@ -195,7 +213,7 @@ impl GenerationPrompt {
 
 impl CandidatePrompt {
     fn new(chunk: &segmentation::TranscriptChunk) -> Self {
-        const INSTRUCTIONS: &str = "Extract zero, one, or two durable questions from the supplied transcript chunk. Use only the supplied source. Prefer definitions, principles, mechanisms, comparisons, procedures, and explicitly qualified causal relationships. Exclude classroom logistics, jokes, personal anecdotes, slide navigation, lecture-order questions, and unresolved references. Never say according to the lecture, notes, or speaker. Preserve populations, conditions, uncertainty, and other qualifications. Every candidate must use the supplied chunk_id and quote exact evidence from the PRIMARY region. An empty candidates array is correct when the source has no independently testable knowledge.";
+        const INSTRUCTIONS: &str = "Extract zero, one, or two durable questions from the supplied transcript chunk. Use only the supplied source. Prefer definitions, principles, mechanisms, comparisons, procedures, and explicitly qualified causal relationships. Exclude classroom logistics, jokes, personal anecdotes, slide navigation, lecture-order questions, and unresolved references. Never say according to the lecture, notes, or speaker. Preserve populations, conditions, uncertainty, and other qualifications. Quote exact evidence from the PRIMARY region. Give every question at least two unique, non-empty answers, and copy each correct answer exactly from answers. A single_choice or true_false question has exactly one correct answer; true_false answers must be exactly [\"True\", \"False\"]. An empty candidates array is correct when the source has no independently testable knowledge.";
         let primary = &chunk.context[chunk.primary_context_bytes.clone()];
         let before = &chunk.context[..chunk.primary_context_bytes.start];
         let after = &chunk.context[chunk.primary_context_bytes.end..];
@@ -437,30 +455,32 @@ pub(crate) fn parse_candidate_batch_json(
     expected_chunk_id: &str,
 ) -> Result<CandidateBatch, String> {
     let json = extract_json_object(response)?;
-    let mut batch: CandidateBatch =
+    let batch: ProviderCandidateBatch =
         serde_json::from_str(json).map_err(|_| INVALID_QUIZ_ERROR.to_owned())?;
     if batch.candidates.len() > MAX_CANDIDATES_PER_CHUNK {
         return Err(INVALID_QUIZ_ERROR.to_owned());
     }
 
-    let mut ids = HashSet::new();
+    let mut batch = CandidateBatch {
+        candidates: batch
+            .candidates
+            .into_iter()
+            .enumerate()
+            .map(|(index, candidate)| QuestionCandidate {
+                candidate_id: format!("{expected_chunk_id}-candidate-{}", index + 1),
+                chunk_id: expected_chunk_id.to_owned(),
+                topic: candidate.topic,
+                question_type: candidate.question_type,
+                question: candidate.question,
+                answers: candidate.answers,
+                correct_answers: candidate.correct_answers,
+                explanation: candidate.explanation,
+                evidence_quote: candidate.evidence_quote,
+            })
+            .collect(),
+    };
     for candidate in &mut batch.candidates {
         normalize_candidate(candidate);
-        if candidate.chunk_id != expected_chunk_id
-            || candidate.candidate_id.is_empty()
-            || !ids.insert(candidate.candidate_id.clone())
-            || candidate.topic.is_empty()
-            || candidate.question.is_empty()
-            || candidate.explanation.is_empty()
-            || candidate.evidence_quote.trim().is_empty()
-            || !valid_answers(
-                candidate.question_type,
-                &candidate.answers,
-                &candidate.correct_answers,
-            )
-        {
-            return Err(INVALID_QUIZ_ERROR.to_owned());
-        }
     }
 
     Ok(batch)
@@ -855,10 +875,8 @@ mod grounded_contract_tests {
     };
     use serde_json::json;
 
-    fn candidate(id: &str) -> serde_json::Value {
+    fn candidate() -> serde_json::Value {
         json!({
-            "candidate_id": id,
-            "chunk_id": "chunk-0001",
             "topic": "Cell biology",
             "question_type": "single_choice",
             "question": "What produces ATP?",
@@ -891,27 +909,23 @@ mod grounded_contract_tests {
                 .is_empty()
         );
         let parsed = parse_candidate_batch_json(
-            &json!({ "candidates": [candidate("candidate-1")] }).to_string(),
+            &json!({ "candidates": [candidate()] }).to_string(),
             "chunk-0001",
         )
         .unwrap();
-        assert_eq!(parsed.candidates[0].candidate_id, "candidate-1");
+        assert_eq!(parsed.candidates[0].candidate_id, "chunk-0001-candidate-1");
+        assert_eq!(parsed.candidates[0].chunk_id, "chunk-0001");
     }
 
     #[test]
-    fn candidate_batches_reject_excessive_malformed_and_duplicate_results() {
+    fn candidate_batches_reject_excessive_and_unknown_fields() {
         assert!(parse_candidate_batch_json(
-            &json!({ "candidates": [candidate("1"), candidate("2"), candidate("3")] }).to_string(),
+            &json!({ "candidates": [candidate(), candidate(), candidate()] }).to_string(),
             "chunk-0001",
         )
         .is_err());
-        assert!(parse_candidate_batch_json(
-            &json!({ "candidates": [candidate("same"), candidate("same")] }).to_string(),
-            "chunk-0001",
-        )
-        .is_err());
-        let mut malformed = candidate("bad");
-        malformed["evidence_quote"] = json!(" ");
+        let mut malformed = candidate();
+        malformed["unexpected"] = json!(true);
         assert!(parse_candidate_batch_json(
             &json!({ "candidates": [malformed] }).to_string(),
             "chunk-0001",

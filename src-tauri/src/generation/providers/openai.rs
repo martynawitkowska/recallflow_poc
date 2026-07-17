@@ -156,15 +156,13 @@ fn build_candidate_payload(model: &str, prompt: &CandidatePrompt) -> serde_json:
                     "items": {
                         "type": "object",
                         "additionalProperties": false,
-                        "required": ["candidate_id", "chunk_id", "topic", "question_type", "question", "answers", "correct_answers", "explanation", "evidence_quote"],
+                        "required": ["topic", "question_type", "question", "answers", "correct_answers", "explanation", "evidence_quote"],
                         "properties": {
-                            "candidate_id": { "type": "string" },
-                            "chunk_id": { "type": "string" },
                             "topic": { "type": "string" },
                             "question_type": { "type": "string", "enum": ["single_choice", "multiple_choice", "true_false"] },
                             "question": { "type": "string" },
-                            "answers": { "type": "array", "items": { "type": "string" } },
-                            "correct_answers": { "type": "array", "items": { "type": "string" } },
+                            "answers": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+                            "correct_answers": { "type": "array", "minItems": 1, "items": { "type": "string" } },
                             "explanation": { "type": "string" },
                             "evidence_quote": { "type": "string" }
                         }
@@ -504,6 +502,11 @@ mod tests {
         assert!(input.chars().count() < 12_000);
         assert!(input.contains("PRIMARY:"));
         assert!(!input.contains("END-OF-TRANSCRIPT"));
+        let candidate = &payload["text"]["format"]["schema"]["properties"]["candidates"]["items"];
+        assert!(candidate["properties"].get("candidate_id").is_none());
+        assert!(candidate["properties"].get("chunk_id").is_none());
+        assert_eq!(candidate["properties"]["answers"]["minItems"], 2);
+        assert_eq!(candidate["properties"]["correct_answers"]["minItems"], 1);
     }
 
     #[test]

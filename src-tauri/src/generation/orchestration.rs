@@ -260,10 +260,8 @@ mod tests {
     use serde_json::json;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    fn response(chunk_id: &str, candidate_id: &str) -> String {
+    fn response() -> String {
         json!({ "candidates": [{
-            "candidate_id": candidate_id,
-            "chunk_id": chunk_id,
             "topic": "Topic",
             "question_type": "single_choice",
             "question": "What is durable knowledge?",
@@ -284,7 +282,7 @@ mod tests {
             orchestrate_candidate_generation(chunks.clone(), CancellationFlag::default(), {
                 let active = active.clone();
                 let peak = peak.clone();
-                move |prompt| {
+                move |_| {
                     let active = active.clone();
                     let peak = peak.clone();
                     async move {
@@ -293,8 +291,7 @@ mod tests {
                         tokio::time::sleep(Duration::from_millis((5 - now.min(4)) as u64 * 5))
                             .await;
                         active.fetch_sub(1, Ordering::SeqCst);
-                        let id = prompt.chunk_id().to_owned();
-                        Ok(response(&id, &format!("candidate-{id}")))
+                        Ok(response())
                     }
                 }
             })
@@ -316,7 +313,7 @@ mod tests {
         let calls = Arc::new(AtomicUsize::new(0));
         let outcome = orchestrate_candidate_generation(chunks, CancellationFlag::default(), {
             let calls = calls.clone();
-            move |prompt| {
+            move |_| {
                 let calls = calls.clone();
                 async move {
                     if calls.fetch_add(1, Ordering::SeqCst) == 0 {
@@ -324,7 +321,7 @@ mod tests {
                             "temporary failure".to_owned(),
                         ))
                     } else {
-                        Ok(response(prompt.chunk_id(), "candidate-1"))
+                        Ok(response())
                     }
                 }
             }
