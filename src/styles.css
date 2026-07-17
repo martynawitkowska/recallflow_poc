@@ -730,29 +730,34 @@ h1 {
 
 .quiz-summary-score {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin: 2rem 0 1rem;
 }
 
-.quiz-summary-score p {
+.quiz-summary-intro,
+.quiz-summary-message {
+  color: var(--color-muted);
+}
+
+.quiz-summary-score > div {
   display: grid;
   gap: 0.4rem;
-  margin: 0;
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-bg);
 }
 
-.quiz-summary-score span,
-.quiz-summary-message {
+.quiz-summary-score dt {
   color: var(--color-muted);
 }
 
-.quiz-summary-score strong {
+.quiz-summary-score dd {
+  margin: 0;
   color: var(--color-accent);
   font-size: 1.5rem;
+  font-weight: 750;
 }
 
 .quiz-attempt-save-status {

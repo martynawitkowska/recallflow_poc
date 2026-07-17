@@ -20,7 +20,7 @@ export default function QuizSummary({
   saveState,
 }: QuizSummaryProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const percentage = Math.round((result.score / result.total) * 100);
+  const percentage = result.total ? Math.round((result.score / result.total) * 100) : 0;
   const incorrectCount = result.total - result.score;
 
   useEffect(() => {
@@ -33,20 +33,29 @@ export default function QuizSummary({
       <h1 id="quiz-summary-title" ref={titleRef} tabIndex={-1}>
         {quizTitle}
       </h1>
-      <div className="quiz-summary-score">
-        <p>
-          <span>Correct answers</span>
-          <strong>{result.score} / {result.total}</strong>
-        </p>
-        <p>
-          <span>Score</span>
-          <strong>{percentage}%</strong>
-        </p>
-      </div>
+      <p className="quiz-summary-intro">
+        Your completed session is summarized below.
+      </p>
+      <dl className="quiz-summary-score">
+        <div>
+          <dt>Correct answers</dt>
+          <dd>{result.score} / {result.total}</dd>
+        </div>
+        <div>
+          <dt>Needs review</dt>
+          <dd>{incorrectCount}</dd>
+        </div>
+        <div>
+          <dt>Score</dt>
+          <dd>{percentage}%</dd>
+        </div>
+      </dl>
       <p className="quiz-summary-message">
-        {incorrectCount === 0
-          ? "Perfect recall. Every answer was correct."
-          : `${incorrectCount} ${incorrectCount === 1 ? "answer needs" : "answers need"} another pass.`}
+        {result.total === 0
+          ? "No answer results were recorded for this session."
+          : incorrectCount === 0
+            ? "Perfect recall. Every answer was correct."
+            : `${incorrectCount} ${incorrectCount === 1 ? "answer needs" : "answers need"} another pass.`}
       </p>
 
       <div className="quiz-attempt-save-status">
