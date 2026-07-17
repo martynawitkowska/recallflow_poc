@@ -27,8 +27,10 @@ Run the complete frontend and Rust validation workflow:
 npm run check
 ```
 
-This runs the TypeScript/Vite production build, Rust formatting check,
-`cargo check`, and the Rust test suite.
+This runs the TypeScript/Vite production build, dependency-free frontend
+validation and domain-logic checks, Rust formatting check, `cargo check`, and
+the Rust test suite. Individual frontend checks are available as
+`npm run check:<area>` scripts in `package.json`.
 
 ## Application preferences
 
