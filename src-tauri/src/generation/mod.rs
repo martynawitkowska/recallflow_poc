@@ -135,7 +135,7 @@ pub fn parse_generated_mnemonic(response: &str) -> Result<String, String> {
 pub fn validate_generation_request(
     request: &GenerateQuizRequest,
 ) -> Result<GenerationSource<'_>, String> {
-    if request.provider == AiProvider::Unsupported {
+    if request.provider != AiProvider::Openai {
         return Err("The selected quiz provider is not available yet.".to_owned());
     }
     if !(MIN_QUESTION_COUNT..=MAX_QUESTION_COUNT).contains(&request.question_count) {

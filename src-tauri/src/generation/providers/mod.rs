@@ -1,3 +1,5 @@
+mod claude;
+mod gemini;
 mod openai;
 
 use super::{GenerationPrompt, MnemonicPrompt};
@@ -11,7 +13,7 @@ pub(super) async fn generate(
 ) -> Result<String, String> {
     match provider {
         AiProvider::Openai => openai::generate(api_key, model, prompt).await,
-        AiProvider::Unsupported => {
+        AiProvider::Gemini | AiProvider::Claude | AiProvider::Unsupported => {
             Err("The selected quiz provider is not available yet.".to_owned())
         }
     }
@@ -25,6 +27,8 @@ pub(super) async fn generate_mnemonic(
 ) -> Result<String, String> {
     match provider {
         AiProvider::Openai => openai::generate_mnemonic(api_key, model, prompt).await,
+        AiProvider::Gemini => gemini::generate_mnemonic(api_key, model, prompt).await,
+        AiProvider::Claude => claude::generate_mnemonic(api_key, model, prompt).await,
         AiProvider::Unsupported => {
             Err("The selected mnemonic provider is not available yet.".to_owned())
         }

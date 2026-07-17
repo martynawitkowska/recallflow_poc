@@ -103,7 +103,7 @@ fn generation_request_validates_provider_and_question_count() {
         "questionCount": 8,
         "apiKey": "request-only-key"
     }))
-    .expect("unknown providers should reach command validation");
+    .expect("known providers should reach command validation");
     let invalid_count = GenerateQuizRequest {
         material: Some("Useful study notes".to_owned()),
         source_url: None,
@@ -117,10 +117,7 @@ fn generation_request_validates_provider_and_question_count() {
         .err()
         .expect("unsupported provider should fail")
         .contains("selected quiz provider is not available"));
-    assert!(matches!(
-        unsupported_provider.provider,
-        AiProvider::Unsupported
-    ));
+    assert!(matches!(unsupported_provider.provider, AiProvider::Gemini));
     assert!(validate_generation_request(&invalid_count)
         .err()
         .expect("out-of-range count should fail")

@@ -31,7 +31,7 @@ export function useMnemonicGeneration() {
           message:
             error instanceof Error
               ? error.message
-              : "OpenAI could not generate a mnemonic. Try again.",
+              : "The selected AI provider could not generate a mnemonic. Try again.",
         });
       }
     }
