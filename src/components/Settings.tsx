@@ -140,7 +140,7 @@ export default function Settings({
         </p>
 
         <label htmlFor="ai-api-key">
-          {keyStatus?.configured
+          {keyStatus?.configured === true
             ? `Replace ${providerOption.label} API key`
             : providerOption.keyLabel}
         </label>
@@ -155,7 +155,7 @@ export default function Settings({
           value={apiKeySettings.apiKey}
         />
         <div className="settings-key-actions">
-          {keyStatus?.configured && (
+          {canManageKey && keyStatus?.configured !== false && (
             <button
               className="danger-button"
               disabled={isSavingKey}
@@ -175,15 +175,17 @@ export default function Settings({
           >
             {isSavingKey
               ? "Saving…"
-              : keyStatus?.configured
+              : keyStatus?.configured === true
                 ? "Replace key"
-                : "Save API key"}
+                : keyStatus?.configured === false
+                  ? "Save API key"
+                  : "Save or replace key"}
           </button>
         </div>
         {apiKeySettings.state.status === "loading" && (
-          <p role="status">Checking for a saved key…</p>
+          <p role="status">Loading API key settings…</p>
         )}
-        {keyStatus?.configured && (
+        {keyStatus?.configured === true && keyStatus.maskedKey && (
           <p className="settings-privacy" role="status">
             Saved as {keyStatus.maskedKey}. RecallFlow will reuse it automatically.
           </p>

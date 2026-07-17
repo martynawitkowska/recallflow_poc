@@ -90,27 +90,6 @@ pub async fn get_api_key(provider: AiProvider) -> Result<Zeroizing<String>, Stri
     .await
 }
 
-pub async fn get_api_key_status(provider: AiProvider) -> Result<ApiKeyStatus, String> {
-    run_blocking(move || {
-        let entry = provider_entry(provider)?;
-        match entry.get_password() {
-            Ok(api_key) => {
-                let api_key = Zeroizing::new(api_key);
-                Ok(ApiKeyStatus {
-                    configured: true,
-                    masked_key: Some(mask_api_key(&api_key)),
-                })
-            }
-            Err(Error::NoEntry) => Ok(ApiKeyStatus {
-                configured: false,
-                masked_key: None,
-            }),
-            Err(error) => Err(map_store_error(&error)),
-        }
-    })
-    .await
-}
-
 pub async fn save_api_key(provider: AiProvider, api_key: String) -> Result<ApiKeyStatus, String> {
     let api_key = normalize_api_key(api_key)?;
     run_blocking(move || {
