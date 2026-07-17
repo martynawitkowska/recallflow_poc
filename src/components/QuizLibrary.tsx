@@ -1,15 +1,19 @@
 import { useState } from "react";
+import type { QuizAttemptsState } from "../hooks/useQuizAttempts";
 import type { QuizLibraryState } from "../hooks/useQuizLibrary";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import Icon from "./Icon";
+import QuizStatisticsModal from "./QuizStatisticsModal";
 
 type QuizLibraryProps = {
-  state: QuizLibraryState;
+  attemptsState: QuizAttemptsState;
   onAddQuiz: () => void;
   onClearQuizzes: () => Promise<void>;
   onRemoveQuiz: (quizId: string) => Promise<void>;
   onRetry: () => Promise<void>;
+  onRetryStatistics: () => Promise<void>;
   onStartQuiz: (quiz: LibraryQuiz) => void;
+  state: QuizLibraryState;
 };
 
 type ManagementFeedback = {
@@ -23,17 +27,20 @@ const actionErrorMessage = (error: unknown) =>
     : "RecallFlow could not update the local quiz library. Restart the app and try again.";
 
 export default function QuizLibrary({
+  attemptsState,
   state,
   onAddQuiz,
   onClearQuizzes,
   onRemoveQuiz,
   onRetry,
+  onRetryStatistics,
   onStartQuiz,
 }: QuizLibraryProps) {
   const [managementFeedback, setManagementFeedback] =
     useState<ManagementFeedback | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [confirmingQuizId, setConfirmingQuizId] = useState<string | null>(null);
+  const [statisticsQuiz, setStatisticsQuiz] = useState<LibraryQuiz | null>(null);
 
   const removeQuiz = async (file: LibraryQuiz) => {
     setPendingAction(file.id);
@@ -207,6 +214,15 @@ export default function QuizLibrary({
               >
                 Start quiz
               </button>
+              <button
+                aria-label={`Statistics for ${file.quiz.title}`}
+                className="secondary-button"
+                disabled={pendingAction !== null}
+                onClick={() => setStatisticsQuiz(file)}
+                type="button"
+              >
+                Statistics
+              </button>
               {confirmingQuizId === file.id ? (
                 <>
                   <button
@@ -242,6 +258,14 @@ export default function QuizLibrary({
           </article>
         ))}
       </div>
+      {statisticsQuiz && (
+        <QuizStatisticsModal
+          onClose={() => setStatisticsQuiz(null)}
+          onRetry={onRetryStatistics}
+          quiz={statisticsQuiz}
+          state={attemptsState}
+        />
+      )}
       <p className="session-note">Quizzes are stored locally on this device.</p>
     </section>
   );

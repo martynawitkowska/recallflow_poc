@@ -511,9 +511,82 @@ h1 {
 
 .library-card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.quiz-statistics-dialog {
+  width: min(42rem, calc(100% - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.45);
+  font: inherit;
+}
+
+.quiz-statistics-dialog::backdrop {
+  background: rgba(2, 6, 5, 0.78);
+  backdrop-filter: blur(0.2rem);
+}
+
+.quiz-statistics-content {
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.quiz-statistics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quiz-statistics-header > div {
+  min-width: 0;
+}
+
+.quiz-statistics-header .secondary-button {
+  flex: 0 0 auto;
+}
+
+.quiz-statistics-header h2,
+.quiz-statistics-header p,
+.quiz-statistics-note,
+.quiz-statistics-state p {
+  margin: 0;
+}
+
+.quiz-statistics-header h2 {
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.quiz-statistics-summary {
+  margin-top: 1.5rem;
+}
+
+.quiz-statistics-note,
+.quiz-statistics-state {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.quiz-statistics-state {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  padding: 2rem 0;
+}
+
+.quiz-statistics-history-title {
+  margin: 2rem 0 1rem;
+  font-size: 1.1rem;
 }
 
 .session-note {
@@ -1005,11 +1078,6 @@ h1 {
   margin-top: 1.5rem;
 }
 
-.quiz-history-count {
-  margin: 2rem 0 1rem;
-  color: var(--color-muted);
-}
-
 .quiz-history-list {
   display: grid;
   gap: 1rem;
@@ -1029,21 +1097,13 @@ h1 {
   background: var(--color-surface);
 }
 
-.quiz-history-card h2,
 .quiz-history-card h3,
 .quiz-history-card p {
   margin: 0;
 }
 
-.quiz-history-card h2,
 .quiz-history-card h3 {
   font-size: 1.05rem;
-}
-
-.quiz-history-card div > p {
-  margin-top: 0.4rem;
-  color: var(--color-muted);
-  font-size: 0.82rem;
 }
 
 .quiz-history-score {

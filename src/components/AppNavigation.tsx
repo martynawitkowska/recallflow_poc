@@ -1,6 +1,6 @@
 import Icon, { type IconName } from "./Icon";
 
-export type ViewKey = "library" | "history" | "import" | "settings";
+export type ViewKey = "library" | "import" | "settings";
 
 type AppNavigationProps = {
   activeView: ViewKey | "quiz" | "summary";
@@ -9,7 +9,6 @@ type AppNavigationProps = {
 
 const items: Array<{ key: ViewKey; label: string; icon: IconName }> = [
   { key: "library", label: "Library", icon: "book" },
-  { key: "history", label: "History", icon: "check" },
   { key: "import", label: "Add quiz", icon: "upload" },
   { key: "settings", label: "Settings", icon: "key" },
 ];

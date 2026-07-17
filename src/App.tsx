@@ -5,7 +5,6 @@ import ConnectivityStatus from "./components/ConnectivityStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
 import QuizGenerator from "./components/QuizGenerator";
-import QuizHistory from "./components/QuizHistory";
 import QuizLibrary from "./components/QuizLibrary";
 import QuizSummary from "./components/QuizSummary";
 import QuizSession from "./components/QuizSession";
@@ -98,7 +97,7 @@ export default function App() {
   const { state, retry } = useAppInfo();
   const isOnline = useOnlineStatus();
   const attemptSave = useQuizAttemptSave();
-  const attempts = useQuizAttempts(activeView === "history");
+  const attempts = useQuizAttempts(activeView === "library");
   const library = useQuizLibrary();
   const navigate = useCallback((view: ViewKey) => {
     setFocusMode(false);
@@ -208,10 +207,12 @@ export default function App() {
             <h1 tabIndex={-1}>Library</h1>
             <p className="lede">Browse the quizzes ready for active recall.</p>
             <QuizLibrary
+              attemptsState={attempts.state}
               onAddQuiz={() => navigate("import")}
               onClearQuizzes={library.clearQuizzes}
               onRemoveQuiz={library.removeQuiz}
               onRetry={library.retry}
+              onRetryStatistics={attempts.retry}
               onStartQuiz={startQuiz}
               state={library.state}
             />
@@ -259,16 +260,6 @@ export default function App() {
             mnemonicModel={aiSelection.models[aiSelection.provider]}
             mnemonicProvider={aiSelection.provider}
             quiz={activeQuiz}
-          />
-        )}
-
-        {activeView === "history" && (
-          <QuizHistory
-            onRetry={attempts.retry}
-            quizzes={
-              library.state.status === "success" ? library.state.quizzes : []
-            }
-            state={attempts.state}
           />
         )}
 
