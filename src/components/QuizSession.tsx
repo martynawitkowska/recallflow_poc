@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
+import { useMnemonicSave } from "../hooks/useMnemonicSave";
 import { answersMatch } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
 import {
@@ -16,6 +17,7 @@ type QuizSessionProps = {
   onFinish: (result: QuizResult) => void;
   onFocusModeChange: (enabled: boolean) => void;
   onReadingFontChange: (font: ReadingFont) => void;
+  onSaveMnemonic: (questionId: string, mnemonic: string) => Promise<void>;
   readingFont: ReadingFont;
 };
 
@@ -41,6 +43,7 @@ export default function QuizSession({
   onFinish,
   onFocusModeChange,
   onReadingFontChange,
+  onSaveMnemonic,
   readingFont,
 }: QuizSessionProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -54,6 +57,7 @@ export default function QuizSession({
   >({});
   const [mnemonicApiKey, setMnemonicApiKey] = useState("");
   const mnemonicGeneration = useMnemonicGeneration();
+  const mnemonicSave = useMnemonicSave(onSaveMnemonic);
   const totalQuestions = file.quiz.questions.length;
   const question = file.quiz.questions[currentIndex];
   const isLastQuestion = currentIndex === totalQuestions - 1;
@@ -111,6 +115,7 @@ export default function QuizSession({
   };
 
   const generateMnemonic = async () => {
+    mnemonicSave.reset();
     const generated = await mnemonicGeneration.generate({
       question: question.question,
       correctAnswers: question.correctAnswers,
@@ -127,6 +132,15 @@ export default function QuizSession({
     }
   };
 
+  const saveMnemonic = async () => {
+    if (mnemonicGeneration.state.status === "success") {
+      await mnemonicSave.save(
+        question.id,
+        mnemonicGeneration.state.mnemonic,
+      );
+    }
+  };
+
   const showNextQuestion = () => {
     if (!answerChecked || isLastQuestion) {
       return;
@@ -136,6 +150,7 @@ export default function QuizSession({
     setAnswerChecked(false);
     setMnemonicApiKey("");
     mnemonicGeneration.reset();
+    mnemonicSave.reset();
     setCurrentIndex((current) =>
       Math.min(current + 1, totalQuestions - 1),
     );
@@ -173,7 +188,12 @@ export default function QuizSession({
         </button>
       </div>
       <header className="quiz-session-header">
-        <button className="secondary-button" onClick={onExit} type="button">
+        <button
+          className="secondary-button"
+          disabled={mnemonicSave.state.status === "saving"}
+          onClick={onExit}
+          type="button"
+        >
           ← Back to library
         </button>
         <div className="quiz-progress-summary">
@@ -287,7 +307,10 @@ export default function QuizSession({
                   <div className="mnemonic-generator-controls">
                     <input
                       autoComplete="off"
-                      disabled={mnemonicGeneration.state.status === "loading"}
+                      disabled={
+                        mnemonicGeneration.state.status === "loading" ||
+                        mnemonicSave.state.status === "saving"
+                      }
                       id="mnemonic-api-key"
                       onChange={(event) => setMnemonicApiKey(event.target.value)}
                       placeholder="sk-…"
@@ -299,6 +322,7 @@ export default function QuizSession({
                       className="secondary-button"
                       disabled={
                         mnemonicGeneration.state.status === "loading" ||
+                        mnemonicSave.state.status === "saving" ||
                         !mnemonicApiKey.trim()
                       }
                       onClick={() => void generateMnemonic()}
@@ -326,6 +350,29 @@ export default function QuizSession({
                       <div>
                         <strong>Mnemonic</strong>
                         <p>{mnemonicGeneration.state.mnemonic}</p>
+                        <div className="mnemonic-save-status">
+                          {(mnemonicSave.state.status === "idle" ||
+                            mnemonicSave.state.status === "error") && (
+                            <button
+                              className="secondary-button"
+                              onClick={() => void saveMnemonic()}
+                              type="button"
+                            >
+                              {mnemonicSave.state.status === "error"
+                                ? "Retry save"
+                                : "Save to quiz"}
+                            </button>
+                          )}
+                          {mnemonicSave.state.status === "saving" && (
+                            <p role="status">Saving mnemonic locally…</p>
+                          )}
+                          {mnemonicSave.state.status === "saved" && (
+                            <p role="status">Saved in quiz JSON.</p>
+                          )}
+                          {mnemonicSave.state.status === "error" && (
+                            <p role="alert">{mnemonicSave.state.message}</p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -335,6 +382,7 @@ export default function QuizSession({
                 {isLastQuestion ? (
                   <button
                     className="primary-button"
+                    disabled={mnemonicSave.state.status === "saving"}
                     onClick={finishQuiz}
                     type="button"
                   >
@@ -343,6 +391,7 @@ export default function QuizSession({
                 ) : (
                   <button
                     className="primary-button"
+                    disabled={mnemonicSave.state.status === "saving"}
                     onClick={showNextQuestion}
                     type="button"
                   >

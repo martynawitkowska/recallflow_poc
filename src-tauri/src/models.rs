@@ -35,6 +35,8 @@ pub struct QuizQuestion {
     pub correct_answers: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub explanation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mnemonic: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]

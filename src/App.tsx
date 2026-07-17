@@ -143,6 +143,9 @@ export default function App() {
             }}
             onFocusModeChange={setFocusMode}
             onReadingFontChange={setReadingFont}
+            onSaveMnemonic={(questionId, mnemonic) =>
+              library.saveMnemonic(activeQuiz.id, questionId, mnemonic)
+            }
             quiz={activeQuiz}
             readingFont={readingFont}
           />

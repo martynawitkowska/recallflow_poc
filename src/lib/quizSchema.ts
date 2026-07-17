@@ -13,6 +13,7 @@ export type QuizQuestion = {
   answers: string[];
   correctAnswers: string[];
   explanation?: string;
+  mnemonic?: string;
 };
 
 export type QuizFile = {

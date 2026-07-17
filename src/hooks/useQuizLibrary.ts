@@ -63,6 +63,59 @@ export function useQuizLibrary() {
     });
   }, [addQuiz]);
 
+  const saveMnemonic = useCallback(
+    async (quizId: string, questionId: string, mnemonic: string) => {
+      const normalizedMnemonic = mnemonic.trim();
+      if (!normalizedMnemonic) {
+        throw new Error("Generate a mnemonic before saving it.");
+      }
+      if (state.status !== "success") {
+        throw new Error("The local quiz library is not available. Try again.");
+      }
+
+      const savedQuiz = state.quizzes.find((quiz) => quiz.id === quizId);
+      if (!savedQuiz) {
+        throw new Error("This quiz is no longer in the local library.");
+      }
+      const savedQuestion = savedQuiz.quiz.questions.find(
+        (question) => question.id === questionId,
+      );
+      if (!savedQuestion) {
+        throw new Error("This question is no longer in the local quiz.");
+      }
+      if (savedQuestion.mnemonic === normalizedMnemonic) {
+        return;
+      }
+
+      const updatedQuizFile: QuizFile = {
+        ...savedQuiz.quiz,
+        questions: savedQuiz.quiz.questions.map((question) =>
+          question.id === questionId
+            ? { ...question, mnemonic: normalizedMnemonic }
+            : question,
+        ),
+      };
+      const updatedQuiz: LibraryQuiz = {
+        ...savedQuiz,
+        size: new TextEncoder().encode(JSON.stringify(updatedQuizFile)).length,
+        quiz: updatedQuizFile,
+      };
+
+      await saveImportedQuiz(updatedQuiz);
+      setState((current) =>
+        current.status === "success"
+          ? {
+              status: "success",
+              quizzes: current.quizzes.map((quiz) =>
+                quiz.id === quizId ? updatedQuiz : quiz,
+              ),
+            }
+          : current,
+      );
+    },
+    [state],
+  );
+
   const removeQuiz = useCallback(async (quizId: string) => {
     ++requestId.current;
     await deleteImportedQuiz(quizId);
@@ -85,6 +138,7 @@ export function useQuizLibrary() {
     state,
     addQuiz,
     addGeneratedQuiz,
+    saveMnemonic,
     removeQuiz,
     clearQuizzes,
     retry: loadQuizzes,

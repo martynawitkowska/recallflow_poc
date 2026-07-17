@@ -767,6 +767,24 @@ h1 {
   line-height: 1.55;
 }
 
+.mnemonic-save-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.mnemonic-generation-status > div .mnemonic-save-status p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.mnemonic-generation-status > div .mnemonic-save-status [role="alert"] {
+  color: #fda4af;
+}
+
 .quiz-question-navigation {
   display: flex;
   justify-content: flex-end;
