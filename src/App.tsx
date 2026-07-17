@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
@@ -6,7 +6,10 @@ import FileDropzone from "./components/FileDropzone";
 import Icon from "./components/Icon";
 import QuizGenerator from "./components/QuizGenerator";
 import QuizLibrary from "./components/QuizLibrary";
-import QuizSession from "./components/QuizSession";
+import QuizSession, {
+  readingFontOptions,
+  type ReadingFont,
+} from "./components/QuizSession";
 import { useAppInfo } from "./hooks/useAppInfo";
 import {
   useQuizFileImport,
@@ -16,16 +19,39 @@ import { useQuizLibrary } from "./hooks/useQuizLibrary";
 import type { LibraryQuiz } from "./lib/quizLibrary";
 
 type ActiveView = ViewKey | "quiz";
+const READING_FONT_STORAGE_KEY = "recallflow-reading-font";
+
+const loadReadingFont = (): ReadingFont => {
+  try {
+    const saved = window.localStorage.getItem(READING_FONT_STORAGE_KEY);
+    return readingFontOptions.some(({ value }) => value === saved)
+      ? (saved as ReadingFont)
+      : "sans";
+  } catch {
+    return "sans";
+  }
+};
 
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>("library");
   const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
+  const [focusMode, setFocusMode] = useState(false);
+  const [readingFont, setReadingFont] = useState(loadReadingFont);
   const { state, retry } = useAppInfo();
   const library = useQuizLibrary();
   const navigate = useCallback((view: ViewKey) => {
+    setFocusMode(false);
     setActiveQuiz(null);
     setActiveView(view);
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(READING_FONT_STORAGE_KEY, readingFont);
+    } catch {
+      // The preference still applies for the current session.
+    }
+  }, [readingFont]);
   const handleImported = useCallback(
     async (file: ValidatedQuizFile) => {
       await library.addQuiz(file);
@@ -36,21 +62,25 @@ export default function App() {
   const quizFileImport = useQuizFileImport(handleImported);
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <button
-          className="brand"
-          onClick={() => navigate("library")}
-          type="button"
-        >
-          <span className="brand-mark"><Icon name="logo" size={26} /></span>
-          <span>
-            <strong>RecallFlow</strong>
-            <small>Local-first learning</small>
-          </span>
-        </button>
-        <AppNavigation activeView={activeView} onNavigate={navigate} />
-      </header>
+    <div
+      className={`app-shell font-${readingFont}${focusMode ? " focus-mode" : ""}`}
+    >
+      {!focusMode && (
+        <header className="app-header">
+          <button
+            className="brand"
+            onClick={() => navigate("library")}
+            type="button"
+          >
+            <span className="brand-mark"><Icon name="logo" size={26} /></span>
+            <span>
+              <strong>RecallFlow</strong>
+              <small>Local-first learning</small>
+            </span>
+          </button>
+          <AppNavigation activeView={activeView} onNavigate={navigate} />
+        </header>
+      )}
 
       <main className="app-content">
         {activeView === "library" && (
@@ -76,7 +106,14 @@ export default function App() {
         )}
 
         {activeView === "quiz" && activeQuiz && (
-          <QuizSession quiz={activeQuiz} onExit={() => navigate("library")} />
+          <QuizSession
+            focusMode={focusMode}
+            onExit={() => navigate("library")}
+            onFocusModeChange={setFocusMode}
+            onReadingFontChange={setReadingFont}
+            quiz={activeQuiz}
+            readingFont={readingFont}
+          />
         )}
 
         {activeView === "import" && (

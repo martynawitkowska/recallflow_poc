@@ -55,6 +55,22 @@ textarea:focus-visible,
   color: var(--color-text);
 }
 
+.font-serif {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.font-mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.focus-mode .app-content {
+  display: grid;
+  min-height: 100vh;
+  align-content: center;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
 .app-header {
   position: sticky;
   z-index: 10;
@@ -466,6 +482,37 @@ h1 {
 .quiz-session {
   width: min(48rem, 100%);
   margin: 0 auto;
+}
+
+.quiz-preferences {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.quiz-preferences label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.quiz-preferences select {
+  padding: 0.55rem 1.8rem 0.55rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface-soft);
+  font: inherit;
+}
+
+.quiz-preferences button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .quiz-session-header {
@@ -1082,6 +1129,15 @@ h1 {
   .app-navigation button {
     flex: 1 0 auto;
     justify-content: center;
+  }
+
+  .quiz-preferences {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .quiz-preferences label {
+    justify-content: space-between;
   }
 
   .library-grid {
