@@ -600,7 +600,7 @@ h1 {
 
 .quiz-question h2 {
   margin: 0.75rem 0 1.5rem;
-  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-size: clamp(0.98rem, 2.8vw, 1.4rem);
   line-height: 1.3;
 }
 
