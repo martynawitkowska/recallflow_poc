@@ -542,6 +542,10 @@ h1 {
   margin-bottom: 2rem;
 }
 
+.quiz-session-header h1 {
+  font-size: clamp(1rem, 3vw, 1.6rem);
+}
+
 .quiz-session-header .secondary-button {
   margin-bottom: 2rem;
 }
