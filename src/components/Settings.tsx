@@ -7,31 +7,89 @@ import {
   type MnemonicModel,
   type MnemonicProvider,
 } from "../lib/mnemonicProviders";
+import {
+  isReadingFont,
+  readingFontOptions,
+  type ReadingFont,
+} from "../lib/appPreferences";
 
-type AiSettingsProps = {
+type SettingsProps = {
   model: MnemonicModel;
   onModelChange: (model: MnemonicModel) => void;
   onProviderChange: (provider: MnemonicProvider) => void;
+  onReadingFontChange: (font: ReadingFont) => void;
+  onStartInFocusModeChange: (enabled: boolean) => void;
   provider: MnemonicProvider;
+  readingFont: ReadingFont;
+  startInFocusMode: boolean;
 };
 
-export default function AiSettings({
+export default function Settings({
   model,
   onModelChange,
   onProviderChange,
+  onReadingFontChange,
+  onStartInFocusModeChange,
   provider,
-}: AiSettingsProps) {
+  readingFont,
+  startInFocusMode,
+}: SettingsProps) {
   const providerOption = getMnemonicProviderOption(provider);
   const modelOption = getMnemonicModelOption(provider, model);
 
   return (
-    <section className="narrow-page" aria-labelledby="ai-settings-title">
-      <p className="eyebrow">Provider configuration</p>
-      <h1 id="ai-settings-title">AI settings</h1>
+    <section className="narrow-page" aria-labelledby="settings-title">
+      <p className="eyebrow">Application preferences</p>
+      <h1 id="settings-title">Settings</h1>
       <p className="lede">
-        Choose the provider and model RecallFlow uses to create mnemonics.
+        Personalize reading and study sessions, then choose the AI used for
+        mnemonic generation.
       </p>
-      <div className="settings-card">
+
+      <section className="settings-card" aria-labelledby="typography-title">
+        <h2 id="typography-title">Typography</h2>
+        <p>Choose the font used throughout RecallFlow.</p>
+        <label htmlFor="reading-font">Reading font</label>
+        <select
+          id="reading-font"
+          onChange={(event) => {
+            if (isReadingFont(event.target.value)) {
+              onReadingFontChange(event.target.value);
+            }
+          }}
+          value={readingFont}
+        >
+          {readingFontOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      <section className="settings-card" aria-labelledby="study-title">
+        <h2 id="study-title">Study sessions</h2>
+        <label className="settings-toggle">
+          <input
+            checked={startInFocusMode}
+            onChange={(event) =>
+              onStartInFocusModeChange(event.target.checked)
+            }
+            type="checkbox"
+          />
+          <span>
+            <strong>Start quizzes in focus mode</strong>
+            <small>
+              Hide navigation when a quiz starts. You can exit focus mode at
+              any time.
+            </small>
+          </span>
+        </label>
+      </section>
+
+      <section className="settings-card" aria-labelledby="ai-settings-title">
+        <h2 id="ai-settings-title">AI provider</h2>
+        <p>Choose the provider and model used to create mnemonics.</p>
         <label htmlFor="ai-provider">Provider</label>
         <select
           id="ai-provider"
@@ -80,7 +138,7 @@ export default function AiSettings({
           RecallFlow saves only this preference. API keys are entered for each
           request and are never saved by this setting.
         </p>
-      </div>
+      </section>
     </section>
   );
 }

@@ -11,7 +11,7 @@ const items: Array<{ key: ViewKey; label: string; icon: IconName }> = [
   { key: "library", label: "Library", icon: "book" },
   { key: "history", label: "History", icon: "check" },
   { key: "import", label: "Add quiz", icon: "upload" },
-  { key: "settings", label: "AI settings", icon: "key" },
+  { key: "settings", label: "Settings", icon: "key" },
 ];
 
 export default function AppNavigation({
