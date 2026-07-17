@@ -46,6 +46,7 @@ export type QuizSourceMode = "material" | "url";
 export function useQuizGeneration(
   onSaveQuiz: (quiz: QuizFile) => Promise<void>,
   isOnline: boolean,
+  model: string,
 ) {
   const [sourceMode, setSourceMode] = useState<QuizSourceMode>("material");
   const [material, setMaterial] = useState("");
@@ -88,8 +89,8 @@ export function useQuizGeneration(
       try {
         const result = await generateQuiz(
           sourceMode === "material"
-            ? { material, provider, questionCount }
-            : { sourceUrl, provider, questionCount },
+            ? { material, provider, model, questionCount }
+            : { sourceUrl, provider, model, questionCount },
           runId,
           (incoming) =>
             setState((current) => {
@@ -135,7 +136,7 @@ export function useQuizGeneration(
         }
       }
     },
-    [isOnline, material, provider, questionCount, sourceMode, sourceUrl, state],
+    [isOnline, material, model, provider, questionCount, sourceMode, sourceUrl, state],
   );
 
   const cancel = useCallback(async () => {

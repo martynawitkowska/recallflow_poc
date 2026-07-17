@@ -300,6 +300,7 @@ export default function App() {
             <div className="import-divider"><span>or</span></div>
             <QuizGenerator
               isOnline={isOnline}
+              model={aiSelection.models[aiSelection.provider]}
               onSaveQuiz={library.addGeneratedQuiz}
             />
             <ExternalQuizReference />

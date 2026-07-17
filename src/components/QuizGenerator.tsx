@@ -11,17 +11,20 @@ import {
   type AiProvider,
 } from "../lib/quizGeneration";
 import type { QuizFile } from "../lib/quizSchema";
+import type { MnemonicModel } from "../lib/mnemonicProviders";
 
 type QuizGeneratorProps = {
   isOnline: boolean;
+  model: MnemonicModel;
   onSaveQuiz: (quiz: QuizFile) => Promise<void>;
 };
 
 export default function QuizGenerator({
   isOnline,
+  model,
   onSaveQuiz,
 }: QuizGeneratorProps) {
-  const generation = useQuizGeneration(onSaveQuiz, isOnline);
+  const generation = useQuizGeneration(onSaveQuiz, isOnline, model);
   const isLoading = generation.state.status === "loading";
   const materialCharacters = countCharacters(generation.material);
 
