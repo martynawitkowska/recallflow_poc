@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { QuizAttemptsState } from "../hooks/useQuizAttempts";
 import type { LibraryQuiz } from "../lib/quizLibrary";
-import { calculatePerformanceMetrics } from "../lib/quizPerformance";
+import {
+  calculatePerformanceMetrics,
+  getRetentionLevel,
+} from "../lib/quizPerformance";
 import Icon from "./Icon";
 
 type QuizHistoryProps = {
@@ -18,6 +21,9 @@ export default function QuizHistory({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const attempts = state.status === "success" ? state.attempts : [];
   const performance = calculatePerformanceMetrics(attempts);
+  const overallRetentionLevel = getRetentionLevel(
+    performance.aggregate.accuracy,
+  );
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -92,11 +98,18 @@ export default function QuizHistory({
             <p>
               <span>Overall retention</span>
               <strong>{performance.aggregate.accuracy}%</strong>
+              <progress
+                aria-label="Overall retention progress"
+                className="retention-progress"
+                max="100"
+                value={performance.aggregate.accuracy}
+              />
+              <small>{overallRetentionLevel}</small>
             </p>
           </div>
           <p className="quiz-summary-message">
-            Overall retention is the percentage of correct answers across all
-            saved sessions.
+            Retention is weighted accuracy across saved answers. 80–100% is
+            Strong, 60–79% is Developing, and below 60% Needs review.
           </p>
           <section aria-labelledby="quiz-performance-title">
             <h2 className="quiz-history-count" id="quiz-performance-title">
@@ -107,6 +120,7 @@ export default function QuizHistory({
                 const quizTitle =
                   quizzes.find((quiz) => quiz.id === metrics.quizId)?.quiz.title ??
                   "Saved quiz";
+                const retentionLevel = getRetentionLevel(metrics.accuracy);
 
                 return (
                   <li key={metrics.quizId}>
@@ -120,7 +134,13 @@ export default function QuizHistory({
                       </div>
                       <p className="quiz-history-score">
                         <strong>{metrics.accuracy}%</strong>
-                        <span>accuracy</span>
+                        <progress
+                          aria-label={`${quizTitle} retention progress`}
+                          className="retention-progress"
+                          max="100"
+                          value={metrics.accuracy}
+                        />
+                        <span>{retentionLevel}</span>
                       </p>
                     </article>
                   </li>
