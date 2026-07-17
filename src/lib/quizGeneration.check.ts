@@ -1,9 +1,17 @@
 import {
+  countCharacters,
+  generationProgressLabel,
+  generationOutcomeMessage,
   MAX_MATERIAL_CHARS,
   MAX_SOURCE_URL_CHARS,
+  mergeGenerationProgress,
   type GenerateQuizRequest,
   validateQuizGenerationRequest,
 } from "./quizGeneration.ts";
+
+if (countCharacters("A🧠B") !== 3) {
+  throw new Error("Expected transcript limits to count Unicode characters.");
+}
 
 const validMaterialRequest: GenerateQuizRequest = {
   material: "Cellular respiration produces ATP.",
@@ -50,4 +58,53 @@ for (const [request, expectedMessage] of invalidRequests) {
 
 if ("apiKey" in validMaterialRequest) {
   throw new Error("Quiz-generation requests must not carry saved API keys.");
+}
+
+const active = {
+  runId: "run-active",
+  stage: "generating_candidates" as const,
+  completed: 2,
+  total: 5,
+};
+const stale = mergeGenerationProgress(active, { ...active, runId: "run-stale", completed: 5 }, "run-active");
+if (stale !== active) {
+  throw new Error("Expected stale generation events to be ignored.");
+}
+const regressed = mergeGenerationProgress(active, { ...active, completed: 1 }, "run-active");
+if (regressed?.completed !== 2) {
+  throw new Error("Expected chunk progress to remain monotonic.");
+}
+const advanced = mergeGenerationProgress(active, {
+  runId: "run-active",
+  stage: "verifying_questions",
+  completed: 0,
+  total: 2,
+}, "run-active");
+if (generationProgressLabel(advanced!) !== "Verifying questions (0 of 2)") {
+  throw new Error("Expected accessible stage and batch progress text.");
+}
+
+const quality = {
+  requestedCount: 8,
+  generatedCandidateCount: 5,
+  deterministicRejectionCount: 1,
+  semanticRejectionCount: 1,
+  duplicateCount: 1,
+  selectedCount: 5,
+  incompleteCoverage: false,
+  duplicateAnalysisIncomplete: false,
+};
+for (const [completion, expected] of [
+  ["quality_limited", "Generated 5 of 8"],
+  ["incomplete_coverage", "source sections"],
+  ["quality_empty", "no questions"],
+  ["cancelled", "cancelled"],
+] as const) {
+  const message = generationOutcomeMessage({ completion, quality });
+  if (!message?.includes(expected)) {
+    throw new Error(`Expected ${completion} completion guidance.`);
+  }
+}
+if (generationOutcomeMessage({ completion: "full", quality }) !== null) {
+  throw new Error("Expected full generation to need no quality warning.");
 }

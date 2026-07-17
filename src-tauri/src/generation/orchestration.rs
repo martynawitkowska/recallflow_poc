@@ -11,7 +11,10 @@ use std::{
     },
     time::Duration,
 };
-use tokio::{sync::Semaphore, task::JoinSet};
+use tokio::{
+    sync::{Notify, Semaphore},
+    task::JoinSet,
+};
 
 pub(crate) const MAX_CONCURRENT_REQUESTS: usize = 4;
 
@@ -50,23 +53,50 @@ impl CandidateGenerationOutcome {
     }
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct CancellationFlag(Arc<AtomicBool>);
+#[derive(Debug, Default)]
+struct CancellationInner {
+    cancelled: AtomicBool,
+    notify: Notify,
+}
+
+#[derive(Clone, Debug, Default)]
+pub(crate) struct CancellationFlag(Arc<CancellationInner>);
 
 impl CancellationFlag {
     pub(crate) fn cancel(&self) {
-        self.0.store(true, Ordering::Release);
+        self.0.cancelled.store(true, Ordering::Release);
+        self.0.notify.notify_waiters();
     }
 
     pub(crate) fn is_cancelled(&self) -> bool {
-        self.0.load(Ordering::Acquire)
+        self.0.cancelled.load(Ordering::Acquire)
+    }
+
+    pub(crate) async fn cancelled(&self) {
+        if !self.is_cancelled() {
+            self.0.notify.notified().await;
+        }
     }
 }
 
+#[cfg(test)]
 pub(crate) async fn orchestrate_candidate_generation<F, Fut>(
     chunks: Vec<TranscriptChunk>,
     cancellation: CancellationFlag,
     generate: F,
+) -> CandidateGenerationOutcome
+where
+    F: Fn(CandidatePrompt) -> Fut + Clone + Send + Sync + 'static,
+    Fut: Future<Output = Result<String, CandidateCallError>> + Send + 'static,
+{
+    orchestrate_candidate_generation_with_progress(chunks, cancellation, generate, None).await
+}
+
+pub(crate) async fn orchestrate_candidate_generation_with_progress<F, Fut>(
+    chunks: Vec<TranscriptChunk>,
+    cancellation: CancellationFlag,
+    generate: F,
+    on_progress: Option<Arc<dyn Fn(usize, usize) + Send + Sync>>,
 ) -> CandidateGenerationOutcome
 where
     F: Fn(CandidatePrompt) -> Fut + Clone + Send + Sync + 'static,
@@ -118,9 +148,23 @@ where
     }
 
     let mut ordered = vec![ChunkGenerationStatus::Cancelled; total_chunks];
-    while let Some(result) = tasks.join_next().await {
-        if let Ok((index, status)) = result {
-            ordered[index] = status;
+    let mut completed = 0;
+    while !tasks.is_empty() {
+        tokio::select! {
+            _ = cancellation.cancelled() => {
+                tasks.abort_all();
+                while tasks.join_next().await.is_some() {}
+                break;
+            }
+            result = tasks.join_next() => {
+                if let Some(Ok((index, status))) = result {
+                    ordered[index] = status;
+                    completed += 1;
+                    if let Some(callback) = &on_progress {
+                        callback(completed, total_chunks);
+                    }
+                }
+            }
         }
     }
 
@@ -157,16 +201,22 @@ pub(crate) async fn generate_candidates_for_chunks(
     model: Option<String>,
     api_key: String,
     cancellation: CancellationFlag,
+    on_progress: Option<Arc<dyn Fn(usize, usize) + Send + Sync>>,
 ) -> CandidateGenerationOutcome {
-    orchestrate_candidate_generation(chunks, cancellation, move |prompt| {
-        let model = model.clone();
-        let api_key = api_key.clone();
-        async move {
-            providers::generate_candidates(provider, model.as_deref(), &api_key, &prompt)
-                .await
-                .map_err(|message| classify_provider_error(&message))
-        }
-    })
+    orchestrate_candidate_generation_with_progress(
+        chunks,
+        cancellation,
+        move |prompt| {
+            let model = model.clone();
+            let api_key = api_key.clone();
+            async move {
+                providers::generate_candidates(provider, model.as_deref(), &api_key, &prompt)
+                    .await
+                    .map_err(|message| classify_provider_error(&message))
+            }
+        },
+        on_progress,
+    )
     .await
 }
 
@@ -322,6 +372,31 @@ mod tests {
         })
         .await;
         assert_eq!(calls.load(Ordering::SeqCst), 0);
+        assert!(outcome
+            .chunks
+            .iter()
+            .all(|status| matches!(status, ChunkGenerationStatus::Cancelled)));
+    }
+
+    #[tokio::test]
+    async fn cancellation_aborts_in_flight_and_queued_work_promptly() {
+        let (_, chunks) = segment_transcript(&"knowledge. ".repeat(2_000)).unwrap();
+        let cancellation = CancellationFlag::default();
+        let cancel_from_test = cancellation.clone();
+        let task = tokio::spawn(orchestrate_candidate_generation(
+            chunks,
+            cancellation,
+            |_| async {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                Ok(r#"{"candidates":[]}"#.to_owned())
+            },
+        ));
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        cancel_from_test.cancel();
+        let outcome = tokio::time::timeout(Duration::from_millis(250), task)
+            .await
+            .expect("cancellation should not wait for provider timeouts")
+            .unwrap();
         assert!(outcome
             .chunks
             .iter()

@@ -6,7 +6,7 @@ pub mod models;
 pub mod state;
 
 use models::AppInfo;
-use state::{AppState, DatabaseState};
+use state::{AppState, DatabaseState, GenerationRuns};
 use tauri::Manager;
 
 #[cfg(all(target_os = "macos", debug_assertions))]
@@ -54,6 +54,7 @@ pub fn run() {
 
             app.manage(AppState::new(AppInfo::new(name, version)));
             app.manage(DatabaseState::new(pool));
+            app.manage(GenerationRuns::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -62,6 +63,7 @@ pub fn run() {
             commands::attempts::save_quiz_attempt,
             commands::generation::generate_mnemonic,
             commands::generation::generate_quiz,
+            commands::generation::cancel_quiz_generation,
             commands::library::list_imported_quizzes,
             commands::library::save_imported_quiz,
             commands::library::save_quiz_mnemonic,

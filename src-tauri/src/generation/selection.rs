@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct QualityMetadata {
+pub struct QualityMetadata {
     pub requested_count: usize,
     pub generated_candidate_count: usize,
     pub deterministic_rejection_count: usize,
