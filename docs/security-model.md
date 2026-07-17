@@ -12,12 +12,14 @@ not require a RecallFlow server.
 | --- | --- | --- |
 | Application preferences | WebView local storage | Reading font and whether quizzes start in focus mode |
 | AI selection | WebView local storage | Selected mnemonic provider and one model choice per provider |
+| Vault unlock material | WebView local storage | Random password used to reopen the Stronghold snapshot automatically |
 | Study library | Local SQLite database | Imported or generated quizzes, saved mnemonics, and quiz attempts |
+| Saved provider credentials | Tauri Stronghold snapshot | Separate encrypted OpenAI, Gemini, and Claude API-key records |
 
-The local-storage records contain no API keys. Local-first storage is not the
-same as encryption: someone who can read the operating-system account's
-RecallFlow application files can read these preferences and the SQLite
-database.
+The local-storage records contain no provider API keys. Local-first storage is
+not the same as protection from the signed-in operating-system user: someone
+who can read all RecallFlow application files can read the preferences and
+SQLite database and obtain the automatic Stronghold unlock material.
 
 ## API-key lifecycle in the generation UI
 
@@ -41,8 +43,8 @@ to RecallFlow's memory could still observe a key while a request is active.
 
 The backend provides one in-memory key slot for OpenAI, Gemini, and Claude.
 This managed state is created when the desktop application starts and is
-dropped when it exits. It never reads from or writes to local storage, SQLite,
-or Stronghold.
+dropped when it exits. The state itself never reads from or writes to local
+storage, SQLite, or Stronghold.
 
 Tauri commands can save, inspect, and remove each provider's session key. Save
 rejects keys shorter than 20 characters or containing whitespace. Status
@@ -52,13 +54,31 @@ does not affect the others.
 
 The current generation forms still submit request-only keys directly. Wiring
 saved provider keys into the UI and generation path belongs to related work.
-Stronghold persistence is intentionally outside REFL-63; REFL-64 owns that
-behavior, and REFL-65 through REFL-67 own restoration, recovery, and
-redaction hardening.
 
 Session-only does not mean inaccessible: a process debugger or another
 program with access to RecallFlow's memory could observe a key while the app
 is running.
+
+## Stronghold persistence
+
+RecallFlow initializes the Tauri Stronghold plugin with Argon2 and a local
+random salt. The persistence wrapper stores each provider key under a distinct
+record name and explicitly saves the encrypted snapshot after inserting or
+removing a record. Successful saves also populate the matching Rust session
+slot; deletes remove both the encrypted record and session value.
+
+The vault uses a randomly generated 32-byte password stored in the WebView app
+profile so it can unlock without prompting on every launch. This keeps API
+keys out of plaintext local storage and SQLite, and protects the Stronghold
+snapshot when copied alone. It does not protect keys from someone who can read
+both the vault and the same app profile. An operating-system credential store
+or user-entered master password would provide a stronger boundary but is not
+part of the approved automatic-unlock design.
+
+REFL-65 owns loading encrypted records back into Rust session state during
+startup. REFL-66 owns missing-password, legacy-vault, and corrupted-vault
+recovery. Until those tasks are complete, the persistence APIs are available
+but the current generation UI remains request-only.
 
 ## Network disclosure
 
@@ -97,5 +117,12 @@ Automated Rust coverage:
 - `cargo test --manifest-path src-tauri/Cargo.toml state::tests` verifies empty
   startup state, provider isolation, masked status, targeted removal, and
   invalid key/provider rejection.
+
+Automated Stronghold contract coverage:
+
+- `npm run check:api-key-storage` verifies key normalization and that OpenAI,
+  Gemini, and Claude use distinct encrypted record names.
+- `npm run build` verifies the Stronghold JavaScript and Tauri IPC contracts
+  compile together.
 
 Run `npm run check` for the complete frontend and Rust validation workflow.

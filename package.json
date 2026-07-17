@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "check": "npm run build && npm run check:app-preferences && npm run check:ipc && npm run check:mnemonic-generation && npm run check:quiz-schema && npm run check:quiz-answers && npm run check:quiz-results && npm run check:quiz-performance && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run build && npm run check:api-key-storage && npm run check:app-preferences && npm run check:ipc && npm run check:mnemonic-generation && npm run check:quiz-schema && npm run check:quiz-answers && npm run check:quiz-results && npm run check:quiz-performance && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check:api-key-storage": "node --no-warnings --experimental-strip-types src/lib/apiKeyStorage.check.ts",
     "check:app-preferences": "node --no-warnings --experimental-strip-types src/lib/appPreferences.check.ts",
     "check:ipc": "node --no-warnings --experimental-strip-types src/lib/ipc.check.ts",
     "check:mnemonic-generation": "node --no-warnings --experimental-strip-types src/lib/mnemonicGeneration.check.ts",
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-stronghold": "^2.3.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
