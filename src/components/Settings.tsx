@@ -188,9 +188,6 @@ export default function Settings({
             Saved as {keyStatus.maskedKey}. RecallFlow will reuse it automatically.
           </p>
         )}
-        <p className="settings-privacy">
-          On Linux, an unlocked Secret Service-compatible keyring is required.
-        </p>
         {apiKeySettings.state.status === "ready" &&
           apiKeySettings.state.message && (
             <p className="management-status" role="status">
@@ -208,16 +205,6 @@ export default function Settings({
             {apiKeySettings.state.message}
           </p>
         )}
-
-        <div className="settings-selection" role="status">
-          <strong>
-            {providerOption.label} · {modelOption.label}
-          </strong>
-          <p>This selection will be used for new mnemonic requests.</p>
-        </div>
-        <p className="settings-privacy">
-          This provider and model selection contains no credentials.
-        </p>
       </section>
 
       <section className="settings-card" aria-labelledby="security-title">
