@@ -49,8 +49,10 @@ memory could still observe a key while a provider request is active.
 RecallFlow sends data to an AI provider only after the user chooses a Generate
 action:
 
-- Quiz generation from notes sends the notes, requested question count, and
-  API key.
+- Quiz generation from notes sends bounded transcript chunks and the API key.
+  Candidate evidence and a bounded chunk context are sent again in separate
+  verification requests. Transcript content leaves the device only after the
+  user explicitly presses **Generate**.
 - Quiz generation from a URL sends the public URL and API key; OpenAI may read
   that page through web search.
 - Mnemonic generation sends the question, correct answer, optional explanation,
@@ -58,6 +60,22 @@ action:
 
 Saved quizzes and attempts are not uploaded automatically. Provider handling
 of submitted data is governed by that provider's account and privacy terms.
+
+OpenAI quiz-generation requests use the Responses API with strict structured
+outputs and `store: false`. The initial workflow is an application-controlled
+pipeline, not the Agents SDK or user-selectable Skills. RecallFlow does not use
+web search or outside facts for pasted transcripts. URL generation remains an
+explicit web-search workflow for the supplied public URL.
+
+Cancellation stops queued work and aborts application tasks waiting on active
+requests; late results are ignored and are not saved. Progress events contain
+only a run identifier, stage, and aggregate counts. Transcript text, evidence
+quotations, provider responses, and API keys are not included in progress
+events or application logs.
+
+Exact quotation matching and independent semantic verification reduce the risk
+of unsupported questions, but they do not guarantee that the source itself is
+factually true. Users should review generated questions before saving them.
 
 ## WebView hardening
 
@@ -102,3 +120,5 @@ Automated coverage:
 - IPC contract tests verify generation request types contain no API-key field.
 - `npm run check` runs the frontend build, contract checks, Rust formatting,
   compilation, and test suite.
+- The grounded-generation corpus is synthetic and its mocked end-to-end tests
+  make no network calls or print source, evidence, raw responses, or keys.

@@ -45,6 +45,25 @@ Provider tests pass bounded, synthetic JSON envelopes directly to the private
 OpenAI, Gemini, and Claude parsers and exercise HTTP failure classification.
 They do not contact provider APIs or include real credentials or study data.
 
+## Grounded quiz generation
+
+Pasted transcripts may contain up to 500,000 Unicode characters. RecallFlow
+normalizes line endings, splits the complete text into bounded logical regions,
+and asks OpenAI for at most two candidates per region. Every retained question
+must quote exact evidence from its assigned primary region and pass a separate
+grounding, standalone-phrasing, portability, qualification, overgeneralization,
+and answer-ambiguity review. Global duplicate removal and topic-balanced
+selection happen before candidates become a public `QuizFile`.
+
+The requested question count is a maximum. RecallFlow may return fewer
+questions—or none—when candidates are unsupported, context-dependent,
+ambiguous, duplicated, or insufficiently qualified. It does not invent filler
+to reach the requested count. Progress and cancellation are available for
+long-running transcript generation.
+
+See [grounded generation](docs/grounded-generation.md) for pipeline constants,
+failure outcomes, fixtures, and developer checks.
+
 ## Application preferences
 
 Open **Settings** to choose the application font and whether new quizzes start
