@@ -63,11 +63,10 @@ generation until you replace or remove it.
 ## Security model
 
 RecallFlow keeps application preferences in the local app profile and study
-data in local SQLite. Provider API keys use separate encrypted Stronghold
-records and Rust session slots, restoring valid saved records before the
-desktop UI starts. Full keys are never returned to React or saved to local
-storage or SQLite. See the [security model](docs/security-model.md) for the
-data flow and automatic-unlock tradeoff.
+data in local SQLite. Provider API keys are stored by Rust in macOS Keychain,
+Windows Credential Manager, or Linux Secret Service. Full keys are never
+returned to React or saved to WebView local storage or SQLite. See the
+[security model](docs/security-model.md) for the data flow.
 
 ## Packaging
 

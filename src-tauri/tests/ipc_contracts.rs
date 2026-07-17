@@ -57,6 +57,24 @@ fn generation_requests_deserialize_the_frontend_contract() {
 }
 
 #[test]
+fn generation_requests_reject_frontend_api_keys() {
+    assert!(serde_json::from_value::<GenerateQuizRequest>(json!({
+        "material": "Study notes",
+        "provider": "openai",
+        "questionCount": 8,
+        "apiKey": "must-not-cross-ipc"
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<GenerateMnemonicRequest>(json!({
+        "question": "Question?",
+        "correctAnswers": ["Answer"],
+        "provider": "openai",
+        "apiKey": "must-not-cross-ipc"
+    }))
+    .is_err());
+}
+
+#[test]
 fn secret_and_mnemonic_payloads_keep_stable_public_fields() {
     let status = ApiKeyStatus {
         configured: true,

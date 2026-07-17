@@ -36,8 +36,7 @@ fn generation_request_requires_material() {
     };
 
     assert!(validate_generation_request(&missing_material)
-        .err()
-        .expect("empty material should fail")
+        .expect_err("empty material should fail")
         .contains("Paste study material"));
 }
 
@@ -70,12 +69,10 @@ fn generation_request_accepts_one_readable_url_source() {
         Ok(GenerationSource::Url("https://example.com/lecture"))
     ));
     assert!(validate_generation_request(&invalid_url)
-        .err()
-        .expect("non-web URL should fail")
+        .expect_err("non-web URL should fail")
         .contains("http:// or https://"));
     assert!(validate_generation_request(&conflicting_sources)
-        .err()
-        .expect("multiple sources should fail")
+        .expect_err("multiple sources should fail")
         .contains("either pasted study material or a URL"));
 }
 
@@ -96,13 +93,11 @@ fn generation_request_validates_provider_and_question_count() {
     };
 
     assert!(validate_generation_request(&unsupported_provider)
-        .err()
-        .expect("unsupported provider should fail")
+        .expect_err("unsupported provider should fail")
         .contains("selected quiz provider is not available"));
     assert!(matches!(unsupported_provider.provider, AiProvider::Gemini));
     assert!(validate_generation_request(&invalid_count)
-        .err()
-        .expect("out-of-range count should fail")
+        .expect_err("out-of-range count should fail")
         .contains("between 3 and 25"));
 }
 
@@ -124,12 +119,10 @@ fn generation_request_rejects_oversized_sources() {
     };
 
     assert!(validate_generation_request(&oversized_material)
-        .err()
-        .expect("oversized material should fail")
+        .expect_err("oversized material should fail")
         .contains("14000 characters or fewer"));
     assert!(validate_generation_request(&oversized_url)
-        .err()
-        .expect("oversized URL should fail")
+        .expect_err("oversized URL should fail")
         .contains("source URL is too long"));
 }
 

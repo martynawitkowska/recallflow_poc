@@ -1,12 +1,12 @@
 pub mod commands;
+pub mod credentials;
 pub mod database;
 pub mod generation;
 pub mod models;
 pub mod state;
-mod vault;
 
 use models::AppInfo;
-use state::{AppState, DatabaseState, SecretState};
+use state::{AppState, DatabaseState};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,7 +25,6 @@ pub fn run() {
                 .map_err(|_| std::io::Error::other("RecallFlow could not locate local storage."))?;
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|_| std::io::Error::other("RecallFlow could not create local storage."))?;
-            app.handle().plugin(vault::plugin(&app_data_dir))?;
             let pool = tauri::async_runtime::block_on(database::connect(
                 &app_data_dir.join("recallflow.sqlite3"),
             ))
@@ -33,7 +32,6 @@ pub fn run() {
 
             app.manage(AppState::new(AppInfo::new(name, version)));
             app.manage(DatabaseState::new(pool));
-            app.manage(SecretState::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -49,8 +47,6 @@ pub fn run() {
             commands::library::clear_imported_quizzes,
             commands::secrets::delete_ai_api_key,
             commands::secrets::get_ai_api_key_status,
-            commands::secrets::remove_legacy_openai_vault,
-            commands::secrets::reset_api_key_vault,
             commands::secrets::save_ai_api_key,
         ])
         .run(tauri::generate_context!())

@@ -87,7 +87,7 @@ pub struct ApiKeyStatus {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GenerateQuizRequest {
     pub material: Option<String>,
     pub source_url: Option<String>,
@@ -97,7 +97,7 @@ pub struct GenerateQuizRequest {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GenerateMnemonicRequest {
     pub question: String,
     pub correct_answers: Vec<String>,

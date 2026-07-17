@@ -188,11 +188,9 @@ export default function Settings({
             Saved as {keyStatus.maskedKey}. RecallFlow will reuse it automatically.
           </p>
         )}
-        {keyStatus?.needsMigration && !keyStatus.configured && (
-          <p className="settings-privacy">
-            An older OpenAI key was found. Paste it again to move it into the current vault.
-          </p>
-        )}
+        <p className="settings-privacy">
+          On Linux, an unlocked Secret Service-compatible keyring is required.
+        </p>
         {apiKeySettings.state.status === "ready" &&
           apiKeySettings.state.message && (
             <p className="management-status" role="status">
@@ -234,8 +232,8 @@ export default function Settings({
             local SQLite library.
           </li>
           <li>
-            <strong>API keys</strong> are encrypted in the local Stronghold
-            vault and are not saved to local storage or SQLite.
+            <strong>API keys</strong> are stored in the operating system
+            credential store and are not saved to local storage or SQLite.
           </li>
         </ul>
         <p className="settings-privacy">
