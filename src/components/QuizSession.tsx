@@ -16,6 +16,7 @@ import {
 } from "../lib/quizResults";
 
 type QuizSessionProps = {
+  aiAvailable: boolean;
   focusMode: boolean;
   isOnline: boolean;
   isRepair: boolean;
@@ -35,6 +36,7 @@ const questionTypeLabels = {
 } as const;
 
 export default function QuizSession({
+  aiAvailable,
   focusMode,
   isOnline,
   isRepair,
@@ -295,94 +297,109 @@ export default function QuizSession({
                   aria-labelledby="mnemonic-generator-title"
                 >
                   <h3 id="mnemonic-generator-title">Need a memory hook?</h3>
-                  <p>
-                    {usingSavedMnemonic
-                      ? "This quiz already has a saved mnemonic. Generate again if you want a replacement."
-                      : `Ask ${mnemonicProviderOption.label} for a short mnemonic tied to this question and its correct answer.`}
-                  </p>
-                  <div className="mnemonic-generator-controls">
-                    <button
-                      className="secondary-button"
-                      disabled={
-                        !isOnline ||
-                        mnemonicGeneration.state.status === "loading" ||
-                        mnemonicSave.state.status === "saving"
-                      }
-                      onClick={() => void generateMnemonic()}
-                      type="button"
-                    >
-                      {mnemonicGeneration.state.status === "loading"
-                        ? "Generating…"
-                        : mnemonicGeneration.state.status === "error"
-                          ? "Try again"
-                          : mnemonic
-                          ? "Regenerate"
-                          : "Create mnemonic"}
-                    </button>
-                  </div>
-                  <p className="field-hint">
-                    {!isOnline ? `${OFFLINE_AI_MESSAGE} ` : ""}
-                    Uses the {mnemonicProviderOption.label} API key saved in
-                    Settings. The question and answer are sent only after you
-                    press the button.
-                  </p>
-                  <div className="mnemonic-generation-status">
-                    {mnemonicGeneration.state.status === "loading" && (
-                      <p role="status">Creating a memory hook…</p>
-                    )}
-                    {mnemonicGeneration.state.status === "error" && (
-                      <p role="alert">{mnemonicGeneration.state.message}</p>
-                    )}
-                    {mnemonic && (
-                      <div>
-                        <strong>
-                          {usingSavedMnemonic ? "Saved mnemonic" : "Mnemonic"}
-                        </strong>
-                        <p
-                          role={
-                            mnemonicGeneration.state.status === "success"
-                              ? "status"
-                              : undefined
+                  {!aiAvailable ? (
+                    <p>
+                      AI mnemonic generation is available in the desktop app.
+                      The GitHub Pages jury preview never asks for an API key or
+                      sends this question to an AI provider.
+                    </p>
+                  ) : (
+                    <>
+                      <p>
+                        {usingSavedMnemonic
+                          ? "This quiz already has a saved mnemonic. Generate again if you want a replacement."
+                          : `Ask ${mnemonicProviderOption.label} for a short mnemonic tied to this question and its correct answer.`}
+                      </p>
+                      <div className="mnemonic-generator-controls">
+                        <button
+                          className="secondary-button"
+                          disabled={
+                            !isOnline ||
+                            mnemonicGeneration.state.status === "loading" ||
+                            mnemonicSave.state.status === "saving"
                           }
+                          onClick={() => void generateMnemonic()}
+                          type="button"
                         >
-                          {mnemonic}
-                        </p>
-                        <div className="mnemonic-save-status">
-                          {usingSavedMnemonic ? (
-                            <p role="status">
-                              Loaded from this quiz. No API request was made.
-                            </p>
-                          ) : (
-                            <>
-                              {(mnemonicSave.state.status === "idle" ||
-                                mnemonicSave.state.status === "error") && (
-                                <button
-                                  className="secondary-button"
-                                  onClick={() => void saveMnemonic()}
-                                  type="button"
-                                >
-                                  {mnemonicSave.state.status === "error"
-                                    ? "Retry save"
-                                    : "Save to quiz"}
-                                </button>
-                              )}
-                              {mnemonicSave.state.status === "saving" && (
-                                <p role="status">Saving mnemonic locally…</p>
-                              )}
-                              {mnemonicSave.state.status === "saved" && (
-                                <p role="status">Saved in quiz JSON.</p>
-                              )}
-                              {mnemonicSave.state.status === "error" && (
-                                <p role="alert">
-                                  {mnemonicSave.state.message}
-                                </p>
-                              )}
-                            </>
-                          )}
-                        </div>
+                          {mnemonicGeneration.state.status === "loading"
+                            ? "Generating…"
+                            : mnemonicGeneration.state.status === "error"
+                              ? "Try again"
+                              : mnemonic
+                                ? "Regenerate"
+                                : "Create mnemonic"}
+                        </button>
                       </div>
-                    )}
-                  </div>
+                      <p className="field-hint">
+                        {!isOnline ? `${OFFLINE_AI_MESSAGE} ` : ""}
+                        Uses the {mnemonicProviderOption.label} API key saved in
+                        Settings. The question and answer are sent only after
+                        you press the button.
+                      </p>
+                      <div className="mnemonic-generation-status">
+                        {mnemonicGeneration.state.status === "loading" && (
+                          <p role="status">Creating a memory hook…</p>
+                        )}
+                        {mnemonicGeneration.state.status === "error" && (
+                          <p role="alert">{mnemonicGeneration.state.message}</p>
+                        )}
+                        {mnemonic && (
+                          <div>
+                            <strong>
+                              {usingSavedMnemonic
+                                ? "Saved mnemonic"
+                                : "Mnemonic"}
+                            </strong>
+                            <p
+                              role={
+                                mnemonicGeneration.state.status === "success"
+                                  ? "status"
+                                  : undefined
+                              }
+                            >
+                              {mnemonic}
+                            </p>
+                            <div className="mnemonic-save-status">
+                              {usingSavedMnemonic ? (
+                                <p role="status">
+                                  Loaded from this quiz. No API request was
+                                  made.
+                                </p>
+                              ) : (
+                                <>
+                                  {(mnemonicSave.state.status === "idle" ||
+                                    mnemonicSave.state.status === "error") && (
+                                    <button
+                                      className="secondary-button"
+                                      onClick={() => void saveMnemonic()}
+                                      type="button"
+                                    >
+                                      {mnemonicSave.state.status === "error"
+                                        ? "Retry save"
+                                        : "Save to quiz"}
+                                    </button>
+                                  )}
+                                  {mnemonicSave.state.status === "saving" && (
+                                    <p role="status">
+                                      Saving mnemonic locally…
+                                    </p>
+                                  )}
+                                  {mnemonicSave.state.status === "saved" && (
+                                    <p role="status">Saved in quiz JSON.</p>
+                                  )}
+                                  {mnemonicSave.state.status === "error" && (
+                                    <p role="alert">
+                                      {mnemonicSave.state.message}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </section>
               )}
               <div className="quiz-question-navigation">

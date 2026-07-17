@@ -1,12 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { getAppInfo, type AppInfo } from "../lib/appInfo";
 import type { AsyncState } from "../lib/asyncState";
+import { isPagesPreview } from "../lib/runtime";
+
+const previewAppInfo: AppInfo = { name: "RecallFlow", version: "web preview" };
 
 export function useAppInfo() {
   const [requestId, setRequestId] = useState(0);
-  const [state, setState] = useState<AsyncState<AppInfo>>({ status: "loading" });
+  const [state, setState] = useState<AsyncState<AppInfo>>(
+    isPagesPreview
+      ? { status: "success", data: previewAppInfo }
+      : { status: "loading" },
+  );
 
   useEffect(() => {
+    if (isPagesPreview) {
+      setState({ status: "success", data: previewAppInfo });
+      return;
+    }
+
     let active = true;
     setState({ status: "loading" });
 

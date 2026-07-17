@@ -290,6 +290,29 @@ summary:focus-visible,
   padding: clamp(2.5rem, 6vw, 4.5rem) 0;
 }
 
+.preview-banner {
+  align-items: center;
+  background: #eef6ff;
+  border-bottom: 1px solid #b8d8f5;
+  color: #173f62;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  text-align: center;
+}
+
+.preview-banner span {
+  font-size: 0.9rem;
+}
+
+.preview-unavailable {
+  background: #f7f9fb;
+  border: 1px solid #d7e0e8;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
 h1 {
   margin: 0 0 0.75rem;
   font-size: clamp(2.25rem, 5vw, 2.5rem);

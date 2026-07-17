@@ -199,6 +199,15 @@ export default function App() {
       )}
 
       <ConnectivityStatus isOnline={isOnline} />
+      {isPagesPreview && (
+        <aside className="preview-banner" aria-label="Preview information">
+          <strong>GitHub Pages jury preview</strong>
+          <span>
+            Your quizzes and results stay only in this browser. AI features are
+            available in the desktop app.
+          </span>
+        </aside>
+      )}
 
       <main
         className="app-content"
@@ -232,6 +241,7 @@ export default function App() {
 
         {activeView === "quiz" && activeQuiz && (
           <QuizSession
+            aiAvailable={!isPagesPreview}
             focusMode={focusMode}
             isOnline={isOnline}
             isRepair={repairMode}
@@ -307,17 +317,29 @@ export default function App() {
               state={quizFileImport.state}
             />
             <div className="import-divider"><span>or</span></div>
-            <QuizGenerator
-              isOnline={isOnline}
-              model={aiSelection.models[aiSelection.provider]}
-              onSaveQuiz={library.addGeneratedQuiz}
-            />
+            {isPagesPreview ? (
+              <section className="preview-unavailable" aria-labelledby="preview-ai-title">
+                <h2 id="preview-ai-title">AI quiz generation is desktop-only</h2>
+                <p>
+                  The jury preview does not accept API keys or send study
+                  material to an AI provider. Import a quiz JSON file above to
+                  try the complete study flow.
+                </p>
+              </section>
+            ) : (
+              <QuizGenerator
+                isOnline={isOnline}
+                model={aiSelection.models[aiSelection.provider]}
+                onSaveQuiz={library.addGeneratedQuiz}
+              />
+            )}
             <ExternalQuizReference />
           </section>
         )}
 
         {activeView === "settings" && (
           <Settings
+            aiAvailable={!isPagesPreview}
             model={aiSelection.models[aiSelection.provider]}
             onModelChange={(model) =>
               setAiSelection((current) => ({

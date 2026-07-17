@@ -15,6 +15,7 @@ import {
 import { useApiKeySettings } from "../hooks/useApiKeySettings";
 
 type SettingsProps = {
+  aiAvailable: boolean;
   model: MnemonicModel;
   onModelChange: (model: MnemonicModel) => void;
   onProviderChange: (provider: MnemonicProvider) => void;
@@ -26,6 +27,7 @@ type SettingsProps = {
 };
 
 export default function Settings({
+  aiAvailable,
   model,
   onModelChange,
   onProviderChange,
@@ -35,25 +37,15 @@ export default function Settings({
   readingFont,
   startInFocusMode,
 }: SettingsProps) {
-  const providerOption = getMnemonicProviderOption(provider);
-  const modelOption = getMnemonicModelOption(provider, model);
-  const apiKeySettings = useApiKeySettings(provider);
-  const keyStatus =
-    apiKeySettings.state.status === "ready" ||
-    apiKeySettings.state.status === "saving"
-      ? apiKeySettings.state.key
-      : null;
-  const canManageKey = apiKeySettings.state.status === "ready";
-  const isSavingKey = apiKeySettings.state.status === "saving";
-
   return (
     <section className="narrow-page" aria-labelledby="settings-title">
       <h1 id="settings-title" tabIndex={-1}>
         Settings
       </h1>
       <p className="lede">
-        Personalize reading and study sessions, then choose the AI used for
-        mnemonic generation.
+        {aiAvailable
+          ? "Personalize reading and study sessions, then choose the AI used for mnemonic generation."
+          : "Personalize reading and study sessions in this browser preview."}
       </p>
 
       <section className="settings-card" aria-labelledby="typography-title">
@@ -97,7 +89,82 @@ export default function Settings({
         </label>
       </section>
 
-      <section className="settings-card" aria-labelledby="ai-settings-title">
+      {aiAvailable ? (
+        <DesktopAiSettings
+          model={model}
+          onModelChange={onModelChange}
+          onProviderChange={onProviderChange}
+          provider={provider}
+        />
+      ) : (
+        <section className="settings-card" aria-labelledby="ai-settings-title">
+          <h2 id="ai-settings-title">AI features</h2>
+          <p>
+            AI quiz and mnemonic generation are available in the desktop app.
+            The GitHub Pages jury preview does not accept or store API keys.
+          </p>
+        </section>
+      )}
+
+      <section className="settings-card" aria-labelledby="security-title">
+        <h2 id="security-title">Privacy and storage</h2>
+        {aiAvailable ? (
+          <>
+            <p>RecallFlow is local-first, but AI generation uses the network.</p>
+            <ul className="settings-security-list">
+              <li>
+                <strong>Preferences</strong> stay in the local app profile.
+              </li>
+              <li>
+                <strong>Quizzes, results, and saved mnemonics</strong> stay in
+                the local SQLite library.
+              </li>
+              <li>
+                <strong>API keys</strong> are stored in the operating system
+                credential store.
+              </li>
+            </ul>
+            <p className="settings-privacy">
+              Study content is sent to the selected provider only when you
+              choose Generate. Nothing is uploaded automatically.
+            </p>
+          </>
+        ) : (
+          <p>
+            Quizzes, results, and preferences are stored in this browser only.
+            Clearing browser data removes them, and nothing is uploaded by the
+            preview.
+          </p>
+        )}
+      </section>
+    </section>
+  );
+}
+
+type DesktopAiSettingsProps = Pick<
+  SettingsProps,
+  "model" | "onModelChange" | "onProviderChange" | "provider"
+>;
+
+function DesktopAiSettings({
+  model,
+  onModelChange,
+  onProviderChange,
+  provider,
+}: DesktopAiSettingsProps) {
+  const providerOption = getMnemonicProviderOption(provider);
+  const modelOption = getMnemonicModelOption(provider, model);
+  const apiKeySettings = useApiKeySettings(provider);
+  const keyStatus =
+    apiKeySettings.state.status === "ready" ||
+    apiKeySettings.state.status === "saving"
+      ? apiKeySettings.state.key
+      : null;
+  const canManageKey = apiKeySettings.state.status === "ready";
+  const isSavingKey = apiKeySettings.state.status === "saving";
+
+  return (
+    <section className="settings-card" aria-labelledby="ai-settings-title">
         <h2 id="ai-settings-title">AI provider</h2>
         <p>Choose the provider and model used to create mnemonics.</p>
         <label htmlFor="ai-provider">Provider</label>
@@ -206,29 +273,6 @@ export default function Settings({
             {apiKeySettings.state.message}
           </p>
         )}
-      </section>
-
-      <section className="settings-card" aria-labelledby="security-title">
-        <h2 id="security-title">Privacy and security</h2>
-        <p>RecallFlow is local-first, but AI generation uses the network.</p>
-        <ul className="settings-security-list">
-          <li>
-            <strong>Preferences</strong> stay in the local app profile.
-          </li>
-          <li>
-            <strong>Quizzes, results, and saved mnemonics</strong> stay in the
-            local SQLite library.
-          </li>
-          <li>
-            <strong>API keys</strong> are stored in the operating system
-            credential store and are not saved to local storage or SQLite.
-          </li>
-        </ul>
-        <p className="settings-privacy">
-          When you choose Generate, the relevant study content and API key are
-          sent to the selected provider. Nothing is uploaded automatically.
-        </p>
-      </section>
     </section>
   );
 }
