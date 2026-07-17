@@ -1,4 +1,4 @@
-use super::super::GenerationPrompt;
+use super::super::{GenerationPrompt, MnemonicPrompt};
 use serde::Deserialize;
 use std::time::Duration;
 
@@ -113,6 +113,17 @@ fn build_payload(model: &str, prompt: &GenerationPrompt) -> serde_json::Value {
     payload
 }
 
+fn build_mnemonic_payload(model: &str, prompt: &MnemonicPrompt) -> serde_json::Value {
+    serde_json::json!({
+        "model": model,
+        "store": false,
+        "reasoning": { "effort": "low" },
+        "instructions": prompt.instructions,
+        "input": prompt.input,
+        "max_output_tokens": prompt.max_output_tokens
+    })
+}
+
 fn extract_generated_json(response: OpenAiResponse) -> Result<String, String> {
     if response.status != "completed" {
         return Err(INCOMPLETE_RESPONSE_ERROR.to_owned());
@@ -160,16 +171,11 @@ fn parse_response(body: &[u8]) -> Result<OpenAiResponse, String> {
     serde_json::from_slice(body).map_err(|_| GENERATION_ERROR.to_owned())
 }
 
-pub(super) async fn generate(
-    api_key: &str,
-    model: Option<&str>,
-    prompt: &GenerationPrompt,
-) -> Result<String, String> {
-    let model = validate_model(model)?;
+async fn send(api_key: &str, payload: serde_json::Value) -> Result<String, String> {
     let mut response = reqwest::Client::new()
         .post(RESPONSES_ENDPOINT)
         .bearer_auth(api_key)
-        .json(&build_payload(model, prompt))
+        .json(&payload)
         .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECONDS))
         .send()
         .await
@@ -213,11 +219,30 @@ pub(super) async fn generate(
     extract_generated_json(response)
 }
 
+pub(super) async fn generate(
+    api_key: &str,
+    model: Option<&str>,
+    prompt: &GenerationPrompt,
+) -> Result<String, String> {
+    let model = validate_model(model)?;
+    send(api_key, build_payload(model, prompt)).await
+}
+
+pub(super) async fn generate_mnemonic(
+    api_key: &str,
+    model: Option<&str>,
+    prompt: &MnemonicPrompt,
+) -> Result<String, String> {
+    let model = validate_model(model)?;
+    send(api_key, build_mnemonic_payload(model, prompt)).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        build_payload, extract_generated_json, parse_response, status_error, validate_model,
-        GenerationPrompt, OpenAiResponse, MAX_RESPONSE_BYTES,
+        build_mnemonic_payload, build_payload, extract_generated_json, parse_response,
+        status_error, validate_model, GenerationPrompt, MnemonicPrompt, OpenAiResponse,
+        MAX_RESPONSE_BYTES,
     };
     use crate::generation::GenerationSource;
     use serde_json::json;
@@ -247,6 +272,22 @@ mod tests {
             .expect("prompt should be text")
             .contains("exactly 12"));
         assert!(material_payload.get("tools").is_none());
+    }
+
+    #[test]
+    fn mnemonic_payload_requests_bounded_plain_text() {
+        let prompt = MnemonicPrompt {
+            instructions: "Create one mnemonic.",
+            input: "Question: Where are memories formed?".to_owned(),
+            max_output_tokens: 220,
+        };
+        let payload = build_mnemonic_payload("gpt-5.4-mini", &prompt);
+
+        assert_eq!(payload["model"], "gpt-5.4-mini");
+        assert_eq!(payload["store"], false);
+        assert_eq!(payload["max_output_tokens"], 220);
+        assert!(payload.get("text").is_none());
+        assert!(payload.get("tools").is_none());
     }
 
     #[test]
