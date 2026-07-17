@@ -3,7 +3,7 @@ use serde::Deserialize;
 use std::time::Duration;
 
 const DEFAULT_MODEL: &str = "gpt-5.4-mini";
-const ALLOWED_MODELS: &[&str] = &[DEFAULT_MODEL];
+const ALLOWED_MODELS: &[&str] = &["gpt-5.5", "gpt-5.4", DEFAULT_MODEL];
 const RESPONSES_ENDPOINT: &str = "https://api.openai.com/v1/responses";
 const REQUEST_TIMEOUT_SECONDS: u64 = 120;
 const MAX_RESPONSE_BYTES: usize = 1_000_000;
@@ -320,17 +320,23 @@ mod tests {
     }
 
     #[test]
-    fn model_allowlist_accepts_only_the_configured_model() {
+    fn model_allowlist_accepts_supported_models_and_rejects_unknown_models() {
         assert_eq!(
             validate_model(None).expect("default model should be allowed"),
             "gpt-5.4-mini"
         );
+        for model in ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"] {
+            assert_eq!(
+                validate_model(Some(model)).expect("listed model should be allowed"),
+                model
+            );
+        }
         assert_eq!(
-            validate_model(Some(" gpt-5.4-mini ")).expect("whitespace should be ignored"),
+            validate_model(Some(" gpt-5.4-mini ")).unwrap(),
             "gpt-5.4-mini"
         );
         assert!(validate_model(Some("gpt-5.6"))
-            .expect_err("unconfigured model should be rejected")
+            .expect_err("unknown model should be rejected")
             .contains("supported OpenAI model"));
     }
 

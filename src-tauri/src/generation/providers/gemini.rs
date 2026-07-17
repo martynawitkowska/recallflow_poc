@@ -3,7 +3,12 @@ use serde::Deserialize;
 use std::time::Duration;
 
 const DEFAULT_MODEL: &str = "gemini-3.5-flash";
-const ALLOWED_MODELS: &[&str] = &[DEFAULT_MODEL];
+const ALLOWED_MODELS: &[&str] = &[
+    DEFAULT_MODEL,
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+];
 const REQUEST_TIMEOUT_SECONDS: u64 = 120;
 const MAX_RESPONSE_BYTES: usize = 1_000_000;
 const GENERATION_ERROR: &str =
@@ -189,6 +194,14 @@ mod tests {
     #[test]
     fn model_allowlist_and_errors_are_provider_specific() {
         assert_eq!(validate_model(None).unwrap(), "gemini-3.5-flash");
+        for model in [
+            "gemini-3.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+        ] {
+            assert_eq!(validate_model(Some(model)).unwrap(), model);
+        }
         assert!(validate_model(Some("gemini-unlisted")).is_err());
         assert!(status_error(reqwest::StatusCode::UNAUTHORIZED).contains("API key"));
         assert!(status_error(reqwest::StatusCode::NOT_FOUND).contains("model"));

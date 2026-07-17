@@ -736,14 +736,9 @@ h1 {
   gap: 0.4rem;
 }
 
-.mnemonic-provider-field select {
-  width: 100%;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  background: var(--color-bg);
-  font: inherit;
+.mnemonic-provider-field > span {
+  color: var(--color-muted);
+  font-size: 0.82rem;
 }
 
 .mnemonic-generator-controls input {
@@ -1042,6 +1037,48 @@ h1 {
 .narrow-page {
   width: min(42rem, 100%);
   margin: 0 auto;
+}
+
+.settings-card {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+}
+
+.settings-card label {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.settings-card select {
+  width: 100%;
+  padding: 0.75rem 2rem 0.75rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  background: var(--color-bg);
+  font: inherit;
+}
+
+.settings-selection {
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: var(--radius-md);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.settings-selection p,
+.settings-privacy {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 .drop-zone {
