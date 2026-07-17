@@ -2,6 +2,7 @@ mod evidence;
 mod orchestration;
 mod providers;
 mod segmentation;
+mod verification;
 
 use crate::models::{
     AiProvider, GenerateMnemonicRequest, GenerateQuizRequest, QuestionType, QuizFile,
@@ -110,6 +111,7 @@ pub(crate) struct CandidatePrompt {
     chunk_id: String,
 }
 
+#[derive(Clone)]
 pub(crate) struct VerificationPrompt {
     instructions: &'static str,
     input: String,
@@ -159,6 +161,24 @@ impl CandidatePrompt {
 
     fn chunk_id(&self) -> &str {
         &self.chunk_id
+    }
+}
+
+impl VerificationPrompt {
+    fn new(
+        candidates: &[evidence::ValidatedCandidate],
+        chunk: &segmentation::TranscriptChunk,
+    ) -> Self {
+        const INSTRUCTIONS: &str = "Independently verify every supplied candidate using only its exact evidence and bounded source context. Decide supported, standalone, portable, qualifications_preserved, not_overgeneralized, and choices_unambiguous. According to the lecture/notes/speaker is not portable. Slide order, earlier demonstrations, unnamed people, this, it, and previous-example references fail when their referent is absent. A specific example supports a general rule only when the source states that rule. Preserve study, population, period, condition, uncertainty, and attribution limits. Anecdotes and opinions are not general facts. Distractors must not also be defensible from the evidence. Never rewrite, repair, supplement, or replace a candidate; when uncertain, reject rather than repair.";
+        let input = serde_json::json!({
+            "source_context": chunk.context,
+            "candidates": candidates.iter().map(|item| &item.candidate).collect::<Vec<_>>()
+        })
+        .to_string();
+        Self {
+            instructions: INSTRUCTIONS,
+            input,
+        }
     }
 }
 
@@ -365,7 +385,7 @@ pub(crate) fn parse_candidate_batch_json(
             || candidate.topic.is_empty()
             || candidate.question.is_empty()
             || candidate.explanation.is_empty()
-            || candidate.evidence_quote.is_empty()
+            || candidate.evidence_quote.trim().is_empty()
             || !valid_answers(
                 candidate.question_type,
                 &candidate.answers,
