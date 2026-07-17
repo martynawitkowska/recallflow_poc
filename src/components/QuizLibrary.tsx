@@ -97,7 +97,7 @@ export default function QuizLibrary({
         editingMetadata.title,
         editingMetadata.videoUrl,
       );
-      setManagementFeedback({ kind: "success", message: "Quiz metadata was updated." });
+      setManagementFeedback({ kind: "success", message: "Quiz details were updated." });
       setEditingMetadata(null);
     } catch (error) {
       setManagementFeedback({ kind: "error", message: actionErrorMessage(error) });
@@ -275,7 +275,7 @@ export default function QuizLibrary({
                     Cancel
                   </button>
                   <button className="primary-button" disabled={pendingAction !== null} type="submit">
-                    {pendingAction === `metadata:${file.id}` ? "Saving…" : "Save metadata"}
+                    {pendingAction === `metadata:${file.id}` ? "Saving…" : "Save details"}
                   </button>
                 </div>
               </form>
@@ -326,7 +326,7 @@ export default function QuizLibrary({
                   Statistics
                 </button>
                 <button
-                  aria-label={`Edit metadata for ${file.quiz.title}`}
+                  aria-label={`Edit quiz details for ${file.quiz.title}`}
                   className="secondary-button"
                   disabled={pendingAction !== null}
                   onClick={() => {
@@ -339,7 +339,7 @@ export default function QuizLibrary({
                   }}
                   type="button"
                 >
-                  Edit metadata
+                  Edit quiz details
                 </button>
                 {confirmingQuizId === file.id ? (
                   <>
