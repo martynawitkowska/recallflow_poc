@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import AiSettings from "./components/AiSettings";
 import AppNavigation, { type ViewKey } from "./components/AppNavigation";
 import AppStatus from "./components/AppStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
@@ -9,10 +8,8 @@ import QuizGenerator from "./components/QuizGenerator";
 import QuizHistory from "./components/QuizHistory";
 import QuizLibrary from "./components/QuizLibrary";
 import QuizSummary from "./components/QuizSummary";
-import QuizSession, {
-  readingFontOptions,
-  type ReadingFont,
-} from "./components/QuizSession";
+import QuizSession from "./components/QuizSession";
+import Settings from "./components/Settings";
 import { useAppInfo } from "./hooks/useAppInfo";
 import {
   useQuizFileImport,
@@ -21,6 +18,10 @@ import {
 import { useQuizLibrary } from "./hooks/useQuizLibrary";
 import { useQuizAttemptSave } from "./hooks/useQuizAttemptSave";
 import { useQuizAttempts } from "./hooks/useQuizAttempts";
+import {
+  createDefaultAppPreferences,
+  parseAppPreferences,
+} from "./lib/appPreferences";
 import type { LibraryQuiz } from "./lib/quizLibrary";
 import {
   createDefaultMnemonicModels,
@@ -32,7 +33,8 @@ import {
 import type { QuizResult } from "./lib/quizResults";
 
 type ActiveView = ViewKey | "quiz" | "summary";
-const READING_FONT_STORAGE_KEY = "recallflow-reading-font";
+const APP_PREFERENCES_STORAGE_KEY = "recallflow-app-preferences";
+const LEGACY_READING_FONT_STORAGE_KEY = "recallflow-reading-font";
 const AI_SELECTION_STORAGE_KEY = "recallflow-ai-selection";
 
 type AiSelection = {
@@ -40,14 +42,14 @@ type AiSelection = {
   provider: MnemonicProvider;
 };
 
-const loadReadingFont = (): ReadingFont => {
+const loadAppPreferences = () => {
   try {
-    const saved = window.localStorage.getItem(READING_FONT_STORAGE_KEY);
-    return readingFontOptions.some(({ value }) => value === saved)
-      ? (saved as ReadingFont)
-      : "sans";
+    return parseAppPreferences(
+      window.localStorage.getItem(APP_PREFERENCES_STORAGE_KEY),
+      window.localStorage.getItem(LEGACY_READING_FONT_STORAGE_KEY),
+    );
   } catch {
-    return "sans";
+    return createDefaultAppPreferences();
   }
 };
 
@@ -89,7 +91,7 @@ export default function App() {
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [repairMode, setRepairMode] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [readingFont, setReadingFont] = useState(loadReadingFont);
+  const [appPreferences, setAppPreferences] = useState(loadAppPreferences);
   const [aiSelection, setAiSelection] = useState(loadAiSelection);
   const { state, retry } = useAppInfo();
   const attemptSave = useQuizAttemptSave();
@@ -117,16 +119,20 @@ export default function App() {
     setRepairMode(questionIds.length > 0);
     setActiveQuiz({ ...quiz, quiz: { ...quiz.quiz, questions } });
     setQuizResult(null);
+    setFocusMode(appPreferences.startInFocusMode);
     setActiveView("quiz");
   };
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(READING_FONT_STORAGE_KEY, readingFont);
+      window.localStorage.setItem(
+        APP_PREFERENCES_STORAGE_KEY,
+        JSON.stringify(appPreferences),
+      );
     } catch {
-      // The preference still applies for the current session.
+      // The preferences still apply for the current session.
     }
-  }, [readingFont]);
+  }, [appPreferences]);
 
   useEffect(() => {
     try {
@@ -149,7 +155,9 @@ export default function App() {
 
   return (
     <div
-      className={`app-shell font-${readingFont}${focusMode ? " focus-mode" : ""}`}
+      className={`app-shell font-${appPreferences.readingFont}${
+        focusMode ? " focus-mode" : ""
+      }`}
     >
       {!focusMode && (
         <header className="app-header">
@@ -200,7 +208,12 @@ export default function App() {
               void attemptSave.save(activeQuiz.id, result);
             }}
             onFocusModeChange={setFocusMode}
-            onReadingFontChange={setReadingFont}
+            onReadingFontChange={(readingFont) =>
+              setAppPreferences((current) => ({
+                ...current,
+                readingFont,
+              }))
+            }
             onSaveMnemonic={async (questionId, mnemonic) => {
               const savedMnemonic = await library.saveMnemonic(
                 activeQuiz.id,
@@ -226,7 +239,7 @@ export default function App() {
             mnemonicModel={aiSelection.models[aiSelection.provider]}
             mnemonicProvider={aiSelection.provider}
             quiz={activeQuiz}
-            readingFont={readingFont}
+            readingFont={appPreferences.readingFont}
           />
         )}
 
@@ -253,6 +266,7 @@ export default function App() {
               )
             }
             onRestart={() => {
+              setFocusMode(appPreferences.startInFocusMode);
               setQuizResult(null);
               setActiveView("quiz");
             }}
@@ -282,7 +296,7 @@ export default function App() {
         )}
 
         {activeView === "settings" && (
-          <AiSettings
+          <Settings
             model={aiSelection.models[aiSelection.provider]}
             onModelChange={(model) =>
               setAiSelection((current) => ({
@@ -293,7 +307,21 @@ export default function App() {
             onProviderChange={(provider) =>
               setAiSelection((current) => ({ ...current, provider }))
             }
+            onReadingFontChange={(readingFont) =>
+              setAppPreferences((current) => ({
+                ...current,
+                readingFont,
+              }))
+            }
+            onStartInFocusModeChange={(startInFocusMode) =>
+              setAppPreferences((current) => ({
+                ...current,
+                startInFocusMode,
+              }))
+            }
             provider={aiSelection.provider}
+            readingFont={appPreferences.readingFont}
+            startInFocusMode={appPreferences.startInFocusMode}
           />
         )}
       </main>

@@ -30,9 +30,16 @@ npm run check
 This runs the TypeScript/Vite production build, Rust formatting check,
 `cargo check`, and the Rust test suite.
 
+## Application preferences
+
+Open **Settings** to choose the application font and whether new quizzes start
+in focus mode. Preferences are validated, stored locally in the app profile,
+and applied without sending data outside RecallFlow. The font can also be
+changed and focus mode can be exited while taking a quiz.
+
 ## AI provider selection
 
-Open **AI settings** to choose the provider and mnemonic model. RecallFlow
+Open **Settings** to choose the provider and mnemonic model. RecallFlow
 remembers the selected model separately for OpenAI, Google Gemini, and
 Anthropic Claude, then uses the active pair for new mnemonic requests.
 

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useMnemonicGeneration } from "../hooks/useMnemonicGeneration";
 import { useMnemonicSave } from "../hooks/useMnemonicSave";
 import {
+  readingFontOptions,
+  type ReadingFont,
+} from "../lib/appPreferences";
+import {
   getMnemonicModelOption,
   getMnemonicProviderOption,
   type MnemonicModel,
@@ -28,14 +32,6 @@ type QuizSessionProps = {
   onSaveMnemonic: (questionId: string, mnemonic: string) => Promise<void>;
   readingFont: ReadingFont;
 };
-
-export const readingFontOptions = [
-  { value: "sans", label: "Sans" },
-  { value: "serif", label: "Serif" },
-  { value: "mono", label: "Monospace" },
-] as const;
-
-export type ReadingFont = (typeof readingFontOptions)[number]["value"];
 
 const questionTypeLabels = {
   single_choice: "Single choice",
