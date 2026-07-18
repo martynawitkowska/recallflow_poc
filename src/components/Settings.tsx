@@ -101,7 +101,7 @@ export default function Settings({
           <h2 id="ai-settings-title">AI features</h2>
           <p>
             AI quiz and mnemonic generation are available in the desktop app.
-            The GitHub Pages jury preview does not accept or store API keys.
+            RecallFlow Web Preview does not accept or store API keys.
           </p>
         </section>
       )}

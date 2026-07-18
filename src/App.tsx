@@ -271,7 +271,7 @@ export default function App() {
       <ConnectivityStatus isOnline={isOnline} />
       {isPagesPreview && (
         <aside className="preview-banner" aria-label="Preview information">
-          <strong>GitHub Pages jury preview</strong>
+          <strong>RecallFlow Web Preview</strong>
           <span>
             Your quizzes and results stay only in this browser. AI features are
             available in the desktop app.
