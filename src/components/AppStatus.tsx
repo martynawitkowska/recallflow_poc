@@ -11,7 +11,7 @@ export default function AppStatus({ state, onRetry }: AppStatusProps) {
   if (isPagesPreview) {
     return (
       <p role="status">
-        GitHub Pages jury preview is ready. Quizzes and results are stored only
+        RecallFlow Web Preview is ready. Quizzes and results are stored only
         in this browser.
       </p>
     );

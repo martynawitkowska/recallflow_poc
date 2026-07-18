@@ -300,7 +300,7 @@ export default function QuizSession({
                   {!aiAvailable ? (
                     <p>
                       AI mnemonic generation is available in the desktop app.
-                      The GitHub Pages jury preview never asks for an API key or
+                      RecallFlow Web Preview never asks for an API key or
                       sends this question to an AI provider.
                     </p>
                   ) : (
