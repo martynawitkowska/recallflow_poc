@@ -59,6 +59,13 @@ const PREVIEW_TUTORIAL_STEPS: readonly PreviewTutorialStepWithView[] = [
       "Import a RecallFlow JSON file in this browser. AI quiz generation stays desktop-only, so the preview never asks for an API key.",
   },
   {
+    view: "import",
+    action: "copy-prompt",
+    title: "Copy the generation prompt",
+    description:
+      "Copy RecallFlow's prompt into your preferred AI chat, add your study material, then download the generated recallflow-quiz.json file and import it here.",
+  },
+  {
     view: "settings",
     title: "Make study sessions comfortable",
     description:

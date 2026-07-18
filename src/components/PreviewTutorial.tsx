@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
+import { useCopyText } from "../hooks/useCopyText";
+import { EXTERNAL_QUIZ_PROMPT } from "../lib/quizGenerationReference";
 
 export type PreviewTutorialStep = {
+  action?: "copy-prompt";
   description: string;
   title: string;
 };
@@ -24,6 +27,7 @@ export default function PreviewTutorial({
 }: PreviewTutorialProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const isLastStep = stepIndex === stepCount - 1;
+  const promptCopy = useCopyText(EXTERNAL_QUIZ_PROMPT, "Prompt");
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -66,6 +70,28 @@ export default function PreviewTutorial({
           {step.title}
         </h2>
         <p id="preview-tutorial-description">{step.description}</p>
+        {step.action === "copy-prompt" && (
+          <div className="preview-tutorial-copy-action">
+            <button
+              className="secondary-button"
+              disabled={promptCopy.state.status === "loading"}
+              onClick={() => void promptCopy.copy()}
+              type="button"
+            >
+              {promptCopy.state.status === "loading"
+                ? "Copying…"
+                : "Copy generation prompt"}
+            </button>
+            {promptCopy.state.status !== "idle" &&
+              promptCopy.state.status !== "loading" && (
+                <p
+                  role={promptCopy.state.status === "error" ? "alert" : "status"}
+                >
+                  {promptCopy.state.message}
+                </p>
+              )}
+          </div>
+        )}
         <progress
           aria-label={`Walkthrough progress: step ${stepIndex + 1} of ${stepCount}`}
           max={stepCount}

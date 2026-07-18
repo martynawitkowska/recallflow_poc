@@ -411,6 +411,25 @@ summary:focus-visible,
   line-height: 1.65;
 }
 
+.preview-tutorial-copy-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: -0.25rem 0 1.5rem;
+}
+
+.preview-tutorial-copy-action p {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.preview-tutorial-copy-action [role="alert"] {
+  color: var(--color-incorrect);
+}
+
 .preview-tutorial-body progress {
   appearance: none;
   width: 100%;
@@ -2159,6 +2178,10 @@ h2[tabindex="-1"]:focus {
   .preview-tutorial-body p {
     margin: 0.6rem 0 1rem;
     line-height: 1.45;
+  }
+
+  .preview-tutorial-copy-action {
+    margin: 0 0 1rem;
   }
 
   .preview-tutorial-actions {
