@@ -107,7 +107,7 @@ component, contract, storage, and failure-path map, and the
 
 ## Browser preview
 
-The [live jury preview](https://martynawitkowska.github.io/recallflow_poc/)
+The [RecallFlow preview](https://martynawitkowska.github.io/recallflow_poc/)
 starts with a deterministic sample quiz. It supports JSON import, study
 sessions, feedback, summaries, repair sessions, statistics, metadata editing,
 deletion, and non-secret preferences. Preview quiz files are limited to 500 KB.
