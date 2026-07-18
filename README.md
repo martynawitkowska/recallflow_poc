@@ -38,12 +38,39 @@ data does not sync with the desktop app.
   focus mode. Offline state keeps local study available while disabling network
   generation.
 
+## Product tour
+
+These captures use the browser preview's deterministic, synthetic biology quiz.
+They contain no user study material, credentials, notifications, or personal
+paths.
+
+![RecallFlow browser preview library with the synthetic Biology review quiz and local-only storage notice](docs/assets/screenshots/library.jpg)
+
+*The local library keeps quiz management, study actions, and storage boundaries
+visible together.*
+
+![RecallFlow quiz question showing an incorrect Nucleus answer, the correct Mitochondrion answer, and immediate feedback](docs/assets/screenshots/answer-feedback.jpg)
+
+*Immediate feedback identifies both selections with text and color, then keeps
+the explanation in the same study flow.*
+
+![RecallFlow session summary showing two of three correct answers and the first missed answer ready for review](docs/assets/screenshots/session-summary.jpg)
+
+*A completed session saves locally, summarizes recall, and begins the review
+that powers a focused repair pass.*
+
 ## Runtime and architecture
 
 | Surface | Local storage | Network boundary |
 | --- | --- | --- |
 | Desktop app | Quizzes, attempts, and saved mnemonics in `recallflow.sqlite3`; preferences in the local WebView profile; OpenAI key in the operating-system credential store | Rust contacts OpenAI only after an explicit quiz or mnemonic generation action |
 | GitHub Pages preview | Seeded and imported quizzes, attempts, and preferences in browser local storage for the preview origin | No provider calls, API-key input, Tauri IPC, or desktop storage access |
+
+![RecallFlow flow diagram showing local React study, separate browser and desktop storage paths, and explicit OpenAI requests crossing the network boundary](docs/assets/architecture/recallflow-overview.png)
+
+*Local study remains inside the device boundary. Only an explicit generation
+action reaches OpenAI. The diagram is also available as an
+[editable Excalidraw source](docs/assets/architecture/recallflow-overview.excalidraw).*
 
 The desktop request path is deliberately narrow:
 
