@@ -58,8 +58,9 @@ The desktop request path is deliberately narrow:
 
 The Pages build follows a different branch in the TypeScript storage wrappers,
 so it never substitutes browser data for desktop persistence. See the
-[security model](docs/security-model.md) for data lifetimes, provider
-disclosures, and failure-path checks.
+[architecture and data-flow guide](docs/architecture.md) for the complete
+component, contract, storage, and failure-path map, and the
+[security model](docs/security-model.md) for credential and provider details.
 
 ## Browser preview
 
@@ -161,6 +162,7 @@ not stored in this repository.
 
 ## Documentation
 
+- [Architecture and data flow](docs/architecture.md)
 - [Security model](docs/security-model.md)
 - [Grounded quiz generation](docs/grounded-generation.md)
 - [Resilient UI states](docs/resilient-ui-states.md)
