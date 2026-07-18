@@ -49,15 +49,17 @@ export default function PreviewTutorial({
       if (!target) return;
       target.scrollIntoView({ block: "start" });
 
-      if (window.matchMedia("(max-width: 52rem)").matches) {
-        const panel = document.querySelector(".preview-tutorial-panel");
-        if (panel) {
-          window.scrollBy({
-            top:
-              target.getBoundingClientRect().top -
-              panel.getBoundingClientRect().bottom,
-          });
-        }
+      const scrollBoundary = document.querySelector(
+        window.matchMedia("(max-width: 52rem)").matches
+          ? ".preview-tutorial-panel"
+          : ".app-header",
+      );
+      if (scrollBoundary) {
+        window.scrollBy({
+          top:
+            target.getBoundingClientRect().top -
+            scrollBoundary.getBoundingClientRect().bottom,
+        });
       }
     });
 
