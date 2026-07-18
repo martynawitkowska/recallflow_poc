@@ -2158,6 +2158,12 @@ h2[tabindex="-1"]:focus {
     box-shadow: none;
   }
 
+  .preview-tutorial-panel-copy {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+  }
+
   .tutorial-open .preview-banner span,
   .tutorial-open .preview-tour-button {
     display: none;

@@ -38,7 +38,7 @@ export default function ExternalQuizReference() {
       </ol>
 
       <article className="reference-card">
-        <div className="reference-card-heading">
+        <div className="reference-card-heading" id="external-prompt-actions">
           <div>
             <h3 id="external-prompt-title">External generation prompt</h3>
             <p>Includes the exact format and validation rules RecallFlow expects.</p>

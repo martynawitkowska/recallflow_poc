@@ -42,11 +42,36 @@ export default function PreviewTutorial({
     titleRef.current?.focus();
   }, [stepIndex]);
 
+  useEffect(() => {
+    if (step.action !== "copy-prompt") return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById("external-prompt-actions");
+      if (!target) return;
+      target.scrollIntoView({ block: "end" });
+
+      if (window.matchMedia("(max-width: 52rem)").matches) {
+        const panel = document.querySelector(".preview-tutorial-panel");
+        if (panel) {
+          window.scrollBy({
+            top:
+              target.getBoundingClientRect().top -
+              panel.getBoundingClientRect().bottom -
+              16,
+          });
+        }
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [step.action]);
+
   return (
     <aside
       aria-describedby="preview-tutorial-description"
       aria-labelledby="preview-tutorial-title"
-      className="preview-tutorial-panel"
+      className={`preview-tutorial-panel${
+        step.action === "copy-prompt" ? " preview-tutorial-panel-copy" : ""
+      }`}
     >
       <div className="preview-tutorial-header">
         <div>
