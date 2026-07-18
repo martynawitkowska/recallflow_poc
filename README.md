@@ -20,6 +20,22 @@ It is a separate, browser-only library backed by this site's local storage. It
 does not use Tauri IPC, SQLite, desktop credentials, or AI requests, and its
 data does not sync with the desktop app.
 
+## How Codex and GPT-5.6 were used
+
+Codex, using GPT-5.6, served as an engineering collaborator throughout
+RecallFlow's development. It helped turn product requirements into focused
+React, TypeScript, Tauri, Rust, and SQLite changes; trace privacy and trust
+boundaries; create deterministic checks and mocked provider flows; diagnose
+failures; and draft or review documentation, accessibility guidance, and
+architecture artifacts.
+
+The maintainer set the product direction, made design and security decisions,
+reviewed the resulting diffs, and controlled every commit and merge. AI-assisted
+changes were accepted only after source review and `npm run check`, which builds
+the frontend and runs the project's TypeScript and Rust checks. This development
+use is separate from RecallFlow's optional runtime generation features: studying
+an imported quiz does not invoke Codex or GPT-5.6.
+
 ## What is implemented
 
 - **Local quiz library:** import and validate RecallFlow JSON, preview questions,
