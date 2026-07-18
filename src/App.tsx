@@ -31,6 +31,7 @@ import {
   type MnemonicProvider,
 } from "./lib/mnemonicProviders";
 import type { QuizResult } from "./lib/quizResults";
+import { isWebPreviewGenerationConfigured } from "./lib/quizGeneration";
 import { isPagesPreview } from "./lib/runtime";
 import appLogo from "../src-tauri/icons/icon.png";
 
@@ -203,8 +204,9 @@ export default function App() {
         <aside className="preview-banner" aria-label="Preview information">
           <strong>GitHub Pages jury preview</strong>
           <span>
-            Your quizzes and results stay only in this browser. AI features are
-            available in the desktop app.
+            {isWebPreviewGenerationConfigured
+              ? "Quizzes and results stay in this browser. Live quiz generation uses a limited server-side connection."
+              : "Your quizzes and results stay only in this browser. AI features are available in the desktop app."}
           </span>
         </aside>
       )}
@@ -317,7 +319,7 @@ export default function App() {
               state={quizFileImport.state}
             />
             <div className="import-divider"><span>or</span></div>
-            {isPagesPreview ? (
+            {isPagesPreview && !isWebPreviewGenerationConfigured ? (
               <section className="preview-unavailable" aria-labelledby="preview-ai-title">
                 <h2 id="preview-ai-title">AI quiz generation is desktop-only</h2>
                 <p>
@@ -331,6 +333,7 @@ export default function App() {
                 isOnline={isOnline}
                 model={aiSelection.models[aiSelection.provider]}
                 onSaveQuiz={library.addGeneratedQuiz}
+                webPreview={isPagesPreview}
               />
             )}
             <ExternalQuizReference />
@@ -365,6 +368,7 @@ export default function App() {
             provider={aiSelection.provider}
             readingFont={appPreferences.readingFont}
             startInFocusMode={appPreferences.startInFocusMode}
+            webQuizGenerationAvailable={isWebPreviewGenerationConfigured}
           />
         )}
       </main>

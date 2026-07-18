@@ -9,6 +9,8 @@ import {
   MAX_QUESTION_COUNT,
   MAX_SOURCE_URL_CHARS,
   MIN_QUESTION_COUNT,
+  MAX_WEB_PREVIEW_MATERIAL_CHARS,
+  MAX_WEB_PREVIEW_QUESTION_COUNT,
   type AiProvider,
 } from "../lib/quizGeneration";
 import { MAX_VIDEO_URL_CHARS, type QuizFile } from "../lib/quizSchema";
@@ -19,12 +21,14 @@ type QuizGeneratorProps = {
   isOnline: boolean;
   model: MnemonicModel;
   onSaveQuiz: (quiz: QuizFile) => Promise<void>;
+  webPreview?: boolean;
 };
 
 export default function QuizGenerator({
   isOnline,
   model,
   onSaveQuiz,
+  webPreview = false,
 }: QuizGeneratorProps) {
   const generation = useQuizGeneration(onSaveQuiz, isOnline, model);
   const isLoading = generation.state.status === "loading";
@@ -37,10 +41,13 @@ export default function QuizGenerator({
       className="quiz-generator"
     >
       <header>
-        <h2 id="quiz-generator-title">Generate from notes or a URL</h2>
+        <h2 id="quiz-generator-title">
+          {webPreview ? "Generate from pasted material" : "Generate from notes or a URL"}
+        </h2>
         <p>
-          Give RecallFlow study material or a public lecture or article page,
-          then choose how many questions to generate.
+          {webPreview
+            ? "Paste your study material, then choose how many questions to generate."
+            : "Give RecallFlow study material or a public lecture or article page, then choose how many questions to generate."}
         </p>
       </header>
 
@@ -58,14 +65,14 @@ export default function QuizGenerator({
           >
             Paste notes
           </button>
-          <button
+          {!webPreview && <button
             aria-pressed={generation.sourceMode === "url"}
             disabled={isLoading}
             onClick={() => generation.setSourceMode("url")}
             type="button"
           >
             Use a URL
-          </button>
+          </button>}
         </div>
 
         {generation.sourceMode === "material" ? (
@@ -81,7 +88,7 @@ export default function QuizGenerator({
             />
             <p className="field-hint character-count">
               {materialCharacters.toLocaleString()} /{" "}
-              {MAX_MATERIAL_CHARS.toLocaleString()} characters
+              {(webPreview ? MAX_WEB_PREVIEW_MATERIAL_CHARS : MAX_MATERIAL_CHARS).toLocaleString()} characters
             </p>
             <label htmlFor="lecture-title">Lecture title (optional)</label>
             <input
@@ -153,7 +160,7 @@ export default function QuizGenerator({
             <input
               disabled={isLoading}
               id="question-count"
-              max={MAX_QUESTION_COUNT}
+              max={webPreview ? MAX_WEB_PREVIEW_QUESTION_COUNT : MAX_QUESTION_COUNT}
               min={MIN_QUESTION_COUNT}
               onChange={(event) =>
                 generation.setQuestionCount(Number(event.target.value))
@@ -165,13 +172,15 @@ export default function QuizGenerator({
           </div>
         </div>
         <p className="field-hint">
-          OpenAI is available now. Additional providers will unlock after their
-          integrations are enabled.
+          {webPreview
+            ? "The jury preview uses a limited server-side OpenAI connection. No API key is stored in this browser."
+            : "OpenAI is available now. Additional providers will unlock after their integrations are enabled."}
         </p>
 
         <p className="field-hint">
-          Uses the OpenAI API key saved in Settings. Your source is sent to
-          OpenAI only after you press Generate.
+          {webPreview
+            ? "Your pasted material is sent only after you press Generate. Requests are rate-limited and capped at 10 questions."
+            : "Uses the OpenAI API key saved in Settings. Your source is sent to OpenAI only after you press Generate."}
         </p>
         <p className="field-hint">
           RecallFlow may return fewer questions than requested when fewer

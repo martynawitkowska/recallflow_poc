@@ -175,7 +175,8 @@ export function useQuizGeneration(
     const runId = state.runId;
     setState({ ...state, cancelling: true });
     try {
-      await cancelQuizGeneration(runId);
+      if (activeController.current) activeController.current.abort();
+      else await cancelQuizGeneration(runId);
     } catch (error) {
       setState({
         status: "error",

@@ -31,6 +31,11 @@ npm run build:pages
 npm run preview:pages
 ```
 
+The optional server-backed quiz generator is implemented but disabled until
+submission readiness. See [web generation deployment](docs/web-generation-deployment.md)
+for its security boundary, $5 budget alert, enforced usage guard, deployment steps, and emergency
+shutdown procedure.
+
 ## Development
 
 Install the JavaScript and Rust dependencies, then start the desktop app with

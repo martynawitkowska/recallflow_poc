@@ -8,7 +8,7 @@
     "dev:pages": "vite --mode pages",
     "build": "tsc && vite build",
     "build:pages": "tsc && vite build --mode pages",
-    "check": "npm run build && npm run check:app-preferences && npm run check:api-key-storage && npm run check:ipc && npm run check:mnemonic-generation && npm run check:quiz-generation && npm run check:quiz-file && npm run check:quiz-schema && npm run check:quiz-answers && npm run check:quiz-results && npm run check:quiz-performance && npm run check:web-preview-storage && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run build && npm run check:app-preferences && npm run check:api-key-storage && npm run check:ipc && npm run check:mnemonic-generation && npm run check:quiz-generation && npm run check:quiz-file && npm run check:quiz-schema && npm run check:quiz-answers && npm run check:quiz-results && npm run check:quiz-performance && npm run check:web-preview-storage && npm run check:worker && cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
     "check:app-preferences": "node --no-warnings --experimental-strip-types src/lib/appPreferences.check.ts",
     "check:api-key-storage": "node --no-warnings --experimental-strip-types src/lib/apiKeyStorage.check.ts",
     "check:ipc": "node --no-warnings --experimental-strip-types src/lib/ipc.check.ts",
@@ -20,11 +20,14 @@
     "check:quiz-results": "node --no-warnings --experimental-strip-types src/lib/quizResults.check.ts",
     "check:quiz-schema": "node --no-warnings --experimental-strip-types src/lib/validateQuiz.check.ts",
     "check:web-preview-storage": "node --no-warnings --experimental-strip-types src/lib/webPreviewStorage.check.ts",
+    "check:worker": "tsc --project worker/tsconfig.json && node --no-warnings --experimental-strip-types worker/src/index.check.ts",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
     "preview": "vite preview",
     "preview:pages": "vite preview --mode pages",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "worker:dev": "wrangler dev --config worker/wrangler.jsonc",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
@@ -38,6 +41,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "typescript": "~7.0.2",
-    "vite": "^8.1.5"
+    "vite": "^8.1.5",
+    "wrangler": "^4.112.0"
   }
 }

@@ -1,0 +1,37 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "recallflow-jury-generation",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-18",
+  "workers_dev": true,
+  "vars": {
+    "GENERATION_ENABLED": "false"
+  },
+  "secrets": {
+    "required": ["OPENAI_API_KEY"]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GENERATION_BUDGET",
+        "class_name": "GenerationBudget"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["GenerationBudget"]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "GENERATION_RATE_LIMITER",
+      "namespace_id": "9501",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ]
+}
