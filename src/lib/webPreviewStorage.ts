@@ -8,7 +8,7 @@ export const MAX_WEB_PREVIEW_QUIZ_BYTES = 500 * 1024;
 const WEB_PREVIEW_HEALTH_KEY = "recallflow.pages.health-check";
 
 const STORAGE_VERSION = 1;
-const SEED_QUIZ_ID = "recallflow-preview-sample";
+export const WEB_PREVIEW_SEED_QUIZ_ID = "recallflow-preview-sample";
 const STORAGE_UNAVAILABLE_MESSAGE =
   "Browser preview storage is unavailable. Enable local site storage and try again.";
 const STORAGE_FULL_MESSAGE =
@@ -43,7 +43,7 @@ function createSeedQuiz(): LibraryQuiz {
   const validation = validateQuiz(QUIZ_SCHEMA_EXAMPLE);
   if (!validation.valid) throw new Error("The preview sample quiz is invalid.");
   return {
-    id: SEED_QUIZ_ID,
+    id: WEB_PREVIEW_SEED_QUIZ_ID,
     name: "recallflow-sample.json",
     size: encodedSize(validation.quiz),
     importedAt: "2026-07-17T00:00:00.000Z",

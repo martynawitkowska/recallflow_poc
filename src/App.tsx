@@ -4,6 +4,9 @@ import AppStatus from "./components/AppStatus";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import ExternalQuizReference from "./components/ExternalQuizReference";
 import FileDropzone from "./components/FileDropzone";
+import PreviewTutorial, {
+  type PreviewTutorialStep,
+} from "./components/PreviewTutorial";
 import QuizGenerator from "./components/QuizGenerator";
 import QuizLibrary from "./components/QuizLibrary";
 import QuizSummary from "./components/QuizSummary";
@@ -31,10 +34,43 @@ import {
   type MnemonicProvider,
 } from "./lib/mnemonicProviders";
 import type { QuizResult } from "./lib/quizResults";
+import {
+  markPreviewTutorialSeen,
+  shouldShowPreviewTutorial,
+} from "./lib/previewTutorial";
 import { isPagesPreview } from "./lib/runtime";
+import { WEB_PREVIEW_SEED_QUIZ_ID } from "./lib/webPreviewStorage";
 import appLogo from "../src-tauri/icons/icon.png";
 
 type ActiveView = ViewKey | "quiz" | "summary";
+type PreviewTutorialStepWithView = PreviewTutorialStep & { view: ViewKey };
+
+const PREVIEW_TUTORIAL_STEPS: readonly PreviewTutorialStepWithView[] = [
+  {
+    view: "library",
+    title: "Start with the sample quiz",
+    description:
+      "The browser preview includes a short quiz so you can try active recall, answer feedback, and saved results straight away.",
+  },
+  {
+    view: "import",
+    title: "Add your own quiz",
+    description:
+      "Import a RecallFlow JSON file in this browser. AI quiz generation stays desktop-only, so the preview never asks for an API key.",
+  },
+  {
+    view: "settings",
+    title: "Make study sessions comfortable",
+    description:
+      "Choose a reading font and decide whether quizzes start in Focus mode. Preview preferences stay only in this browser.",
+  },
+  {
+    view: "library",
+    title: "Ready to practise",
+    description:
+      "Return to the library and try the included sample quiz. Your answers and results remain on this device.",
+  },
+];
 const APP_PREFERENCES_STORAGE_KEY = isPagesPreview
   ? "recallflow.pages.preferences.v1"
   : "recallflow-app-preferences";
@@ -91,12 +127,19 @@ const loadAiSelection = (): AiSelection => {
 
 export default function App() {
   const mainRef = useRef<HTMLElement>(null);
+  const tourButtonRef = useRef<HTMLButtonElement>(null);
   const [activeView, setActiveView] = useState<ActiveView>("library");
   const previousViewRef = useRef<ActiveView>(activeView);
   const [activeQuiz, setActiveQuiz] = useState<LibraryQuiz | null>(null);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [repairMode, setRepairMode] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [tutorialStepIndex, setTutorialStepIndex] = useState<number | null>(
+    () =>
+      isPagesPreview && shouldShowPreviewTutorial()
+        ? 0
+        : null,
+  );
   const [appPreferences, setAppPreferences] = useState(loadAppPreferences);
   const [aiSelection, setAiSelection] = useState(loadAiSelection);
   const { state, retry } = useAppInfo();
@@ -110,6 +153,24 @@ export default function App() {
     setQuizResult(null);
     setRepairMode(false);
     setActiveView(view);
+  }, []);
+
+  const showTutorialStep = useCallback(
+    (stepIndex: number) => {
+      const step = PREVIEW_TUTORIAL_STEPS[stepIndex];
+      if (!step) return;
+      navigate(step.view);
+      setTutorialStepIndex(stepIndex);
+    },
+    [navigate],
+  );
+
+  const closeTutorial = useCallback((returnFocus = true) => {
+    markPreviewTutorialSeen();
+    setTutorialStepIndex(null);
+    if (returnFocus) {
+      window.requestAnimationFrame(() => tourButtonRef.current?.focus());
+    }
   }, []);
 
   const startQuiz = (quiz: LibraryQuiz, questionIds: readonly string[] = []) => {
@@ -158,8 +219,10 @@ export default function App() {
     }
 
     previousViewRef.current = activeView;
-    mainRef.current?.querySelector<HTMLElement>("h1")?.focus();
-  }, [activeView]);
+    if (tutorialStepIndex === null) {
+      mainRef.current?.querySelector<HTMLElement>("h1")?.focus();
+    }
+  }, [activeView, tutorialStepIndex]);
 
   const handleImported = useCallback(
     async (file: ValidatedQuizFile) => {
@@ -206,6 +269,14 @@ export default function App() {
             Your quizzes and results stay only in this browser. AI features are
             available in the desktop app.
           </span>
+          <button
+            className="preview-tour-button"
+            onClick={() => showTutorialStep(0)}
+            ref={tourButtonRef}
+            type="button"
+          >
+            Take the tour
+          </button>
         </aside>
       )}
 
@@ -368,6 +439,31 @@ export default function App() {
           />
         )}
       </main>
+      {isPagesPreview && tutorialStepIndex !== null && (
+        <PreviewTutorial
+          onBack={() => showTutorialStep(tutorialStepIndex - 1)}
+          onClose={() => closeTutorial()}
+          onNext={() => {
+            if (tutorialStepIndex < PREVIEW_TUTORIAL_STEPS.length - 1) {
+              showTutorialStep(tutorialStepIndex + 1);
+              return;
+            }
+
+            closeTutorial(false);
+            const sampleQuiz =
+              library.state.status === "success"
+                ? library.state.quizzes.find(
+                    (quiz) => quiz.id === WEB_PREVIEW_SEED_QUIZ_ID,
+                  )
+                : undefined;
+            if (sampleQuiz) startQuiz(sampleQuiz);
+            else navigate("library");
+          }}
+          step={PREVIEW_TUTORIAL_STEPS[tutorialStepIndex]}
+          stepCount={PREVIEW_TUTORIAL_STEPS.length}
+          stepIndex={tutorialStepIndex}
+        />
+      )}
     </div>
   );
 }
