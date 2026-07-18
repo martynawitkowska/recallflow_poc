@@ -237,7 +237,7 @@ export default function App() {
     <div
       className={`app-shell font-${appPreferences.readingFont}${
         focusMode ? " focus-mode" : ""
-      }`}
+      }${tutorialStepIndex !== null ? " tutorial-open" : ""}`}
     >
       <a className="skip-link" href="#main-content">
         Skip to main content
@@ -278,6 +278,32 @@ export default function App() {
             Take the tour
           </button>
         </aside>
+      )}
+
+      {isPagesPreview && tutorialStepIndex !== null && (
+        <PreviewTutorial
+          onBack={() => showTutorialStep(tutorialStepIndex - 1)}
+          onClose={() => closeTutorial()}
+          onNext={() => {
+            if (tutorialStepIndex < PREVIEW_TUTORIAL_STEPS.length - 1) {
+              showTutorialStep(tutorialStepIndex + 1);
+              return;
+            }
+
+            closeTutorial(false);
+            const sampleQuiz =
+              library.state.status === "success"
+                ? library.state.quizzes.find(
+                    (quiz) => quiz.id === WEB_PREVIEW_SEED_QUIZ_ID,
+                  )
+                : undefined;
+            if (sampleQuiz) startQuiz(sampleQuiz);
+            else navigate("library");
+          }}
+          step={PREVIEW_TUTORIAL_STEPS[tutorialStepIndex]}
+          stepCount={PREVIEW_TUTORIAL_STEPS.length}
+          stepIndex={tutorialStepIndex}
+        />
       )}
 
       <main
@@ -439,31 +465,6 @@ export default function App() {
           />
         )}
       </main>
-      {isPagesPreview && tutorialStepIndex !== null && (
-        <PreviewTutorial
-          onBack={() => showTutorialStep(tutorialStepIndex - 1)}
-          onClose={() => closeTutorial()}
-          onNext={() => {
-            if (tutorialStepIndex < PREVIEW_TUTORIAL_STEPS.length - 1) {
-              showTutorialStep(tutorialStepIndex + 1);
-              return;
-            }
-
-            closeTutorial(false);
-            const sampleQuiz =
-              library.state.status === "success"
-                ? library.state.quizzes.find(
-                    (quiz) => quiz.id === WEB_PREVIEW_SEED_QUIZ_ID,
-                  )
-                : undefined;
-            if (sampleQuiz) startQuiz(sampleQuiz);
-            else navigate("library");
-          }}
-          step={PREVIEW_TUTORIAL_STEPS[tutorialStepIndex]}
-          stepCount={PREVIEW_TUTORIAL_STEPS.length}
-          stepIndex={tutorialStepIndex}
-        />
-      )}
     </div>
   );
 }

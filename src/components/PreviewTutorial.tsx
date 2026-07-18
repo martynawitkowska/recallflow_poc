@@ -22,39 +22,27 @@ export default function PreviewTutorial({
   stepCount,
   stepIndex,
 }: PreviewTutorialProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const isLastStep = stepIndex === stepCount - 1;
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (!dialog.open) dialog.showModal();
-
-    return () => {
-      if (dialog.open) dialog.close();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
     };
-  }, []);
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
 
   useEffect(() => {
     titleRef.current?.focus();
   }, [stepIndex]);
 
   return (
-    <dialog
+    <aside
       aria-describedby="preview-tutorial-description"
       aria-labelledby="preview-tutorial-title"
-      className="preview-tutorial-dialog"
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-      onKeyDown={(event) => {
-        if (event.key !== "Escape") return;
-        event.preventDefault();
-        onClose();
-      }}
-      ref={dialogRef}
+      className="preview-tutorial-panel"
     >
       <div className="preview-tutorial-header">
         <div>
@@ -103,6 +91,6 @@ export default function PreviewTutorial({
           </button>
         </div>
       </div>
-    </dialog>
+    </aside>
   );
 }

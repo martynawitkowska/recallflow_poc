@@ -322,21 +322,22 @@ summary:focus-visible,
   flex: 0 0 auto;
 }
 
-.preview-tutorial-dialog {
-  width: min(34rem, calc(100% - 2rem));
-  max-height: calc(100vh - 2rem);
-  padding: 0;
-  overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  color: var(--color-text);
-  background: var(--color-surface);
-  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.45);
-  font: inherit;
+.app-shell.tutorial-open {
+  padding-right: clamp(20rem, 36vw, 26rem);
 }
 
-.preview-tutorial-dialog::backdrop {
-  background: rgba(19, 23, 26, 0.72);
+.preview-tutorial-panel {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  width: clamp(20rem, 36vw, 26rem);
+  height: 100vh;
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: -0.75rem 0 2rem rgba(0, 0, 0, 0.14);
 }
 
 .preview-tutorial-header,
@@ -2120,6 +2121,63 @@ h2[tabindex="-1"]:focus {
   .generated-quiz-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 52rem) {
+  .app-shell.tutorial-open {
+    padding-right: 0;
+  }
+
+  .preview-tutorial-panel {
+    position: static;
+    width: auto;
+    height: auto;
+    max-height: none;
+    border-bottom: 1px solid var(--color-border);
+    border-left: 0;
+    box-shadow: none;
+  }
+
+  .tutorial-open .preview-banner span,
+  .tutorial-open .preview-tour-button {
+    display: none;
+  }
+
+  .preview-tutorial-header {
+    padding: 0.85rem 1rem 0;
+  }
+
+  .preview-tutorial-body {
+    padding: 1rem;
+  }
+
+  .preview-tutorial-body h2 {
+    font-size: 1.5rem;
+  }
+
+  .preview-tutorial-body p {
+    margin: 0.6rem 0 1rem;
+    line-height: 1.45;
+  }
+
+  .preview-tutorial-actions {
+    align-items: center;
+    flex-direction: row;
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .preview-tutorial-skip {
+    align-self: auto;
+  }
+
+  .preview-tutorial-navigation {
+    display: flex;
+  }
+
+  .preview-tutorial-navigation .primary-button,
+  .preview-tutorial-navigation .secondary-button {
+    padding: 0.6rem 0.75rem;
   }
 }
 
