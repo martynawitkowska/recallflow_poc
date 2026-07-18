@@ -47,7 +47,7 @@ export default function PreviewTutorial({
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById("external-prompt-actions");
       if (!target) return;
-      target.scrollIntoView({ block: "end" });
+      target.scrollIntoView({ block: "start" });
 
       if (window.matchMedia("(max-width: 52rem)").matches) {
         const panel = document.querySelector(".preview-tutorial-panel");
@@ -55,8 +55,7 @@ export default function PreviewTutorial({
           window.scrollBy({
             top:
               target.getBoundingClientRect().top -
-              panel.getBoundingClientRect().bottom -
-              16,
+              panel.getBoundingClientRect().bottom,
           });
         }
       }
