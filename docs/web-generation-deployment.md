@@ -1,23 +1,24 @@
 # Web generation deployment
 
-REFL-95 adds a Cloudflare Worker for limited jury-preview quiz generation. It
-is intentionally disabled and not deployed while the submission is being
-prepared. Judges never enter an OpenAI key: `OPENAI_API_KEY` exists only as an
-encrypted Worker secret.
+REFL-95 adds a Cloudflare Worker for limited jury-preview quiz and mnemonic
+generation. Judges never enter an OpenAI key: `OPENAI_API_KEY` exists only as
+an encrypted Worker secret.
 
 ## Security and cost boundary
 
 - The Worker accepts `POST /generate` only from the production Pages origin or
   the two configured local development origins.
-- It accepts pasted material only, capped at 50,000 characters and 10
-  questions. The full request body is capped at 75 KB.
+- Quiz requests accept pasted material only, capped at 50,000 characters and 2
+  questions. Mnemonic requests accept the current question, correct answers,
+  and optional explanation, capped at 8,000 characters total. The full request
+  body is capped at 75 KB.
 - Cloudflare limits generation to five requests per minute per location. A
   Durable Object also reserves at most 50 generation attempts per UTC month.
   CORS is a browser boundary, not authentication.
-- OpenAI receives the material only after the judge selects **Generate**. The
-  Worker requests strict structured output, disables response storage, caps
-  output at 4,000 tokens, times out after 25 seconds, and validates the quiz
-  again before returning it.
+- OpenAI receives material or question context only after the judge selects a
+  generation action. The Worker requests strict structured quiz output or a
+  mnemonic capped at 220 output tokens, disables response storage, times out
+  after 25 seconds, and validates the result before returning it.
 - The Worker returns fixed public errors and never logs or returns the provider
   key or raw provider response.
 

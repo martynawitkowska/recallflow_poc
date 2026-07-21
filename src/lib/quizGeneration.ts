@@ -15,7 +15,7 @@ export const MAX_WEB_PREVIEW_MATERIAL_CHARS = 50_000;
 export const MIN_WEB_PREVIEW_QUESTION_COUNT = 1;
 export const MAX_WEB_PREVIEW_QUESTION_COUNT = 2;
 
-const webPreviewGenerationEndpoint = (() => {
+export const webPreviewGenerationEndpoint = (() => {
   const value = import.meta.env?.VITE_RECALLFLOW_GENERATION_URL?.trim() ?? "";
   if (!value) return "";
   try {

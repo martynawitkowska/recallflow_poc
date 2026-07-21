@@ -276,7 +276,7 @@ export default function App() {
           <strong>RecallFlow Web Preview</strong>
           <span>
             {isWebPreviewGenerationConfigured
-              ? "Quizzes and results stay in this browser. Live quiz generation uses a limited server-side connection."
+              ? "Quizzes and results stay in this browser. Live quiz and mnemonic generation use a limited server-side connection."
               : "Your quizzes and results stay only in this browser. AI features are available in the desktop app."}
           </span>
           <button
@@ -348,7 +348,7 @@ export default function App() {
 
         {activeView === "quiz" && activeQuiz && (
           <QuizSession
-            aiAvailable={!isPagesPreview}
+            aiAvailable={!isPagesPreview || isWebPreviewGenerationConfigured}
             focusMode={focusMode}
             isOnline={isOnline}
             isRepair={repairMode}

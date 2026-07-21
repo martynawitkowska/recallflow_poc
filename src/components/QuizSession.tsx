@@ -9,6 +9,7 @@ import {
 } from "../lib/mnemonicProviders";
 import { answersMatch, shuffleAnswers } from "../lib/quizAnswers";
 import type { LibraryQuiz } from "../lib/quizLibrary";
+import { isPagesPreview } from "../lib/runtime";
 import {
   calculateQuizResult,
   type QuizAnswerState,
@@ -332,9 +333,9 @@ export default function QuizSession({
                       </div>
                       <p className="field-hint">
                         {!isOnline ? `${OFFLINE_AI_MESSAGE} ` : ""}
-                        Uses the {mnemonicProviderOption.label} API key saved in
-                        Settings. The question and answer are sent only after
-                        you press the button.
+                        {isPagesPreview
+                          ? "Uses the preview's limited server-side OpenAI connection. The question and answer are sent only after you press the button; no API key is stored in this browser."
+                          : `Uses the ${mnemonicProviderOption.label} API key saved in Settings. The question and answer are sent only after you press the button.`}
                       </p>
                       <div className="mnemonic-generation-status">
                         {mnemonicGeneration.state.status === "loading" && (

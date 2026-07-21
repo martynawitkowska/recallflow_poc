@@ -175,10 +175,11 @@ Pages build, the library and attempt wrappers branch before `invokeIpc`:
 - **Reset preview** replaces preview data with that seed;
 - preview quiz JSON is limited to 500 KB even though desktop file import accepts
   files up to 5 MB;
-- AI-key settings, mnemonic generation, and URL generation are unavailable, and
-  the preview never reads desktop SQLite or operating-system credentials;
+- AI-key settings and URL generation are unavailable, and the preview never
+  reads desktop SQLite or operating-system credentials;
 - when a public generation endpoint is configured at build time, pasted
-  material can be sent explicitly to the Worker for a bounded quiz operation.
+  material or current question context can be sent explicitly to the Worker for
+  bounded quiz or mnemonic generation.
 
 The Pages build is therefore not a fallback desktop backend. Its records do not
 synchronize with the desktop app, and clearing site data removes them.
