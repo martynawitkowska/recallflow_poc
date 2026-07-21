@@ -4,6 +4,7 @@ import {
   generateQuiz,
   generationOutcomeMessage,
   DEFAULT_QUESTION_COUNT,
+  MAX_WEB_PREVIEW_QUESTION_COUNT,
   mergeGenerationProgress,
   type AiProvider,
   type GenerationProgress,
@@ -13,6 +14,7 @@ import {
   validateOptionalVideoUrl,
 } from "../lib/quizGeneration";
 import { OFFLINE_AI_MESSAGE } from "../lib/connectivity";
+import { isPagesPreview } from "../lib/runtime";
 import type { QuizFile } from "../lib/quizSchema";
 
 type SaveState =
@@ -56,7 +58,9 @@ export function useQuizGeneration(
   const [sourceUrl, setSourceUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [provider, setProvider] = useState<AiProvider>("openai");
-  const [questionCount, setQuestionCount] = useState(DEFAULT_QUESTION_COUNT);
+  const [questionCount, setQuestionCount] = useState(
+    isPagesPreview ? MAX_WEB_PREVIEW_QUESTION_COUNT : DEFAULT_QUESTION_COUNT,
+  );
   const [state, setState] = useState<QuizGenerationState>({ status: "idle" });
   const activeController = useRef<AbortController | null>(null);
 

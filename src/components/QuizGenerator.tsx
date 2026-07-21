@@ -9,6 +9,7 @@ import {
   MAX_QUESTION_COUNT,
   MAX_SOURCE_URL_CHARS,
   MIN_QUESTION_COUNT,
+  MIN_WEB_PREVIEW_QUESTION_COUNT,
   MAX_WEB_PREVIEW_MATERIAL_CHARS,
   MAX_WEB_PREVIEW_QUESTION_COUNT,
   type AiProvider,
@@ -161,7 +162,7 @@ export default function QuizGenerator({
               disabled={isLoading}
               id="question-count"
               max={webPreview ? MAX_WEB_PREVIEW_QUESTION_COUNT : MAX_QUESTION_COUNT}
-              min={MIN_QUESTION_COUNT}
+              min={webPreview ? MIN_WEB_PREVIEW_QUESTION_COUNT : MIN_QUESTION_COUNT}
               onChange={(event) =>
                 generation.setQuestionCount(Number(event.target.value))
               }
@@ -179,7 +180,7 @@ export default function QuizGenerator({
 
         <p className="field-hint">
           {webPreview
-            ? "Your pasted material is sent only after you press Generate. Requests are rate-limited and capped at 10 questions."
+            ? "Your pasted material is sent only after you press Generate. Requests are rate-limited and capped at 2 questions."
             : "Uses the OpenAI API key saved in Settings. Your source is sent to OpenAI only after you press Generate."}
         </p>
         <p className="field-hint">

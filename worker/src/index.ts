@@ -7,8 +7,8 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 const MAX_BODY_BYTES = 75_000;
 const MAX_MATERIAL_CHARS = 50_000;
-const MIN_QUESTIONS = 3;
-const MAX_QUESTIONS = 10;
+const MIN_QUESTIONS = 1;
+const MAX_QUESTIONS = 2;
 const PROVIDER_TIMEOUT_MS = 25_000;
 const MONTHLY_GENERATION_LIMIT = 50;
 
@@ -295,7 +295,7 @@ export async function handleRequest(
   }
   const generationRequest = parseRequest(body);
   if (!generationRequest) {
-    return error(origin, 400, "invalid_request", "Use 3–10 questions and no more than 50,000 characters.");
+    return error(origin, 400, "invalid_request", "Use 1–2 questions and no more than 50,000 characters.");
   }
   const rateLimit = await env.GENERATION_RATE_LIMITER.limit({ key: "jury-quiz-generation" });
   if (!rateLimit.success) {

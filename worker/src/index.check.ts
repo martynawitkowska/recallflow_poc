@@ -41,13 +41,13 @@ function env(enabled = true, rateAllowed = true, budgetAllowed = true) {
 const generationRequest = {
   operation: "quiz",
   material: "Mitochondria generate most cellular ATP.",
-  questionCount: 3,
+  questionCount: 2,
 };
 
 const quiz = {
   title: "Cell biology",
   description: "A focused review.",
-  questions: [1, 2, 3].map((number) => ({
+  questions: [1, 2].map((number) => ({
     id: `q${number}`,
     type: "single_choice",
     question: `Question ${number}?`,
@@ -81,8 +81,12 @@ expect(
   "Unsupported content types must be rejected before the provider call.",
 );
 expect(
-  (await handleRequest(request({ ...generationRequest, questionCount: 20 }), env())).status === 400,
+  (await handleRequest(request({ ...generationRequest, questionCount: 3 }), env())).status === 400,
   "Excessive question counts must be rejected before the provider call.",
+);
+expect(
+  (await handleRequest(request({ ...generationRequest, questionCount: 0 }), env())).status === 400,
+  "Question counts below the preview minimum must be rejected before the provider call.",
 );
 expect(
   (await handleRequest(request(generationRequest), env(true, false))).status === 429,
