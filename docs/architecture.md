@@ -10,7 +10,8 @@ RecallFlow has two deliberately separate runtimes:
 - the desktop build uses the shared React UI with Tauri IPC, Rust, SQLite, the
   operating-system credential store, and explicit provider requests;
 - the GitHub Pages build uses the shared React UI with a browser-only local
-  storage adapter and has no Tauri, SQLite, credential, or provider access.
+  storage adapter and has no Tauri, SQLite, or credential access. An optional
+  server-side endpoint provides tightly limited pasted-material generation.
 
 There is no RecallFlow account, hosted application backend, synchronization,
 or automatic upload path in either runtime.
@@ -30,6 +31,8 @@ flowchart TB
   subgraph preview["Pages preview boundary"]
     direction LR
     previewAdapter["webPreviewStorage"] --> browserStore[("localStorage")]
+    wrappers -->|"explicit generation action"| worker["Cloudflare Worker"]
+    worker -->|"server-held key"| openai
   end
 
   subgraph desktop["Desktop application boundary"]
@@ -64,6 +67,7 @@ OpenAI edge is used only after **Generate quiz** or **Create mnemonic**.
 | Credentials | Validate, mask, read, replace, and delete provider keys through the operating-system store | [`src-tauri/src/credentials.rs`](../src-tauri/src/credentials.rs) |
 | Provider pipeline | Validate requests, segment and ground pasted material, call provider adapters, verify results, and sanitize output | [`src-tauri/src/generation/`](../src-tauri/src/generation/) |
 | Pages persistence | Validate and persist a separate versioned preview library and attempts in browser local storage | [`src/lib/webPreviewStorage.ts`](../src/lib/webPreviewStorage.ts) |
+| Pages generation | Validate a limited pasted-material request and call a server-side endpoint without exposing a provider key | [`src/lib/quizGeneration.ts`](../src/lib/quizGeneration.ts) and [`worker/`](../worker/) |
 
 Components do not invoke RecallFlow application commands directly. A component
 delegates to a hook, the hook calls a feature wrapper in `src/lib/`, and only
@@ -171,8 +175,10 @@ Pages build, the library and attempt wrappers branch before `invokeIpc`:
 - **Reset preview** replaces preview data with that seed;
 - preview quiz JSON is limited to 500 KB even though desktop file import accepts
   files up to 5 MB;
-- AI settings and built-in generation are unavailable, and the preview never
-  reads desktop SQLite or operating-system credentials.
+- AI-key settings, mnemonic generation, and URL generation are unavailable, and
+  the preview never reads desktop SQLite or operating-system credentials;
+- when a public generation endpoint is configured at build time, pasted
+  material can be sent explicitly to the Worker for a bounded quiz operation.
 
 The Pages build is therefore not a fallback desktop backend. Its records do not
 synchronize with the desktop app, and clearing site data removes them.

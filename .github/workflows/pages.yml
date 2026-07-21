@@ -50,6 +50,8 @@ jobs:
 
       - name: Build GitHub Pages preview
         run: npm run build:pages
+        env:
+          VITE_RECALLFLOW_GENERATION_URL: ${{ vars.VITE_RECALLFLOW_GENERATION_URL }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6

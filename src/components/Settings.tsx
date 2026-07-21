@@ -24,6 +24,7 @@ type SettingsProps = {
   provider: MnemonicProvider;
   readingFont: ReadingFont;
   startInFocusMode: boolean;
+  webQuizGenerationAvailable?: boolean;
 };
 
 export default function Settings({
@@ -36,6 +37,7 @@ export default function Settings({
   provider,
   readingFont,
   startInFocusMode,
+  webQuizGenerationAvailable = false,
 }: SettingsProps) {
   return (
     <section className="narrow-page" aria-labelledby="settings-title">
@@ -100,8 +102,9 @@ export default function Settings({
         <section className="settings-card" aria-labelledby="ai-settings-title">
           <h2 id="ai-settings-title">AI features</h2>
           <p>
-            AI quiz and mnemonic generation are available in the desktop app.
-            RecallFlow Web Preview does not accept or store API keys.
+            {webQuizGenerationAvailable
+              ? "Limited quiz generation is available through a server-side OpenAI connection. Mnemonic generation remains desktop-only. The preview does not accept or store API keys."
+              : "AI quiz and mnemonic generation are available in the desktop app. RecallFlow Web Preview does not accept or store API keys."}
           </p>
         </section>
       )}
@@ -132,8 +135,10 @@ export default function Settings({
         ) : (
           <p>
             Quizzes, results, and preferences are stored in this browser only.
-            Clearing browser data removes them, and nothing is uploaded by the
-            preview.
+            Clearing browser data removes them.
+            {webQuizGenerationAvailable
+              ? " Pasted material is sent to OpenAI only when you choose Generate."
+              : " Nothing is uploaded by the preview."}
           </p>
         )}
       </section>

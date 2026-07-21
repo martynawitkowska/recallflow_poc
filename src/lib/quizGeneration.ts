@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { invokeIpc } from "./ipc.ts";
 import { MAX_VIDEO_URL_CHARS, type QuizFile } from "./quizSchema.ts";
 import { validateQuiz } from "./validateQuiz.ts";
+import { isPagesPreview } from "./runtime.ts";
 
 export const MAX_MATERIAL_CHARS = 500_000;
 export const MAX_SOURCE_URL_CHARS = 2_048;
@@ -10,6 +11,24 @@ export const MAX_LECTURE_TITLE_CHARS = 200;
 export const MIN_QUESTION_COUNT = 3;
 export const MAX_QUESTION_COUNT = 25;
 export const DEFAULT_QUESTION_COUNT = 8;
+export const MAX_WEB_PREVIEW_MATERIAL_CHARS = 50_000;
+export const MAX_WEB_PREVIEW_QUESTION_COUNT = 10;
+
+const webPreviewGenerationEndpoint = (() => {
+  const value = import.meta.env?.VITE_RECALLFLOW_GENERATION_URL?.trim() ?? "";
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.hostname === "localhost" || url.hostname === "127.0.0.1"
+      ? url.toString()
+      : "";
+  } catch {
+    return "";
+  }
+})();
+
+export const isWebPreviewGenerationConfigured =
+  isPagesPreview && Boolean(webPreviewGenerationEndpoint);
 
 export type AiProvider = "openai";
 
@@ -195,6 +214,10 @@ export async function generateQuiz(
     throw new Error(validationError);
   }
 
+  if (isPagesPreview) {
+    return generateWebPreviewQuiz(request, runId, onProgress, signal);
+  }
+
   let unlisten: UnlistenFn = () => {};
   let cleaned = false;
   const cleanup = () => {
@@ -243,7 +266,86 @@ export async function generateQuiz(
 }
 
 export async function cancelQuizGeneration(runId: string): Promise<void> {
+  if (isPagesPreview) return;
   await invokeIpc("cancel_quiz_generation", { runId });
+}
+
+async function generateWebPreviewQuiz(
+  request: GenerateQuizRequest,
+  runId: string,
+  onProgress: (progress: GenerationProgress) => void,
+  signal?: AbortSignal,
+): Promise<GenerationResult> {
+  if (!webPreviewGenerationEndpoint) {
+    throw new Error("Live quiz generation is not enabled for this preview yet.");
+  }
+  if (request.sourceUrl !== undefined) {
+    throw new Error("The jury preview generates from pasted material only.");
+  }
+  if (
+    countCharacters(request.material ?? "") > MAX_WEB_PREVIEW_MATERIAL_CHARS ||
+    request.questionCount > MAX_WEB_PREVIEW_QUESTION_COUNT
+  ) {
+    throw new Error("The jury preview supports up to 50,000 characters and 10 questions per request.");
+  }
+
+  const emptyQuality: GenerationQuality = {
+    requestedCount: request.questionCount,
+    generatedCandidateCount: 0,
+    deterministicRejectionCount: 0,
+    semanticRejectionCount: 0,
+    duplicateCount: 0,
+    selectedCount: 0,
+    incompleteCoverage: false,
+    duplicateAnalysisIncomplete: false,
+  };
+  onProgress({ runId, stage: "preparing_transcript", completed: 1, total: 1 });
+  onProgress({ runId, stage: "generating_candidates", completed: 0, total: 1 });
+
+  let response: Response;
+  try {
+    response = await fetch(webPreviewGenerationEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        operation: "quiz",
+        material: request.material,
+        questionCount: request.questionCount,
+      }),
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) {
+      return { completion: "cancelled", quality: emptyQuality };
+    }
+    throw new Error("The live generation service is unavailable. Try again later.");
+  }
+
+  if (!response.ok) {
+    const messages: Record<number, string> = {
+      413: "The pasted material is too large for the jury preview.",
+      429: "The jury preview generation limit was reached. Try again later.",
+      503: "Live generation is temporarily disabled.",
+      504: "Live generation took too long. Try shorter material.",
+    };
+    throw new Error(messages[response.status] ?? "Live generation could not create a quiz. Try again later.");
+  }
+  const payload = (await response.json()) as { quiz?: unknown };
+  const validation = validateQuiz(payload.quiz);
+  if (!validation.valid || validation.quiz.questions.length > request.questionCount) {
+    throw new Error("Live generation returned an invalid quiz. Try again later.");
+  }
+  const selectedCount = validation.quiz.questions.length;
+  onProgress({ runId, stage: "complete", completed: 1, total: 1 });
+  return {
+    quiz: validation.quiz,
+    completion: selectedCount === request.questionCount ? "full" : "quality_limited",
+    quality: {
+      ...emptyQuality,
+      generatedCandidateCount: selectedCount,
+      selectedCount,
+    },
+  };
 }
 
 function isGenerationResult(value: unknown): value is GenerationResult {

@@ -1,1 +1,1 @@
-export const isPagesPreview = import.meta.env.MODE === "pages";
+export const isPagesPreview = import.meta.env?.MODE === "pages";

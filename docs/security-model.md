@@ -94,9 +94,17 @@ permissions.
 
 The GitHub Pages build uses browser local storage for its separate seeded quiz
 library, attempts, and preferences. It does not invoke Tauri, open the desktop
-SQLite database, read the operating-system credential store, accept an API key,
-or send study content to a provider. Preview data is scoped to the Pages origin
-and does not synchronize with the desktop app.
+SQLite database, read the operating-system credential store, or accept an API
+key. Preview data is scoped to the Pages origin and does not synchronize with
+the desktop app.
+
+When `VITE_RECALLFLOW_GENERATION_URL` is configured, an explicit quiz-generation
+action sends pasted material to a Cloudflare Worker. The Worker owns the OpenAI
+secret, accepts only approved origins and one quiz operation, bounds input and
+output, rate-limits requests, enforces a monthly attempt allowance, times out
+provider calls, and validates returned quiz data. Removing the endpoint URL or
+disabling the Worker leaves import and study behavior available without network
+generation. See [web generation deployment](web-generation-deployment.md).
 
 ## Review checklist
 

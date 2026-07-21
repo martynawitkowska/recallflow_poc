@@ -34,6 +34,7 @@ import {
   type MnemonicProvider,
 } from "./lib/mnemonicProviders";
 import type { QuizResult } from "./lib/quizResults";
+import { isWebPreviewGenerationConfigured } from "./lib/quizGeneration";
 import {
   markPreviewTutorialSeen,
   shouldShowPreviewTutorial,
@@ -55,8 +56,9 @@ const PREVIEW_TUTORIAL_STEPS: readonly PreviewTutorialStepWithView[] = [
   {
     view: "import",
     title: "Add your own quiz",
-    description:
-      "Import a RecallFlow JSON file in this browser. AI quiz generation stays desktop-only, so the preview never asks for an API key.",
+    description: isWebPreviewGenerationConfigured
+      ? "Import a RecallFlow JSON file or generate a quiz from pasted material. Live generation uses a limited server-side connection, so the preview never asks for an API key."
+      : "Import a RecallFlow JSON file in this browser. AI quiz generation stays desktop-only, so the preview never asks for an API key.",
   },
   {
     view: "import",
@@ -273,8 +275,9 @@ export default function App() {
         <aside className="preview-banner" aria-label="Preview information">
           <strong>RecallFlow Web Preview</strong>
           <span>
-            Your quizzes and results stay only in this browser. AI features are
-            available in the desktop app.
+            {isWebPreviewGenerationConfigured
+              ? "Quizzes and results stay in this browser. Live quiz generation uses a limited server-side connection."
+              : "Your quizzes and results stay only in this browser. AI features are available in the desktop app."}
           </span>
           <button
             className="preview-tour-button"
@@ -421,7 +424,7 @@ export default function App() {
               state={quizFileImport.state}
             />
             <div className="import-divider"><span>or</span></div>
-            {isPagesPreview ? (
+            {isPagesPreview && !isWebPreviewGenerationConfigured ? (
               <section className="preview-unavailable" aria-labelledby="preview-ai-title">
                 <h2 id="preview-ai-title">AI quiz generation is desktop-only</h2>
                 <p>
@@ -435,6 +438,7 @@ export default function App() {
                 isOnline={isOnline}
                 model={aiSelection.models[aiSelection.provider]}
                 onSaveQuiz={library.addGeneratedQuiz}
+                webPreview={isPagesPreview}
               />
             )}
             <ExternalQuizReference />
@@ -469,6 +473,7 @@ export default function App() {
             provider={aiSelection.provider}
             readingFont={appPreferences.readingFont}
             startInFocusMode={appPreferences.startInFocusMode}
+            webQuizGenerationAvailable={isWebPreviewGenerationConfigured}
           />
         )}
       </main>

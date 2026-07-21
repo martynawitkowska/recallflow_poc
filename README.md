@@ -17,8 +17,9 @@ never returned to React.
 
 [Try the browser preview](https://martynawitkowska.github.io/recallflow_poc/).
 It is a separate, browser-only library backed by this site's local storage. It
-does not use Tauri IPC, SQLite, desktop credentials, or AI requests, and its
-data does not sync with the desktop app.
+does not use Tauri IPC, SQLite, or desktop credentials, and its data does not
+sync with the desktop app. When enabled for judging, limited quiz generation
+uses a separate server-side endpoint whose API key never reaches the browser.
 
 ## How Codex and GPT-5.6 were used
 
@@ -80,7 +81,7 @@ that powers a focused repair pass.*
 | Surface | Local storage | Network boundary |
 | --- | --- | --- |
 | Desktop app | Quizzes, attempts, and saved mnemonics in `recallflow.sqlite3`; preferences in the local WebView profile; OpenAI key in the operating-system credential store | Rust contacts OpenAI only after an explicit quiz or mnemonic generation action |
-| GitHub Pages preview | Seeded and imported quizzes, attempts, and preferences in browser local storage for the preview origin | No provider calls, API-key input, Tauri IPC, or desktop storage access |
+| GitHub Pages preview | Seeded and imported quizzes, attempts, and preferences in browser local storage for the preview origin | Optional pasted-material generation through a limited server-side endpoint; no API-key input, Tauri IPC, or desktop storage access |
 
 ![RecallFlow flow diagram showing local React study, separate browser and desktop storage paths, and explicit OpenAI requests crossing the network boundary](docs/assets/architecture/recallflow-overview.png)
 
@@ -114,10 +115,11 @@ deletion, and non-secret preferences. Preview quiz files are limited to 500 KB.
 
 Preview data survives refreshes in the same browser profile, but it is not
 synced or backed up. Clearing site data or using **Reset preview** discards the
-preview library and restores the sample quiz. For a browser-only alternative
-to built-in generation, the app can copy a RecallFlow JSON prompt for use in an
-AI service chosen by the learner; only the resulting local JSON file is then
-imported into the preview.
+preview library and restores the sample quiz. When the optional jury-generation
+endpoint is enabled, the preview can send pasted material to OpenAI after the
+user selects **Generate**; the browser never receives the provider key. The app
+also offers a copyable RecallFlow JSON prompt for an AI service chosen by the
+learner, after which only the resulting local JSON file is imported.
 
 ## Prerequisites
 
@@ -139,6 +141,11 @@ npm ci
 
 `npm ci` installs the locked frontend and Tauri CLI dependencies. Cargo resolves
 the locked Rust dependencies when a desktop or validation command first runs.
+
+The optional server-backed quiz generator is implemented but disabled until
+submission readiness. See [web generation deployment](docs/web-generation-deployment.md)
+for its security boundary, $5 budget alert, enforced usage guard, deployment
+steps, and emergency shutdown procedure.
 
 ## Development and validation
 
@@ -185,8 +192,9 @@ storage, or provider behavior.
 - The requested quiz question count is a maximum. Grounding and quality checks
   may return fewer questions or none; generated drafts still require review.
 - URL generation requires a public page readable without signing in.
-- The Pages preview has no AI generation, desktop persistence, credential
-  access, or synchronization with the desktop app.
+- The Pages preview has no mnemonic or URL generation, desktop persistence,
+  credential access, or synchronization with the desktop app. Its optional
+  pasted-material generation is disabled unless a server endpoint is configured.
 - RecallFlow has no built-in cloud synchronization or backup service.
 
 ## Packaging
