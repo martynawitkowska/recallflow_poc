@@ -194,13 +194,22 @@ class ProviderOutputError extends Error {
   }
 }
 
-class ProviderTransportError extends Error {}
+class ProviderTransportError extends Error {
+  readonly timedOut: boolean;
+
+  constructor(timedOut = false) {
+    super("OpenAI transport failed.");
+    this.timedOut = timedOut;
+  }
+}
 
 async function callOpenAi(
   request: GenerateRequest,
   apiKey: string,
   providerFetch: typeof fetch,
 ): Promise<unknown> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
   let response: Response;
   try {
     response = await providerFetch("https://api.openai.com/v1/responses", {
@@ -233,10 +242,12 @@ async function callOpenAi(
           },
         },
       }),
-      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+      signal: controller.signal,
     });
   } catch {
-    throw new ProviderTransportError("OpenAI transport failed.");
+    throw new ProviderTransportError(controller.signal.aborted);
+  } finally {
+    clearTimeout(timeout);
   }
   if (!response.ok) throw new ProviderHttpError(response.status);
   try {
@@ -333,7 +344,9 @@ export async function handleRequest(
       return error(origin, 502, providerError.code, "Live generation returned an invalid quiz. Try again later.");
     }
     if (providerError instanceof ProviderTransportError) {
-      return error(origin, 503, "provider_transport_failed", "OpenAI could not be reached from the preview service.");
+      return providerError.timedOut
+        ? error(origin, 504, "timeout", "Live generation took too long. Try shorter material.")
+        : error(origin, 503, "provider_transport_failed", "OpenAI could not be reached from the preview service.");
     }
     return error(
       origin,
