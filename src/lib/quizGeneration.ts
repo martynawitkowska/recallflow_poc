@@ -12,7 +12,8 @@ export const MIN_QUESTION_COUNT = 3;
 export const MAX_QUESTION_COUNT = 25;
 export const DEFAULT_QUESTION_COUNT = 8;
 export const MAX_WEB_PREVIEW_MATERIAL_CHARS = 50_000;
-export const MAX_WEB_PREVIEW_QUESTION_COUNT = 10;
+export const MIN_WEB_PREVIEW_QUESTION_COUNT = 1;
+export const MAX_WEB_PREVIEW_QUESTION_COUNT = 2;
 
 const webPreviewGenerationEndpoint = (() => {
   const value = import.meta.env?.VITE_RECALLFLOW_GENERATION_URL?.trim() ?? "";
@@ -192,12 +193,18 @@ export function validateQuizGenerationRequest(
       return "Enter a complete public http:// or https:// URL.";
     }
   }
+  const minimumQuestions = isPagesPreview
+    ? MIN_WEB_PREVIEW_QUESTION_COUNT
+    : MIN_QUESTION_COUNT;
+  const maximumQuestions = isPagesPreview
+    ? MAX_WEB_PREVIEW_QUESTION_COUNT
+    : MAX_QUESTION_COUNT;
   if (
     !Number.isInteger(request.questionCount) ||
-    request.questionCount < MIN_QUESTION_COUNT ||
-    request.questionCount > MAX_QUESTION_COUNT
+    request.questionCount < minimumQuestions ||
+    request.questionCount > maximumQuestions
   ) {
-    return `Choose between ${MIN_QUESTION_COUNT} and ${MAX_QUESTION_COUNT} questions.`;
+    return `Choose between ${minimumQuestions} and ${maximumQuestions} questions.`;
   }
 
   return null;
@@ -286,7 +293,7 @@ async function generateWebPreviewQuiz(
     countCharacters(request.material ?? "") > MAX_WEB_PREVIEW_MATERIAL_CHARS ||
     request.questionCount > MAX_WEB_PREVIEW_QUESTION_COUNT
   ) {
-    throw new Error("The jury preview supports up to 50,000 characters and 10 questions per request.");
+    throw new Error("The jury preview supports up to 50,000 characters and 2 questions per request.");
   }
 
   const emptyQuality: GenerationQuality = {
