@@ -98,13 +98,14 @@ SQLite database, read the operating-system credential store, or accept an API
 key. Preview data is scoped to the Pages origin and does not synchronize with
 the desktop app.
 
-When `VITE_RECALLFLOW_GENERATION_URL` is configured, an explicit quiz-generation
-action sends pasted material to a Cloudflare Worker. The Worker owns the OpenAI
-secret, accepts only approved origins and one quiz operation, bounds input and
-output, rate-limits requests, enforces a monthly attempt allowance, times out
-provider calls, and validates returned quiz data. Removing the endpoint URL or
-disabling the Worker leaves import and study behavior available without network
-generation. See [web generation deployment](web-generation-deployment.md).
+When `VITE_RECALLFLOW_GENERATION_URL` is configured, explicit quiz or mnemonic
+generation sends pasted material or the current question context to a Cloudflare
+Worker. The Worker owns the OpenAI secret, accepts only approved origins and the
+two bounded operation types, rate-limits requests, enforces a shared monthly
+attempt allowance, times out provider calls, and validates returned data.
+Removing the endpoint URL or disabling the Worker leaves import and study
+behavior available without network generation. See
+[web generation deployment](web-generation-deployment.md).
 
 ## Review checklist
 

@@ -44,6 +44,13 @@ const generationRequest = {
   questionCount: 2,
 };
 
+const mnemonicRequest = {
+  operation: "mnemonic",
+  question: "What produces cellular ATP?",
+  correctAnswers: ["Mitochondria"],
+  explanation: "Mitochondria generate most cellular ATP.",
+};
+
 const quiz = {
   title: "Cell biology",
   description: "A focused review.",
@@ -87,6 +94,10 @@ expect(
 expect(
   (await handleRequest(request({ ...generationRequest, questionCount: 0 }), env())).status === 400,
   "Question counts below the preview minimum must be rejected before the provider call.",
+);
+expect(
+  (await handleRequest(request({ ...mnemonicRequest, correctAnswers: [] }), env())).status === 400,
+  "Mnemonic requests without a correct answer must be rejected before the provider call.",
 );
 expect(
   (await handleRequest(request(generationRequest), env(true, false))).status === 429,
@@ -139,6 +150,39 @@ expect(receivedSecret, "The provider request must use the server-side secret.");
 expect(
   success.headers.get("Access-Control-Allow-Origin") === origin,
   "Successful responses must allow only the requesting approved origin.",
+);
+
+let mnemonicPayload: Record<string, unknown> | undefined;
+const mnemonicSuccess = await handleRequest(
+  request(mnemonicRequest),
+  env(),
+  async (_input, init) => {
+    mnemonicPayload = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    return Response.json({
+      output: [{ content: [{ type: "output_text", text: "  Mighty\nmitochondria make ATP.  " }] }],
+    });
+  },
+);
+const mnemonicBody = await mnemonicSuccess.json() as { mnemonic?: string };
+expect(
+  mnemonicSuccess.status === 200 &&
+    mnemonicBody.mnemonic === "Mighty mitochondria make ATP." &&
+    mnemonicPayload?.max_output_tokens === 220 &&
+    !("text" in (mnemonicPayload ?? {})),
+  "A mnemonic request must use bounded plain text output and return a normalized mnemonic.",
+);
+
+const invalidMnemonic = await handleRequest(
+  request(mnemonicRequest),
+  env(),
+  async () => Response.json({
+    output: [{ content: [{ type: "output_text", text: "unsafe\u0000mnemonic" }] }],
+  }),
+);
+expect(
+  invalidMnemonic.status === 502 &&
+    (await invalidMnemonic.text()).includes("provider_output_invalid_mnemonic"),
+  "Invalid mnemonic output must fail closed.",
 );
 
 const invalidProviderOutput = await handleRequest(

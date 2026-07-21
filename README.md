@@ -18,8 +18,9 @@ never returned to React.
 [Try the browser preview](https://martynawitkowska.github.io/recallflow_poc/).
 It is a separate, browser-only library backed by this site's local storage. It
 does not use Tauri IPC, SQLite, or desktop credentials, and its data does not
-sync with the desktop app. When enabled for judging, limited quiz generation
-uses a separate server-side endpoint whose API key never reaches the browser.
+sync with the desktop app. When enabled for judging, limited quiz and mnemonic
+generation use a separate server-side endpoint whose API key never reaches the
+browser.
 
 ## How Codex and GPT-5.6 were used
 
@@ -192,9 +193,9 @@ storage, or provider behavior.
 - The requested quiz question count is a maximum. Grounding and quality checks
   may return fewer questions or none; generated drafts still require review.
 - URL generation requires a public page readable without signing in.
-- The Pages preview has no mnemonic or URL generation, desktop persistence,
-  credential access, or synchronization with the desktop app. Its optional
-  pasted-material generation is disabled unless a server endpoint is configured.
+- The Pages preview has no URL generation, desktop persistence, credential
+  access, or synchronization with the desktop app. Its optional pasted-material
+  quiz and mnemonic generation are disabled unless a server endpoint is configured.
 - RecallFlow has no built-in cloud synchronization or backup service.
 
 ## Packaging

@@ -103,7 +103,7 @@ export default function Settings({
           <h2 id="ai-settings-title">AI features</h2>
           <p>
             {webQuizGenerationAvailable
-              ? "Limited quiz generation is available through a server-side OpenAI connection. Mnemonic generation remains desktop-only. The preview does not accept or store API keys."
+              ? "Limited quiz and mnemonic generation are available through a server-side OpenAI connection. The preview does not accept or store API keys."
               : "AI quiz and mnemonic generation are available in the desktop app. RecallFlow Web Preview does not accept or store API keys."}
           </p>
         </section>
@@ -137,7 +137,7 @@ export default function Settings({
             Quizzes, results, and preferences are stored in this browser only.
             Clearing browser data removes them.
             {webQuizGenerationAvailable
-              ? " Pasted material is sent to OpenAI only when you choose Generate."
+              ? " Pasted material or question context is sent to OpenAI only when you choose a generation action."
               : " Nothing is uploaded by the preview."}
           </p>
         )}

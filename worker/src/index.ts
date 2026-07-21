@@ -9,6 +9,8 @@ const MAX_BODY_BYTES = 75_000;
 const MAX_MATERIAL_CHARS = 50_000;
 const MIN_QUESTIONS = 1;
 const MAX_QUESTIONS = 2;
+const MAX_MNEMONIC_CONTEXT_CHARS = 8_000;
+const MAX_MNEMONIC_CHARS = 1_000;
 const PROVIDER_TIMEOUT_MS = 25_000;
 const MONTHLY_GENERATION_LIMIT = 50;
 
@@ -57,11 +59,20 @@ export class GenerationBudget {
   }
 }
 
-type GenerateRequest = {
+type QuizGenerateRequest = {
   operation: "quiz";
   material: string;
   questionCount: number;
 };
+
+type MnemonicGenerateRequest = {
+  operation: "mnemonic";
+  question: string;
+  correctAnswers: string[];
+  explanation?: string;
+};
+
+type GenerateRequest = QuizGenerateRequest | MnemonicGenerateRequest;
 
 const quizSchema = {
   type: "object",
@@ -135,23 +146,59 @@ function error(origin: string, status: number, code: string, message: string) {
 
 function parseRequest(value: unknown): GenerateRequest | null {
   if (!value || typeof value !== "object") return null;
-  const request = value as Partial<GenerateRequest>;
+  const request = value as Record<string, unknown>;
+  if (request.operation === "quiz") {
+    if (
+      typeof request.material !== "string" ||
+      !request.material.trim() ||
+      Array.from(request.material).length > MAX_MATERIAL_CHARS ||
+      !Number.isInteger(request.questionCount) ||
+      (request.questionCount as number) < MIN_QUESTIONS ||
+      (request.questionCount as number) > MAX_QUESTIONS
+    ) {
+      return null;
+    }
+    return {
+      operation: "quiz",
+      material: request.material.trim(),
+      questionCount: request.questionCount as number,
+    };
+  }
+  if (request.operation !== "mnemonic") return null;
+  const correctAnswers = request.correctAnswers;
+  const explanation = request.explanation;
   if (
-    request.operation !== "quiz" ||
-    typeof request.material !== "string" ||
-    !request.material.trim() ||
-    Array.from(request.material).length > MAX_MATERIAL_CHARS ||
-    !Number.isInteger(request.questionCount) ||
-    request.questionCount! < MIN_QUESTIONS ||
-    request.questionCount! > MAX_QUESTIONS
+    typeof request.question !== "string" ||
+    !request.question.trim() ||
+    !Array.isArray(correctAnswers) ||
+    correctAnswers.length === 0 ||
+    correctAnswers.length > 6 ||
+    correctAnswers.some((answer) => typeof answer !== "string" || !answer.trim()) ||
+    (explanation !== undefined && typeof explanation !== "string")
   ) {
     return null;
   }
+  const normalizedAnswers = (correctAnswers as string[]).map((answer) => answer.trim());
+  const contextLength = Array.from(request.question).length
+    + normalizedAnswers.reduce((total, answer) => total + Array.from(answer).length, 0)
+    + (typeof explanation === "string" ? Array.from(explanation).length : 0);
+  if (contextLength > MAX_MNEMONIC_CONTEXT_CHARS) return null;
   return {
-    operation: "quiz",
-    material: request.material.trim(),
-    questionCount: request.questionCount!,
+    operation: "mnemonic",
+    question: request.question.trim(),
+    correctAnswers: normalizedAnswers,
+    ...(typeof explanation === "string" && explanation.trim()
+      ? { explanation: explanation.trim() }
+      : {}),
   };
+}
+
+function sanitizeMnemonic(value: string): string | null {
+  if (Array.from(value).some((character) => /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(character))) {
+    return null;
+  }
+  const mnemonic = value.split(/\s+/u).filter(Boolean).join(" ");
+  return mnemonic && Array.from(mnemonic).length <= MAX_MNEMONIC_CHARS ? mnemonic : null;
 }
 
 function extractOutputText(value: unknown): string | null {
@@ -209,17 +256,8 @@ async function callOpenAi(
   providerFetch: typeof fetch,
 ): Promise<unknown> {
   const normalizedApiKey = apiKey.trim();
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
-  let response: Response;
-  try {
-    response = await providerFetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${normalizedApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+  const body = request.operation === "quiz"
+    ? {
         model: "gpt-5.4-mini",
         store: false,
         max_output_tokens: 4_000,
@@ -242,7 +280,35 @@ async function callOpenAi(
             schema: quizSchema,
           },
         },
-      }),
+      }
+    : {
+        model: "gpt-5.4-mini",
+        store: false,
+        reasoning: { effort: "low" },
+        max_output_tokens: 220,
+        input: [
+          {
+            role: "developer",
+            content:
+              "Create one vivid mnemonic that helps the learner remember the correct answer. Use a rhyme, acronym, memorable image, or tiny story. Respond in the same language as the question, use no more than three short sentences, and return only the mnemonic.",
+          },
+          {
+            role: "user",
+            content: `Question: ${request.question}\nCorrect answer: ${request.correctAnswers.join(", ")}\nExplanation: ${request.explanation ?? "No explanation was provided."}`,
+          },
+        ],
+      };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await providerFetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${normalizedApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
   } catch {
@@ -277,7 +343,7 @@ export async function handleRequest(
     return error(origin, 503, "disabled", "Live generation is temporarily unavailable.");
   }
   if (!request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
-    return error(origin, 415, "invalid_request", "Send a JSON quiz-generation request.");
+    return error(origin, 415, "invalid_request", "Send a JSON generation request.");
   }
   const contentLength = Number(request.headers.get("Content-Length") ?? "0");
   if (contentLength > MAX_BODY_BYTES) {
@@ -291,13 +357,13 @@ export async function handleRequest(
   try {
     body = JSON.parse(bodyText);
   } catch {
-    return error(origin, 400, "invalid_request", "Send a valid quiz-generation request.");
+    return error(origin, 400, "invalid_request", "Send a valid generation request.");
   }
   const generationRequest = parseRequest(body);
   if (!generationRequest) {
-    return error(origin, 400, "invalid_request", "Use 1–2 questions and no more than 50,000 characters.");
+    return error(origin, 400, "invalid_request", "Send a valid bounded quiz or mnemonic request.");
   }
-  const rateLimit = await env.GENERATION_RATE_LIMITER.limit({ key: "jury-quiz-generation" });
+  const rateLimit = await env.GENERATION_RATE_LIMITER.limit({ key: "jury-generation" });
   if (!rateLimit.success) {
     return error(origin, 429, "rate_limited", "The jury preview generation limit was reached. Try again in one minute.");
   }
@@ -317,6 +383,11 @@ export async function handleRequest(
     );
     const outputText = extractOutputText(providerResponse);
     if (!outputText) throw new ProviderOutputError("provider_output_missing");
+    if (generationRequest.operation === "mnemonic") {
+      const mnemonic = sanitizeMnemonic(outputText);
+      if (!mnemonic) throw new ProviderOutputError("provider_output_invalid_mnemonic");
+      return json(origin, 200, { mnemonic });
+    }
     let parsedOutput: unknown;
     try {
       parsedOutput = JSON.parse(outputText);
@@ -342,7 +413,7 @@ export async function handleRequest(
       return error(origin, 503, "provider_unavailable", "OpenAI is temporarily unavailable for this preview.");
     }
     if (providerError instanceof ProviderOutputError) {
-      return error(origin, 502, providerError.code, "Live generation returned an invalid quiz. Try again later.");
+      return error(origin, 502, providerError.code, "Live generation returned an invalid result. Try again later.");
     }
     if (providerError instanceof ProviderTransportError) {
       return providerError.timedOut
