@@ -361,5 +361,7 @@ export async function handleRequest(
 }
 
 export default {
-  fetch: handleRequest,
+  fetch(request: Request, env: Env) {
+    return handleRequest(request, env);
+  },
 };
