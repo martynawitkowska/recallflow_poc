@@ -194,45 +194,56 @@ class ProviderOutputError extends Error {
   }
 }
 
+class ProviderTransportError extends Error {}
+
 async function callOpenAi(
   request: GenerateRequest,
   apiKey: string,
   providerFetch: typeof fetch,
 ): Promise<unknown> {
-  const response = await providerFetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-5.4-mini",
-      store: false,
-      max_output_tokens: 4_000,
-      input: [
-        {
-          role: "developer",
-          content:
-            "Create a rigorous active-recall quiz grounded only in the supplied material. Answer choices must be concise, parallel, self-contained, and unambiguous. Put reasoning only in explanation. For true_false use exactly True and False. Return exactly the requested number of questions when the material supports them; otherwise return fewer rather than inventing facts.",
-        },
-        {
-          role: "user",
-          content: `Requested questions: ${request.questionCount}\n\nStudy material:\n${request.material}`,
-        },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "recallflow_quiz",
-          strict: true,
-          schema: quizSchema,
-        },
+  let response: Response;
+  try {
+    response = await providerFetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-    }),
-    signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
-  });
+      body: JSON.stringify({
+        model: "gpt-5.4-mini",
+        store: false,
+        max_output_tokens: 4_000,
+        input: [
+          {
+            role: "developer",
+            content:
+              "Create a rigorous active-recall quiz grounded only in the supplied material. Answer choices must be concise, parallel, self-contained, and unambiguous. Put reasoning only in explanation. For true_false use exactly True and False. Return exactly the requested number of questions when the material supports them; otherwise return fewer rather than inventing facts.",
+          },
+          {
+            role: "user",
+            content: `Requested questions: ${request.questionCount}\n\nStudy material:\n${request.material}`,
+          },
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "recallflow_quiz",
+            strict: true,
+            schema: quizSchema,
+          },
+        },
+      }),
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    });
+  } catch {
+    throw new ProviderTransportError("OpenAI transport failed.");
+  }
   if (!response.ok) throw new ProviderHttpError(response.status);
-  return response.json();
+  try {
+    return await response.json();
+  } catch {
+    throw new ProviderOutputError("provider_response_invalid_envelope");
+  }
 }
 
 export async function handleRequest(
@@ -320,6 +331,9 @@ export async function handleRequest(
     }
     if (providerError instanceof ProviderOutputError) {
       return error(origin, 502, providerError.code, "Live generation returned an invalid quiz. Try again later.");
+    }
+    if (providerError instanceof ProviderTransportError) {
+      return error(origin, 503, "provider_transport_failed", "OpenAI could not be reached from the preview service.");
     }
     return error(
       origin,

@@ -162,3 +162,16 @@ expect(
     !rejectedProviderBody.includes("provider detail"),
   "Provider request errors must expose only a safe classification.",
 );
+
+const transportFailure = await handleRequest(
+  request(generationRequest),
+  env(),
+  async () => {
+    throw new Error("private transport detail");
+  },
+);
+expect(
+  transportFailure.status === 503 &&
+    (await transportFailure.text()).includes("provider_transport_failed"),
+  "Transport failures must expose only a safe classification.",
+);
