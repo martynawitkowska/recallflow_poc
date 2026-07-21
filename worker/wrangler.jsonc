@@ -5,7 +5,7 @@
   "compatibility_date": "2026-07-18",
   "workers_dev": true,
   "vars": {
-    "GENERATION_ENABLED": "false"
+    "GENERATION_ENABLED": "true"
   },
   "secrets": {
     "required": ["OPENAI_API_KEY"]
