@@ -208,6 +208,7 @@ async function callOpenAi(
   apiKey: string,
   providerFetch: typeof fetch,
 ): Promise<unknown> {
+  const normalizedApiKey = apiKey.trim();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
   let response: Response;
@@ -215,7 +216,7 @@ async function callOpenAi(
     response = await providerFetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${normalizedApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

@@ -34,7 +34,7 @@ function env(enabled = true, rateAllowed = true, budgetAllowed = true) {
         return { success: rateAllowed };
       },
     },
-    OPENAI_API_KEY: "test-only-key",
+    OPENAI_API_KEY: " test-only-key\n",
   };
 }
 
