@@ -185,6 +185,15 @@ class ProviderHttpError extends Error {
   }
 }
 
+class ProviderOutputError extends Error {
+  readonly code: string;
+
+  constructor(code: string) {
+    super("OpenAI output failed validation.");
+    this.code = code;
+  }
+}
+
 async function callOpenAi(
   request: GenerateRequest,
   apiKey: string,
@@ -284,11 +293,17 @@ export async function handleRequest(
       providerFetch,
     );
     const outputText = extractOutputText(providerResponse);
-    if (!outputText) throw new Error("invalid_provider_response");
-    const validation = validateQuiz(JSON.parse(outputText));
-    if (!validation.valid) throw new Error("invalid_quiz");
+    if (!outputText) throw new ProviderOutputError("provider_output_missing");
+    let parsedOutput: unknown;
+    try {
+      parsedOutput = JSON.parse(outputText);
+    } catch {
+      throw new ProviderOutputError("provider_output_invalid_json");
+    }
+    const validation = validateQuiz(parsedOutput);
+    if (!validation.valid) throw new ProviderOutputError("provider_output_invalid_quiz");
     if (validation.quiz.questions.length > generationRequest.questionCount) {
-      throw new Error("excessive_questions");
+      throw new ProviderOutputError("provider_output_excessive_questions");
     }
     return json(origin, 200, { quiz: validation.quiz });
   } catch (providerError) {
@@ -302,6 +317,9 @@ export async function handleRequest(
         return error(origin, 502, "provider_request_rejected", "Live generation needs a configuration update.");
       }
       return error(origin, 503, "provider_unavailable", "OpenAI is temporarily unavailable for this preview.");
+    }
+    if (providerError instanceof ProviderOutputError) {
+      return error(origin, 502, providerError.code, "Live generation returned an invalid quiz. Try again later.");
     }
     return error(
       origin,

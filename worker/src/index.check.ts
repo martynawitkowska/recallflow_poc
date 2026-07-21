@@ -142,9 +142,11 @@ const invalidProviderOutput = await handleRequest(
   env(),
   async () => Response.json({ output: [{ content: [{ type: "output_text", text: "{}" }] }] }),
 );
+const invalidProviderBody = await invalidProviderOutput.text();
 expect(
   invalidProviderOutput.status === 502 &&
-    !(await invalidProviderOutput.text()).includes("test-only-key"),
+    invalidProviderBody.includes("provider_output_invalid_quiz") &&
+    !invalidProviderBody.includes("test-only-key"),
   "Invalid provider output must fail without exposing secrets.",
 );
 
