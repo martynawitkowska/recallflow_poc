@@ -104,7 +104,7 @@ export default function Settings({
           <p>
             {webQuizGenerationAvailable
               ? "Limited quiz generation is available through a server-side OpenAI connection. Mnemonic generation remains desktop-only. The preview does not accept or store API keys."
-              : "AI quiz and mnemonic generation are available in the desktop app. The GitHub Pages jury preview does not accept or store API keys."}
+              : "AI quiz and mnemonic generation are available in the desktop app. RecallFlow Web Preview does not accept or store API keys."}
           </p>
         </section>
       )}

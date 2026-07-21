@@ -1,7 +1,53 @@
-.codex
+# Dependencies and generated application output
 node_modules/
 dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
 src-tauri/target/
 src-tauri/gen/
-worker/.dev.vars*
-worker/.wrangler/
+
+# Environment files and local development secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.envrc
+.envrc.local
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+!.dev.vars.*.example
+.wrangler/
+
+# Logs, caches, and generated reports
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.cache/
+coverage/
+
+# Local agent and editor state
+.codex/
+.claude/
+.agents/
+.vscode/
+.idea/
+.fleet/
+.zed/
+*.sw?
+*~
+
+# Operating-system metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
