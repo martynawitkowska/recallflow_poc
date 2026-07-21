@@ -176,6 +176,15 @@ function extractOutputText(value: unknown): string | null {
   return null;
 }
 
+class ProviderHttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super("OpenAI request failed.");
+    this.status = status;
+  }
+}
+
 async function callOpenAi(
   request: GenerateRequest,
   apiKey: string,
@@ -213,7 +222,7 @@ async function callOpenAi(
     }),
     signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
   });
-  if (!response.ok) throw new Error(`provider_${response.status}`);
+  if (!response.ok) throw new ProviderHttpError(response.status);
   return response.json();
 }
 
@@ -285,6 +294,15 @@ export async function handleRequest(
   } catch (providerError) {
     const timedOut =
       providerError instanceof DOMException && providerError.name === "TimeoutError";
+    if (providerError instanceof ProviderHttpError) {
+      if (providerError.status === 401 || providerError.status === 403) {
+        return error(origin, 502, "provider_authentication_failed", "Live generation is not configured correctly.");
+      }
+      if (providerError.status === 400) {
+        return error(origin, 502, "provider_request_rejected", "Live generation needs a configuration update.");
+      }
+      return error(origin, 503, "provider_unavailable", "OpenAI is temporarily unavailable for this preview.");
+    }
     return error(
       origin,
       timedOut ? 504 : 502,

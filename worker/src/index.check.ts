@@ -147,3 +147,16 @@ expect(
     !(await invalidProviderOutput.text()).includes("test-only-key"),
   "Invalid provider output must fail without exposing secrets.",
 );
+
+const rejectedProviderRequest = await handleRequest(
+  request(generationRequest),
+  env(),
+  async () => new Response("provider detail must stay private", { status: 400 }),
+);
+const rejectedProviderBody = await rejectedProviderRequest.text();
+expect(
+  rejectedProviderRequest.status === 502 &&
+    rejectedProviderBody.includes("provider_request_rejected") &&
+    !rejectedProviderBody.includes("provider detail"),
+  "Provider request errors must expose only a safe classification.",
+);
